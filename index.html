@@ -476,6 +476,21 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .db-day span{color:#5b8c3c}
 .db-day.sun-bd{border-left:2px solid #e8c89a}
 .db-day.mon-bd{border-left:2px solid #6b984f}
+/* 「本周汇总」对开页右页：更轻的纸色 + 更紧的字距 + 紧凑间距，减少"翻页撞墙"感 */
+.book-right.summary{background:linear-gradient(180deg,#fff7e6 0%,#fffdf8 60%);box-shadow:inset 4px 0 12px -8px rgba(168,141,108,.18)}
+.book-right.summary .db-date{font-weight:700;color:#a07a4f;letter-spacing:1px}
+.book-right.summary .db-sum-title{font-size:17px}
+.book-right.summary{padding:12px 14px}
+.db-sum-week{display:flex;flex-direction:column;gap:8px;max-height:calc(100% - 48px);overflow-y:auto;-webkit-overflow-scrolling:touch}
+.db-sum-day{padding:2px 0}
+.db-sum-day-head{display:flex;align-items:baseline;gap:8px;margin-bottom:4px;padding-bottom:3px;border-bottom:1px dashed #ece6d8}
+.db-sum-day-date{font-size:17px;font-weight:700;color:#5a6e52;font-family:var(--title-font)}
+.db-sum-day-wd{font-size:11px;color:#8a7a5c}
+.db-sum-items{margin:0;padding-left:0;list-style:none}
+.db-sum-items li{font-size:12px;line-height:1.5;padding:1.5px 0;display:flex;align-items:center;gap:7px;color:#55574f}
+.db-sum-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;display:inline-block}
+.db-sum-empty{font-size:11px;color:#bbb;padding:2px 0 4px}
+.db-sum-next-hint{margin-top:10px;text-align:center;font-size:11px;color:#a8a8a8;letter-spacing:2px;opacity:.7}
 .book-bar{display:flex;gap:8px;margin-top:10px}
 .db-top-bar{display:flex;align-items:center;gap:10px;margin-top:8px}
 .db-flip{width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:24px;color:#b3a98f;background:#f3f1ea;border-radius:50%;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;border:1px solid #e6e0d0;flex-shrink:0}
@@ -531,7 +546,6 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
     </p>
     <div style="display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap">
       <button class="btn" onclick="Welcome.start()">开始今天 ✨</button>
-      <button class="btn ghost" style="background:rgba(255,255,255,.22);color:#fff;border-color:rgba(255,255,255,.4);min-width:auto;padding:10px 20px" onclick="Welcome.refresh()">换一句 ↻</button>
     </div>
   </div>
 </div>
@@ -758,9 +772,10 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
         <div class="book-right" id="dbRight"></div>
         <div class="book-edge-btn right-edge" onclick="DiaryBook.next()">›</div>
       </div>
-      <div id="dbCalendar" class="db-cal-wrap"></div>
       <div class="book-bar">
+        <button class="btn ghost small" onclick="DiaryBook.prev()" aria-label="上一页">←</button>
         <button class="btn ghost small" onclick="DiaryBook.go(Util.today())">回到今天</button>
+        <button class="btn ghost small" onclick="DiaryBook.next()" aria-label="下一页">→</button>
       </div>
     </section><!-- ==== 功能：日记本 END ==== --><!-- ==== 功能：个人认知库 START ==== --><section class="page" id="page-self">
       <div class="page-title">个人认知库</div><div class="page-sub">优点、喜欢/不喜欢、关键词、边界，以及能控制和不能控制的事情。</div>
@@ -1749,7 +1764,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-12-v31';
+const BUILD_VERSION = '2026-08-12-v32';
 const App = {
   current:'home',
   booting:true,
@@ -1893,6 +1908,8 @@ const Welcome = {
     Store.set('welcomeLast', {date:day, text:out.text, quote:out.quote});
     return out;
   },
+  /* v32 已删：换一句按钮被去掉，本方法无调用方，保留为空以防其它代码误引用 */
+  refresh(){},
   async fetchOnline(day){
     const key = Store.getSecret('ai');
     if(!key) return null;
@@ -2433,7 +2450,6 @@ const MainQuest = {
 /* ==== 功能：日记本 START ==== */
 const DiaryBook = {
   cur:null,
-  weekMode:false,
   _flipDir:0, /* -1=向后翻(上一页), +1=向前翻(下一页) */
   /* cur = 当前展开页的左页日期（实体书式：每翻一页 = 整张对开页换一对）
      合法左页：周一/周三/周五/周日（间距 2 天），左页为周日时右页是本周汇总（也是可翻的一页） */
@@ -2566,24 +2582,40 @@ const DiaryBook = {
     if(recDays.length) html+=`<div style="margin-top:6px;font-size:11px;color:#999">📝 ${recDays.join('、')}</div>`;
     return html;
   },
-  /* 「本周汇总」作为对开页的右页（当左页=周日时），可像普通页一样翻走 */
+  /* 「本周汇总」作为对开页的右页（当左页=周日时），可像普通页一样翻走
+     格式：标题"X月 第X周" + 每天"DD 周X"+完成的必做/习惯清单（带彩色小圆点）+ 翻页提示 */
   summaryPageHtml(sundayDate){
     const monday=Util.dateAdd(sundayDate,-6);
-    const week=[]; for(let i=0;i<7;i++) week.push(Util.dateAdd(monday,i));
-    const data=week.map(d=>this.dayData(d));
-    const gratitudeDays=data.filter(d=>d.winLines.length).length;
-    const totalDone=data.reduce((s,d)=>s+d.doneTasks.length,0);
-    const habitDays=data.filter(d=>d.habitDoneN>0).length;
-    const moodDays=data.reduce((s,d)=>s+d.moodDiary.length,0);
-    const whisperDays=data.filter(d=>d.whispers.length).length;
-    const questN=data.reduce((s,d)=>s+d.questEvents.length,0);
-    const rows=[['写了感恩日记',gratitudeDays+' 天'],['完成今日必做',totalDone+' 件'],['有习惯打卡',habitDays+' 天'],['写了情绪日记',moodDays+' 篇'],['发了碎碎念',whisperDays+' 天'],['主线任务打卡',questN+' 次']];
+    const monthLabel = Number(monday.slice(5,7)) + '月';
+    const weekLabel = '第' + this._isoWeek(monday) + '周';
     const wd=['日','一','二','三','四','五','六'];
-    const dayList=week.map((dt,i)=>{ const d=data[i]; const wdn=wd[new Date(dt+'T00:00:00').getDay()]; return `<div class="db-day ${d.has?'on':''}" onclick="DiaryBook.go('${dt}')"><b>${dt.slice(5)}</b><small>周${wdn}</small>${d.has?'<span>✓</span>':''}</div>`; }).join('');
-    return `<div class="db-date">本周汇总（${monday} ~ ${sundayDate}）</div><div class="db-sec"><h3>本周一眼</h3><ul class="db-list">${rows.map(r=>`<li>${r[0]}：<b>${r[1]}</b></li>`).join('')}</ul></div><div class="db-weekdays">${dayList}</div>`;
+    const palette=['#e8a87c','#85c1e9','#a8d18d','#d4a5e0','#f4d35e','#ff8a80','#82b1ff','#a0c4a8'];
+    const week=[]; for(let i=0;i<7;i++) week.push(Util.dateAdd(monday,i));
+    const daysHtml=week.map(dt=>{
+      const d=this.dayData(dt);
+      /* 完成的必做 + 完成的习惯，按顺序拼成一条清单 */
+      const items=[];
+      d.doneTasks.forEach(t=>items.push(t.text));
+      d.habitsDone.forEach(h=>items.push(h.name));
+      const dow=new Date(dt+'T00:00:00').getDay();
+      const head=`<div class="db-sum-day-head"><span class="db-sum-day-date">${dt.slice(8)}</span><span class="db-sum-day-wd">周${wd[dow]}</span></div>`;
+      const list=items.length
+        ? `<ul class="db-sum-items">${items.map((t,i)=>`<li><span class="db-sum-dot" style="background:${palette[i%palette.length]}"></span>${Util.esc(t)}</li>`).join('')}</ul>`
+        : `<div class="db-sum-empty">没记录</div>`;
+      return `<div class="db-sum-day">${head}${list}</div>`;
+    }).join('');
+    return `<div class="db-date db-sum-title">${monthLabel} ${weekLabel}</div><div class="db-sum-week">${daysHtml}</div><div class="db-sum-next-hint">↪ 继续翻 → 进入下周</div>`;
+  },
+  /* ISO 周号（1..53），周一为周首 */
+  _isoWeek(date){
+    const d=new Date(date+'T00:00:00');
+    d.setHours(0,0,0,0);
+    d.setDate(d.getDate()+4-(d.getDay()||7));
+    const yearStart=new Date(d.getFullYear(),0,1);
+    return Math.ceil((((d-yearStart)/86400000)+1)/7);
   },
   renderSpread(curLeft){
-    const left=document.getElementById('dbLeft'), right=document.getElementById('dbRight'), cal=document.getElementById('dbCalendar'), pick=document.getElementById('dbDatePick'), spread=document.getElementById('bookSpread');
+    const left=document.getElementById('dbLeft'), right=document.getElementById('dbRight'), pick=document.getElementById('dbDatePick'), spread=document.getElementById('bookSpread');
     if(!left||!right) return;
     const isSunday=this._isSunday(curLeft);
     const rightDate=isSunday?null:Util.dateAdd(curLeft,1);
@@ -2618,37 +2650,10 @@ const DiaryBook = {
       Media.paint(left); Media.paint(right);
     }
     if(pick) pick.value=curLeft;
-    if(cal) cal.innerHTML=this.calHtml(curLeft);
+    /* 汇总页视觉上与日记页区分（更轻的纸色 + 更紧的字距），减少"翻页撞墙"感 */
+    right.classList.toggle('summary', isSunday);
   },
-  renderWeek(date){
-    const left=document.getElementById('dbLeft'), right=document.getElementById('dbRight'), cal=document.getElementById('dbCalendar'), pick=document.getElementById('dbDatePick');
-    if(!left||!right) return;
-    left.className='book-left'; right.className='book-right';
-    this._flipDir=0;
-    const monday=this.mondayOf(date);
-    const week=[]; for(let i=0;i<7;i++) week.push(Util.dateAdd(monday,i));
-    const data=week.map(d=>this.dayData(d));
-    const gratitudeDays=data.filter(d=>d.winLines.length).length;
-    const totalDone=data.reduce((s,d)=>s+d.doneTasks.length,0);
-    const habitDays=data.filter(d=>d.habitDoneN>0).length;
-    const moodDays=data.reduce((s,d)=>s+d.moodDiary.length,0);
-    const whisperDays=data.filter(d=>d.whispers.length).length;
-    const questN=data.reduce((s,d)=>s+d.questEvents.length,0);
-    const rows=[['写了感恩日记',gratitudeDays+' 天'],['完成今日必做',totalDone+' 件'],['有习惯打卡',habitDays+' 天'],['写了情绪日记',moodDays+' 篇'],['发了碎碎念',whisperDays+' 天'],['主线任务打卡',questN+' 次']];
-    /* 周日到周六排序，让周日周一边界清晰可见 */
-    const sortedDays=week.map((dt,i)=>({idx:i,dt,d:data[i],wdn:['日','一','二','三','四','五','六'][new Date(dt+'T00:00:00').getDay()]}));
-    sortedDays.sort((a,b)=>a.wdn-b.wdn);
-    const dayList=sortedDays.map(({dt,d,wdn})=>`<div class="db-day ${d.has?'on':''}${wdn===0?' sun-bd':''}${wdn===1?' mon-bd':''}" onclick="DiaryBook.go('${dt}')"><b>${dt.slice(5)}</b><small>周${wdn}</small>${d.has?'<span>✓</span>':''}</div>`).join('');
-    left.innerHTML=`<div class="db-date">本周汇总（${monday} ~ ${week[6]}）</div><div class="db-sec"><h3>本周一眼</h3><ul class="db-list">${rows.map(r=>`<li>${r[0]}：<b>${r[1]}</b></li>`).join('')}</ul></div><div class="db-weekdays">${dayList}</div>`;
-    /* 右页显示今天的内容 */
-    const today=Util.today();
-    const tWd=['日','一','二','三','四','五','六'][new Date(today+'T00:00:00').getDay()];
-    right.innerHTML=`<div class="db-date">${today} · 周${tWd}</div>`+this.pageHtml(this.dayData(today),today);
-    Media.paint(right);
-    if(pick) pick.value=date;
-    if(cal) cal.innerHTML=this.calHtml(monday);
-  }
-};
+}
 /* ==== 功能：日记本 END ==== */
 /* ==== 功能：追踪表 START ==== */
 const Tracker = {
