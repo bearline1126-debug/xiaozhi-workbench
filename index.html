@@ -295,7 +295,7 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 }
 .sortable{touch-action:pan-y}
 .sort-tip{font-size:11px;color:var(--text-dim);margin:2px 2px 0}
-/* ==== 首页文件夹式大入口 ==== */
+/* ==== 首页文件夹式更多 ==== */
 .folder-head{display:flex;align-items:center;gap:8px;justify-content:space-between;cursor:pointer;user-select:none}
 .folder-name{display:flex;align-items:center;gap:7px;font-family:var(--title-font);font-size:16px;font-weight:800}
 .folder-caret{transition:transform .2s ease;display:inline-block;font-size:13px;color:var(--text-dim)}
@@ -439,7 +439,30 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .db-day b{display:block;font-size:12px}
 .db-day span{color:#5b8c3c}
 .book-bar{display:flex;gap:8px;margin-top:10px}
+.db-top-bar{display:flex;align-items:center;gap:10px;margin-top:8px}
+.db-flip{width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:24px;color:#b3a98f;background:#f3f1ea;border-radius:50%;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;border:1px solid #e6e0d0;flex-shrink:0}
+.db-flip:active{background:#e7e4db;transform:scale(.92)}
+.db-cal-wrap{margin-top:12px;background:#faf8f3;border:1px solid #ece6d8;border-radius:14px;padding:12px}
 @keyframes starIn{from{opacity:0;transform:translateY(-20px) scale(.5)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes starFly{0%{opacity:1;transform:translateY(0) scale(1)}60%{opacity:1;transform:translateY(-120px) scale(1.4) rotate(15deg)}100%{opacity:0;transform:translateY(-180px) scale(.3) rotate(30deg)}}
+@keyframes twinkle{0%,100%{opacity:1}50%{opacity:.4}}
+.bottle-wrap{text-align:center;padding:20px 0 10px;position:relative}
+.bottle-svg{width:160px;height:200px;margin:0 auto;display:block}
+.bottle-stars-area{position:absolute;top:30px;left:50%;transform:translateX(-50%);width:110px;height:130px;pointer-events:none;overflow:hidden}
+.bottle-star{position:absolute;font-size:18px;animation:twinkle 2s ease-in-out infinite}
+.bottle-star.s1{top:70%;left:20%;animation-delay:0s}.bottle-star.s2{top:55%;left:55%;animation-delay:.3s}.bottle-star.s3{top:40%;left:35%;animation-delay:.6s}.bottle-star.s4{top:75%;left:65%;animation-delay:.9s}.bottle-star.s5{top:25%;left:50%;animation-delay:1.2s}.bottle-star.s6{top:60%;left:10%;animation-delay:1.5s}.bottle-star.flying{animation:starFly .8s ease-in forwards;pointer-events:none;z-index:10}
+.bottle-count{margin-top:6px;font-size:14px;color:#8a7a5c;font-weight:600}
+.year-bottles{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+.year-bottle{flex:1;min-width:90px;text-align:center;background:#f8f5ee;border:1px solid #ece6d8;border-radius:14px;padding:12px 8px;cursor:pointer;transition:transform .2s,box-shadow .2s}
+.year-bottle:active{transform:scale(.96)}
+.year-bottle.cur{border-color:#6b984f;background:#f0f7e8}
+.year-bottle-emoji{font-size:36px;line-height:1}
+.year-bottle-label{font-size:12px;color:#888;margin-top:4px}
+.year-bottle-n{font-size:16px;font-weight:700;color:#6b984f}
+.star-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.star-card{background:linear-gradient(135deg,#fff9e6,#ffe8a0);border-radius:12px;padding:10px 8px;text-align:center;box-shadow:0 1px 4px rgba(180,140,40,.12);animation:starIn .4s ease both}
+.star-card-name{font-size:13px;font-weight:600;color:#5a4e2a;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.star-card-date{font-size:11px;color:#998548;margin-top:4px}
 .img-grid{display:flex;flex-wrap:wrap;gap:6px}
 .img-grid>img,.img-cell>img{width:72px;height:72px;object-fit:cover;border-radius:10px;border:1px solid #eee}
 .img-cell{position:relative;display:inline-block;margin:0 6px 6px 0}
@@ -679,18 +702,19 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
         <div id="reviewNotes"></div>
       </div>
     </section><!-- ==== 功能：复盘中心 END ==== --><!-- ==== 功能：日记本 START ==== --><section class="page" id="page-diarybook">
-      <div class="page-title">日记本</div><div class="page-sub">双页翻书，左页日历右页内容，可翻到任意日期补记。</div>
+      <div class="page-title">日记本</div><div class="page-sub">双页翻书，可翻到任意日期补记。</div>
+      <div class="db-top-bar">
+        <span class="db-flip db-flip-left" onclick="DiaryBook.prev()">‹</span>
+        <input type="date" id="dbDatePick" onchange="DiaryBook.go(this.value)">
+        <span class="db-flip db-flip-right" onclick="DiaryBook.next()">›</span>
+      </div>
       <div class="book-spread" id="bookSpread">
         <div class="book-spine"></div>
         <div class="book-left" id="dbLeft"></div>
         <div class="book-right" id="dbRight"></div>
       </div>
+      <div id="dbCalendar" class="db-cal-wrap"></div>
       <div class="book-bar">
-        <button class="btn ghost small" onclick="DiaryBook.prev()">‹ 上一页</button>
-        <input type="date" id="dbDatePick" style="flex:1;font-size:14px;padding:4px 8px;border:1px solid var(--line,#ddd);border-radius:8px" onchange="DiaryBook.go(this.value)">
-        <button class="btn ghost small" onclick="DiaryBook.next()">下一页 ›</button>
-      </div>
-      <div class="book-bar" style="margin-top:6px">
         <button class="btn ghost small" onclick="DiaryBook.go(Util.today())">回到今天</button>
         <button class="btn ghost small" id="dbWeekBtn" onclick="DiaryBook.toggleWeek()">本周汇总</button>
       </div>
@@ -827,7 +851,7 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
       </div>
       <div class="card">
         <h2>今天运动了</h2>
-        <div class="row"><select id="sportType" style="flex:1"></select><button class="btn" onclick="Sport.addLog()">打卡</button></div>
+        <div class="row"><select id="sportType" style="flex:1"></select><input id="sportDuration" type="number" placeholder="分钟" min="1" style="width:70px"><button class="btn" onclick="Sport.addLog()">打卡</button></div>
       </div>
       <div class="card"><h2>月度日历</h2><div class="calendar-grid" id="sportCalendar"></div></div>
       <div class="card"><h2>最近记录</h2><div id="sportList"></div></div>
@@ -891,12 +915,7 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
       <div class="card"><h2>我的心愿清单</h2><div id="wishShopList"></div></div>
       <div class="card">
         <h2>✨ 星愿瓶</h2>
-        <div id="wishBottle" style="text-align:center;padding:20px 0;position:relative">
-          <div style="font-size:64px;line-height:1">🫙</div>
-          <div id="bottleStars" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none"></div>
-          <p class="hint" id="bottleHint">兑换的心愿会变成星星飞进来</p>
-        </div>
-        <div id="doneWishShopList"></div>
+        <div id="wishBottleArea"></div>
       </div>
       <p style="margin-top:8px;font-size:12px;color:#999;text-align:center">💰 每日最多 10 枚金币 · 打卡/复盘/运动/情绪日记/连续签到都能赚</p>
     </section><!-- ==== 功能：心仪好物兑换铺 END ==== --><!-- ==== 功能：生活智能分析 START ==== --><section class="page" id="page-lifeAnalysis">
@@ -1548,7 +1567,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-12-v21';
+const BUILD_VERSION = '2026-08-12-v22';
 const App = {
   current:'home',
   booting:true,
@@ -1851,7 +1870,7 @@ const Home = {
     const val=t.value?`<div class="big">${t.value()}<small>${t.unit||''}</small></div>`:'';
     return `<div class="tile pinned-tile" data-sort-id="${id}" data-zone="top">
       <button class="grab" data-grab style="position:absolute;left:5px;top:6px" onclick="event.stopPropagation()">⠿</button>
-      ${removable?`<button class="pin-btn" onclick="event.stopPropagation();Home.unpin('${id}')" title="收回大入口">↩</button>`:''}
+      ${removable?`<button class="pin-btn" onclick="event.stopPropagation();Home.unpin('${id}')" title="收回更多">↩</button>`:''}
       <button style="border:0;background:transparent;text-align:left;color:inherit;padding:0;width:100%" ${t.go?`onclick="App.go('${t.go}')"`:''}>
         <h3 style="margin-top:16px">${t.icon} ${Util.esc(t.name)}</h3>${val}<p class="muted">${desc}</p>
       </button>
@@ -1865,7 +1884,7 @@ const Home = {
   unpin(id){
     Store.set('home_top_tiles', this.topTiles().filter(x=>x!==id));
     Store.set('home_pinned_entries', Store.get('home_pinned_entries',[]).filter(x=>x!==id));
-    this.render(); UI.toast('已收回大入口');
+    this.render(); UI.toast('已收回更多');
   },
   todoItems(){
     const out=[];
@@ -1916,7 +1935,7 @@ const Home = {
     this.bindDrag();
     Cooking.paintWheelList();
   },
-  titles:{todo:'今天要处理',tasks:'今日必做',tracker:'本周追踪',notesGift:'经验与人情',entries:'大入口',wheel:'今天吃什么',life:'生活智能分析',manage:'桌面管理'},
+  titles:{todo:'今天要处理',tasks:'今日必做',tracker:'本周追踪',notesGift:'经验与人情',entries:'更多',wheel:'今天吃什么',life:'生活智能分析',manage:'桌面管理'},
   widgetCatalog(){ return this.widgets().filter(w=>w.id!=='manage').map(w=>({id:w.id,label:this.titles[w.id]})); },
   allEntryIds(){ return Store.get('home_entries',['self','wish','cooking','english','visual','sport','outfit','notes','lifeAnalysis','chat','quick','gift','review','mainquest','diarybook']); },
   entryCatalog(){ return this.allEntryIds().map(id=>({id,label:(App.routes.find(x=>x.id===id)||{}).name||id})); },
@@ -2294,24 +2313,29 @@ const DiaryBook = {
     return html;
   },
   renderSpread(date){
-    const left=document.getElementById('dbLeft'), right=document.getElementById('dbRight');
+    const left=document.getElementById('dbLeft'), right=document.getElementById('dbRight'), cal=document.getElementById('dbCalendar'), pick=document.getElementById('dbDatePick');
     if(!left||!right) return;
     left.classList.remove('flip-anim'); right.classList.remove('flip-anim');
     void left.offsetWidth;
     left.classList.add('flip-anim'); right.classList.add('flip-anim');
-    left.innerHTML=this.calHtml(date);
-    const wd=['日','一','二','三','四','五','六'][new Date(date+'T00:00:00').getDay()];
-    right.innerHTML=`<div class="db-date">${date} · 周${wd}</div>`+this.pageHtml(this.dayData(date),date);
-    Media.paint(right);
+    /* 右页 = 当天，左页 = 前一天（方便连续阅读） */
+    const prev=Util.dateAdd(date,-1);
+    const wd=['日','一','二','三','四','五','六'];
+    const wdN=new Date(date+'T00:00:00').getDay();
+    const pwN=new Date(prev+'T00:00:00').getDay();
+    left.innerHTML=`<div class="db-date">${prev} · 周${wd[pwN]}</div>`+this.pageHtml(this.dayData(prev),prev);
+    right.innerHTML=`<div class="db-date">${date} · 周${wd[wdN]}</div>`+this.pageHtml(this.dayData(date),date);
+    Media.paint(left); Media.paint(right);
+    if(pick) pick.value=date;
+    if(cal) cal.innerHTML=this.calHtml(date);
   },
   renderWeek(date){
-    const left=document.getElementById('dbLeft'), right=document.getElementById('dbRight');
+    const left=document.getElementById('dbLeft'), right=document.getElementById('dbRight'), cal=document.getElementById('dbCalendar'), pick=document.getElementById('dbDatePick');
     if(!left||!right) return;
     left.classList.remove('flip-anim'); right.classList.remove('flip-anim');
     void left.offsetWidth;
     left.classList.add('flip-anim'); right.classList.add('flip-anim');
     const monday=this.mondayOf(date);
-    left.innerHTML=this.calHtml(monday);
     const week=[]; for(let i=0;i<7;i++) week.push(Util.dateAdd(monday,i));
     const data=week.map(d=>this.dayData(d));
     const gratitudeDays=data.filter(d=>d.winLines.length).length;
@@ -2321,8 +2345,15 @@ const DiaryBook = {
     const whisperDays=data.filter(d=>d.whispers.length).length;
     const questN=data.reduce((s,d)=>s+d.questEvents.length,0);
     const rows=[['写了感恩日记',gratitudeDays+' 天'],['完成今日必做',totalDone+' 件'],['有习惯打卡',habitDays+' 天'],['写了情绪日记',moodDays+' 篇'],['发了碎碎念',whisperDays+' 天'],['主线任务打卡',questN+' 次']];
-    const dayList=week.map((dt,i)=>{ const d=data[i]; const wd=['日','一','二','三','四','五','六'][new Date(dt+'T00:00:00').getDay()]; return `<div class="db-day ${d.has?'on':''}" onclick="DiaryBook.go('${dt}')"><b>${dt.slice(5)}</b><small>周${wd}</small>${d.has?'<span>✓</span>':''}</div>`; }).join('');
-    right.innerHTML=`<div class="db-date">本周汇总（${monday} ~ ${week[6]}）</div><div class="db-sec"><h3>本周一眼</h3><ul class="db-list">${rows.map(r=>`<li>${r[0]}：<b>${r[1]}</b></li>`).join('')}</ul></div><div class="db-weekdays">${dayList}</div>`;
+    const dayList=week.map((dt,i)=>{ const d=data[i]; const wdn=['日','一','二','三','四','五','六'][new Date(dt+'T00:00:00').getDay()]; return `<div class="db-day ${d.has?'on':''}" onclick="DiaryBook.go('${dt}')"><b>${dt.slice(5)}</b><small>周${wdn}</small>${d.has?'<span>✓</span>':''}</div>`; }).join('');
+    left.innerHTML=`<div class="db-date">本周汇总（${monday} ~ ${week[6]}）</div><div class="db-sec"><h3>本周一眼</h3><ul class="db-list">${rows.map(r=>`<li>${r[0]}：<b>${r[1]}</b></li>`).join('')}</ul></div><div class="db-weekdays">${dayList}</div>`;
+    /* 右页显示今天的内容 */
+    const today=Util.today();
+    const tWd=['日','一','二','三','四','五','六'][new Date(today+'T00:00:00').getDay()];
+    right.innerHTML=`<div class="db-date">${today} · 周${tWd}</div>`+this.pageHtml(this.dayData(today),today);
+    Media.paint(right);
+    if(pick) pick.value=date;
+    if(cal) cal.innerHTML=this.calHtml(monday);
   }
 };
 /* ==== 功能：日记本 END ==== */
@@ -3009,10 +3040,33 @@ const WishShop = {
     if(!item || item.done) return;
     if(Coin.spend(item.cost, '兑换：' + item.name)){
       Store.set('wish_shop', this.list().map(x => x.id === id ? {...x, done:true, redeemedAt:Util.today()} : x));
+      this.flyStar(item.name);
       this.render(); Home.render();
     }
   },
   del(id){ Store.set('wish_shop', this.list().filter(x => x.id !== id)); this.render(); },
+  /* 星星飞入瓶子动画 */
+  flyStar(name){
+    const area=document.getElementById('wishBottleArea');
+    if(!area) return;
+    const star=document.createElement('div');
+    star.textContent='⭐';
+    star.className='bottle-star flying';
+    star.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-size:28px;z-index:999;pointer-events:none';
+    document.body.appendChild(star);
+    setTimeout(()=>{ if(star.parentNode) star.parentNode.removeChild(star); },850);
+  },
+  /* 按年份分组已完成心愿 */
+  byYear(){
+    const done=this.list().filter(x=>x.done);
+    const map={};
+    done.forEach(x=>{
+      const y=x.redeemedAt?.slice(0,4)||'未知';
+      if(!map[y]) map[y]=[];
+      map[y].push(x);
+    });
+    return map;
+  },
   render(){
     const total = Coin.total();
     const el = document.getElementById('wishCoinTotal'); if(el) el.innerHTML = total + '<small>枚</small>';
@@ -3032,13 +3086,74 @@ const WishShop = {
         </div>`;
       }).join('') : '<div class="empty">还没有心愿，先加一件想要的吧</div>';
     }
-    /* 星愿瓶 + 已完成列表 */
-    const doneList = list.filter(x => x.done);
-    const hintEl = document.getElementById('bottleHint');
-    if(hintEl) hintEl.textContent = doneList.length ? `已装进 ${doneList.length} 颗星` : '兑换的心愿会变成星星飞进来';
-    const doneEl = document.getElementById('doneWishShopList');
-    if(doneEl){
-      doneEl.innerHTML = doneList.length ? doneList.map(x => `<div class="item done" style="animation:starIn .4s ease both"><span style="font-size:16px;margin-right:6px">⭐</span><div class="grow"><div class="title">${Util.esc(x.name)}</div><div class="desc">${x.cost} 枚 · ${x.redeemedAt||''}</div></div></div>`).join('') : '';
+    /* ====== 星愿瓶区域 ====== */
+    const area=document.getElementById('wishBottleArea');
+    if(!area) return;
+    const doneList=list.filter(x=>x.done);
+    const years=this.byYear();
+    const yearKeys=Object.keys(years).sort().reverse();
+    const curYear=new Date().getFullYear().toString();
+    const curYearDone=years[curYear]||[];
+    const pastYears=yearKeys.filter(y=>y!==curYear&&y!=='未知');
+
+    /* 瓶子 SVG */
+    const nStars=curYearDone.length;
+    let starsHtml='';
+    for(let i=0;i<Math.min(nStars,8);i++){
+      const cls='s'+((i%6)+1);
+      const delay=(i*.25)%2;
+      starsHtml+=`<span class="bottle-star ${cls}" style="animation-delay:${delay}s">⭐</span>`;
+    }
+    const bottleSvg=`<svg class="bottle-svg" viewBox="0 0 120 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#e8f4f8"/><stop offset="100%" stop-color="#c5e4ed"/></linearGradient>
+      <linearGradient id="glass" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="rgba(255,255,255,.5)"/><stop offset="50%" stop-color="rgba(255,255,255,.1)"/><stop offset="100%" stop-color="rgba(255,255,255,.3)"/></linearGradient></defs>
+      <rect x="30" y="8" width="60" height="16" rx="4" fill="#d4a574"/>
+      <rect x="34" y="12" width="52" height="8" rx="2" fill="#e8c89a"/>
+      <path d="M24 24 Q20 24 20 32 L18 140 Q18 152 30 154 L90 154 Q102 152 102 140 L100 32 Q100 24 96 24Z" fill="url(#bg)" stroke="#9ec5d8" stroke-width="2"/>
+      <path d="M26 28 Q24 28 24 34 L22 138 Q22 148 32 150 L88 150 Q98 148 98 138 L96 34 Q96 28 94 28Z" fill="url(#glass)" opacity=".5"/>
+      <ellipse cx="60" cy="145" rx="36" ry="6" fill="#b8dce8" opacity=".4"/>
+    </svg>`;
+
+    let html=`<div class="bottle-wrap">
+      ${bottleSvg}
+      <div class="bottle-stars-area">${starsHtml}</div>
+      <div class="bottle-count">${nStars} 颗星 · ${curYear}年</div>
+    </div>`;
+
+    /* 年份瓶 */
+    if(yearKeys.length){
+      html+=`<div class="year-bottles">`;
+      /* 当年瓶 */
+      html+=`<div class="year-bottle cur"><div class="year-bottle-emoji">🫙</div><div class="year-bottle-n">${nStars}</div><div class="year-bottle-label">${curYear}年</div></div>`;
+      /* 往年瓶 */
+      pastYears.forEach(y=>{
+        const yn=years[y].length;
+        html+=`<div class="year-bottle" onclick="WishShop.showYearCards('${y}')"><div class="year-bottle-emoji">🫙</div><div class="year-bottle-n">${yn}</div><div class="year-bottle-label">${y}年</div></div>`;
+      });
+      html+=`</div>`;
+    }
+
+    /* 心愿星星卡片（当年） */
+    if(curYearDone.length){
+      html+=`<div style="margin-top:14px"><div style="font-size:13px;font-weight:600;color:#8a7a5c;margin-bottom:8px;display:flex;align-items:center;gap:6px"><span style="background:#6b984f;color:#fff;padding:2px 10px;border-radius:6px;font-size:12px">心愿星星</span>${curYear}年</div>`;
+      html+=`<div class="star-cards">${curYearDone.map(x=>`<div class="star-card"><div class="star-card-name">⭐ ${Util.esc(x.name)}</div><div class="star-card-date">${x.redeemedAt||''}</div></div>`).join('')}</div></div>`;
+    }
+
+    /* 往年展开区 */
+    html+=`<div id="yearCardsArea"></div>`;
+
+    area.innerHTML=html;
+  },
+  showYearCards(year){
+    const el=document.getElementById('yearCardsArea');
+    if(!el) return;
+    const items=this.byYear()[year]||[];
+    if(!items.length) return;
+    const visible=el.style.display==='block';
+    el.style.display=visible?'none':'block';
+    if(!visible){
+      el.innerHTML=`<div style="margin-top:12px"><div style="font-size:13px;font-weight:600;color:#8a7a5c;margin-bottom:8px">🫙 ${year}年 · ${items.length} 颗星</div>
+      <div class="star-cards">${items.map(x=>`<div class="star-card"><div class="star-card-name">⭐ ${Util.esc(x.name)}</div><div class="star-card-date">${x.cost} 枚 · ${x.redeemedAt||''}</div></div>`).join('')}</div></div>`;
     }
   }
 };
@@ -3225,7 +3340,7 @@ const Visual = {
     ['🌿 配色','叶片绿 + 石榴红','自然底色里放一个小面积高饱和点'],
     ['📐 构图','三分法留白','主体不要塞满，给视线呼吸的位置'],
     ['👗 穿搭','低饱和上衣 + 亮色配饰','日常好穿，但有一个记忆点'],
-    ['🖼️ UI','底部导航 + 大入口','手机上最省心的路径是少想、直接点']
+    ['🖼️ UI','底部导航 + 更多','手机上最省心的路径是少想、直接点']
   ],
   list(){ return Store.get('visuals',[]); },
   picks(){
@@ -3284,7 +3399,7 @@ const Sport = {
     this.calendar(logs); this.renderList();
   },
   addType(){ const name=sportName.value.trim(); if(!name)return; Store.set('sport_types',[...this.types(),{id:Util.uid(),icon:sportIcon.value.trim()||'💪',name}]); sportName.value=sportIcon.value=''; this.render(); },
-  addLog(){ const t=this.types().find(x=>x.id===sportType.value); if(!t)return UI.toast('先选运动类型'); Util.bump('sport_type',sportType.value); Store.set('sport_logs',[{id:Util.uid(),date:Util.today(),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),type:t,duration:0},...this.logs()]); Coin.checkSport(); this.render(); },
+  addLog(){ const duration=Number(sportDuration.value); const t=this.types().find(x=>x.id===sportType.value); if(!t)return UI.toast('先选运动类型'); Util.bump('sport_type',sportType.value); Store.set('sport_logs',[{id:Util.uid(),date:Util.today(),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),type:t,duration:duration||0},...this.logs()]); sportDuration.value=''; Coin.checkSport(); this.render(); },
   calendar(logs){ const now=new Date(), y=now.getFullYear(), m=now.getMonth(); const last=new Date(y,m+1,0).getDate(); const by={}; logs.forEach(x=>by[Number(x.date.slice(8))]=(by[Number(x.date.slice(8))]||0)+x.duration); sportCalendar.innerHTML=Array.from({length:last},(_,i)=>`<div class="day-cell ${by[i+1]?'active':''}">${i+1}${by[i+1]?'<br>'+by[i+1]+'m':''}</div>`).join(''); },
   renderList(){ sportList.innerHTML=this.logs().length?this.logs().slice(0,20).map(x=>UI.item(`${x.type.icon} ${x.type.name} · ${x.duration} 分钟`,`${x.date} ${x.time}`,`<button class="del" onclick="Sport.del('${x.id}')">✕</button>`,`draggable="true" data-sort-id="${x.id}"`)).join(''):'<div class="empty">还没有运动记录</div>'; DragSort.bind('#sportList [data-sort-id]','sport_logs',()=>Sport.render()); },
   del(id){ Store.set('sport_logs',this.logs().filter(x=>x.id!==id)); this.render(); },
