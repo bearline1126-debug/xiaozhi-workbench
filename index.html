@@ -1050,21 +1050,12 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
         <p class="hint">这是本地弱保护，主要防止别人随手打开看到内容。忘记密码只能清浏览器数据后重新开始。</p>
       </div>
       <div class="card">
-        <h2>App 外观（安装到桌面的名称与图标）</h2>
-        <p class="hint">这里的名称和图标会用在「安装到桌面」后的 App 上。改完点保存，刷新一次本页再安装即可生效。不填则用默认「小彘的工作台」。</p>
+        <h2>App 外观（安装到桌面的名称）</h2>
+        <p class="hint">这里的名称会用在「安装到桌面」后的 App 上。改完点保存，刷新一次本页再安装即可生效。不填则用默认「小彘的工作台」。图标已改为固定一张，不再支持自定义。</p>
         <label>App 名称（桌面显示的全名）</label>
         <input id="appName" placeholder="小彘的工作台" maxlength="20">
         <label>简称（手机桌面上图标下方的字，建议 4 字内）</label>
         <input id="appShortName" placeholder="小彘" maxlength="6">
-        <label>自定义图标（方形图片，会自动裁成 512×512）</label>
-        <div class="row" style="margin-top:8px;align-items:center">
-          <div id="appIconPrev" style="width:56px;height:56px;border-radius:14px;background:#dfead6 center/cover no-repeat;display:flex;align-items:center;justify-content:center;font-size:12px;color:#6b7d63;border:1px solid #cfe0c4">默认</div>
-          <div style="flex:1">
-            <button class="btn ghost small" onclick="document.getElementById('appIconFile').click()">选择图片</button>
-            <button class="btn ghost small" onclick="AppCustom.clearIcon()">恢复默认</button>
-          </div>
-          <input id="appIconFile" type="file" accept="image/*" style="display:none" onchange="AppCustom.render()">
-        </div>
         <button class="btn" style="margin-top:12px;width:100%" onclick="AppCustom.applyFromSettings()">保存外观设置</button>
       </div>
       <div class="card">
@@ -1081,18 +1072,18 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 </nav>
 <div class="toast" id="toast"></div>
 <script>
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 const Store = (() => {
   const NS = 'bysdash:';
   const SEC = 'bysdash$secret:';
+  const DB_NAME = 'bysdash-store';
+  const STORE_NAME = 'kv';
+  const DB_VERSION = 1;
+  /* 极小的系统标记和密钥仍留在 localStorage（要同步、要尽早读到），其余用户记录统一进 IndexedDB「bysdash-store」，从此解除 5MB 上限 */
+  const SYS_KEYS = new Set(['_lastWrite','_lastPage','_buildVersion','_appCustom','_pwaDismissed','_homeTopFixed','_schemaVersion','__storeInIDB']);
   const cleanText = (v, max = 80) => String(v ?? '').replace(/[<>"'`]/g, '').trim().slice(0, max);
-  const cleanDataIcon = v => {
-    const s = String(v || '').trim();
-    if(!/^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+/=]+$/i.test(s)) return '';
-    return s.length <= 1800000 ? s : '';
-  };
   const cleanHttpsUrl = v => {
-    const s = String(v || '').trim();
+    const s = String(v ?? '').trim();
     if(!s) return '';
     try { const u = new URL(s); return u.protocol === 'https:' ? u.href : ''; }
     catch { return ''; }
@@ -1100,54 +1091,179 @@ const Store = (() => {
   const cleanImportValue = (key, value) => {
     if(key === '_appCustom'){
       const c = value && typeof value === 'object' ? value : {};
-      return {name: cleanText(c.name, 24), shortName: cleanText(c.shortName, 8), icon: cleanDataIcon(c.icon)};
+      /* 图标自定义已下线，导入老备份时直接丢掉图标；名称与短名称照旧清洗 */
+      return {name: cleanText(c.name, 24), shortName: cleanText(c.shortName, 8), icon: ''};
     }
     if(key === 'aiBase' || key === 'syncUrl') return cleanHttpsUrl(value);
     return value;
   };
-  const driver = {
-    get(k){ try { const raw = localStorage.getItem(k); return raw == null ? null : JSON.parse(raw); } catch { return null; } },
-    set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch(e){ UI.toast('文字仓库满了，请到设置里把图片搬进大仓库或先导出备份'); console.error(e); return false; } },
-    remove(k){ localStorage.removeItem(k); },
-    keys(){ return Object.keys(localStorage); }
-  };
+  const _lsGet = k => { try { const raw = localStorage.getItem(k); return raw == null ? null : JSON.parse(raw); } catch { return null; } };
+  const _lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } };
+  /* 内存缓存：init() 后装满所有用户记录 + 系统标记，从此 Store.get/set 都是同步的，调用方一行都不用改 */
+  const _mem = new Map();
+  let _db = null;
+  let _ready = false;
+  function _openDB(){
+    return new Promise((resolve, reject) => {
+      const q = indexedDB.open(DB_NAME, DB_VERSION);
+      q.onupgradeneeded = () => { const db = q.result; if(!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME); };
+      q.onsuccess = () => resolve(q.result);
+      q.onerror = () => reject(q.error);
+    });
+  }
+  function _tx(mode, fn){
+    if(!_db) return Promise.resolve(false);
+    return new Promise(resolve => {
+      try {
+        const tx = _db.transaction(STORE_NAME, mode);
+        const res = fn(tx.objectStore(STORE_NAME));
+        tx.oncomplete = () => resolve(res || true);
+        tx.onerror = () => resolve(false);
+        tx.onabort = () => resolve(false);
+      } catch { resolve(false); }
+    });
+  }
+  const _idbPut = (k, v) => _tx('readwrite', s => s.put(v, NS + k));
+  const _idbDelete = k => _tx('readwrite', s => s.delete(NS + k));
+  function _idbDump(){
+    return new Promise(resolve => {
+      if(!_db){ resolve({keys:[], values:[]}); return; }
+      try {
+        const tx = _db.transaction(STORE_NAME, 'readonly');
+        const kr = tx.objectStore(STORE_NAME).getAllKeys();
+        const vr = tx.objectStore(STORE_NAME).getAll();
+        let keys=[], values=[];
+        kr.onsuccess = () => { keys = kr.result || []; };
+        vr.onsuccess = () => { values = vr.result || []; };
+        tx.oncomplete = () => resolve({keys, values});
+        tx.onerror = () => resolve({keys:[], values:[]});
+      } catch { resolve({keys:[], values:[]}); }
+    });
+  }
+  /* 首次启动或 IDB 被清空时：把 localStorage 里残留的用户记录逐条写进 IDB 并读回校验，校验通过才删 LS，确保数据绝不丢 */
+  async function _migrateFromLS(){
+    const candidates = [];
+    for(let i = 0; i < localStorage.length; i++){
+      const k = localStorage.key(i);
+      if(!k || !k.startsWith(NS)) continue;
+      const short = k.slice(NS.length);
+      if(SYS_KEYS.has(short)) continue;
+      const v = _lsGet(k);
+      if(v !== null && v !== undefined) candidates.push([short, v]);
+    }
+    if(!candidates.length){ _lsSet('__storeInIDB', 1); return true; }
+    for(const [short, v] of candidates){
+      await _idbPut(short, v);
+      _mem.set(short, v);
+    }
+    const {keys, values} = await _idbDump();
+    const idbMap = new Map();
+    keys.forEach((k, i) => { if(typeof k === 'string' && k.startsWith(NS)) idbMap.set(k.slice(NS.length), values[i]); });
+    let ok = true;
+    for(const [short] of candidates){ if(!idbMap.has(short)){ ok = false; break; } }
+    if(ok){
+      for(const [short] of candidates) localStorage.removeItem(NS + short);
+      _lsSet('__storeInIDB', 1);
+      return true;
+    }
+    console.warn('Store 迁移校验失败，已保留 localStorage 原数据，下一次启动会自动重试');
+    return false;
+  }
+  async function init(){
+    /* 先把系统标记从 localStorage 装进 _mem，保证最早期的同步读取可用 */
+    SYS_KEYS.forEach(k => { const v = _lsGet(NS + k); if(v !== null && v !== undefined) _mem.set(k, v); });
+    /* 尝试打开 IDB，把所有记录读进 _mem；打不开就回退到 localStorage */
+    try {
+      _db = await _openDB();
+      const {keys, values} = await _idbDump();
+      let idbHadUser = false;
+      keys.forEach((k, i) => {
+        if(typeof k === 'string' && k.startsWith(NS)){
+          const short = k.slice(NS.length);
+          _mem.set(short, values[i]);
+          if(!SYS_KEYS.has(short)) idbHadUser = true;
+        }
+      });
+      if(!idbHadUser) await _migrateFromLS();
+    } catch(e){
+      console.warn('IndexedDB 不可用，回退到 localStorage：', e);
+      for(let i = 0; i < localStorage.length; i++){
+        const k = localStorage.key(i);
+        if(!k || !k.startsWith(NS)) continue;
+        const short = k.slice(NS.length);
+        const v = _lsGet(k);
+        if(v !== null && v !== undefined) _mem.set(short, v);
+      }
+    }
+    _ready = true;
+  }
+  /* 顺序写入队列，避免并发事务冲突 */
+  let _writeChain = Promise.resolve();
+  const _enqueue = op => { _writeChain = _writeChain.then(op).catch(()=>{}); return _writeChain; };
   return {
-    get(key, fallback = null){ const v = driver.get(NS + key); return v == null ? fallback : v; },
-    set(key, val){ const ok = driver.set(NS + key, val); if (ok) driver.set(NS + '_lastWrite', Date.now()); return ok; },
-    remove(key){ driver.remove(NS + key); },
+    async init(){ return init(); },
+    ready(){ return _ready; },
+    get(key, fallback = null){
+      if(_mem.has(key)) return _mem.get(key);
+      const v = _lsGet(NS + key);
+      return v == null ? fallback : v;
+    },
+    set(key, val){
+      _mem.set(key, val);
+      const now = Date.now();
+      _mem.set('_lastWrite', now);
+      if(SYS_KEYS.has(key)){
+        _lsSet(NS + key, val);
+        _lsSet(NS + '_lastWrite', now);
+      } else {
+        _lsSet(NS + '_lastWrite', now);
+        _enqueue(() => _idbPut(key, val));
+      }
+      return true;
+    },
+    remove(key){
+      _mem.delete(key);
+      if(SYS_KEYS.has(key)) localStorage.removeItem(NS + key);
+      else _enqueue(() => _idbDelete(key));
+    },
     getDaily(key, fallback = null){ return this.get(key + ':' + Util.today(), fallback); },
     setDaily(key, val){ return this.set(key + ':' + Util.today(), val); },
-    getSecret(key){ return driver.get(SEC + key); },
-    setSecret(key, val){ return driver.set(SEC + key, val); },
-    keyList(){ return driver.keys().filter(k => k.startsWith(NS)).map(k => k.slice(NS.length)); },
-    exportAll(){ const data = {}; driver.keys().filter(k => k.startsWith(NS)).forEach(k => data[k.slice(NS.length)] = driver.get(k)); return {app:'小彘的工作台',version:1,schemaVersion:SCHEMA_VERSION,exportedAt:new Date().toISOString(),data}; },
-    /* 只覆盖备份里出现过的 key，本机多出来的内容一律保留，避免任何一侧的数据被抹掉 */
+    getSecret(key){ return _lsGet(SEC + key); },
+    setSecret(key, val){ return _lsSet(SEC + key, val); },
+    keyList(){ return [..._mem.keys()]; },
+    exportAll(){ const data = {}; _mem.forEach((v, k) => { data[k] = v; }); return {app:'小彘的工作台', version:1, schemaVersion: SCHEMA_VERSION, exportedAt: new Date().toISOString(), data}; },
+    /* 只覆盖备份里出现过的 key，本机多出来的内容一律保留 */
     importAll(parsed){
-      if (!parsed || parsed.app !== '小彘的工作台' || !parsed.data || typeof parsed.data !== 'object') throw new Error('格式不对');
-      Object.entries(parsed.data).forEach(([k,v]) => {
+      if(!parsed || parsed.app !== '小彘的工作台' || !parsed.data || typeof parsed.data !== 'object') throw new Error('格式不对');
+      Object.entries(parsed.data).forEach(([k, v]) => {
         if(typeof k !== 'string' || k.length > 100 || /[\x00-\x1f]/.test(k)) return;
-        if (v !== undefined) driver.set(NS + k, cleanImportValue(k, v));
+        if(v !== undefined) this.set(k, cleanImportValue(k, v));
       });
     },
     /* 判断当前是否真的有用户数据（排除纯配置项），用于防止空数据覆盖云盘里的有效备份 */
     hasUserData(){
       const data = this.exportAll().data;
-      const ignore = new Set(['_lastWrite','openDays','welcomeSeen','home_widgets','home_entries','home_hidden_widgets','home_hidden_entries','autoBackup','aiBase','aiModel','aiSeen','hubGroup','welcomeWallpaper','welcomeMsg','activeGroup','theme','lastWeeklyReview','review_notes','quoteSeen','aiWelcomeSeen','homeStreakSeen','dailyQuote','lifeSummaryCache']);
-      for (const k of Object.keys(data)) {
-        if (ignore.has(k)) continue;
+      const ignore = new Set(['_lastWrite','openDays','welcomeSeen','home_widgets','home_entries','home_hidden_widgets','home_hidden_entries','autoBackup','aiBase','aiModel','aiSeen','hubGroup','welcomeWallpaper','welcomeMsg','activeGroup','theme','lastWeeklyReview','review_notes','quoteSeen','aiWelcomeSeen','homeStreakSeen','lifeSummaryCache','__storeInIDB']);
+      for(const k of Object.keys(data)){
+        if(ignore.has(k)) continue;
         const v = data[k];
-        if (v == null || v === '') continue;
-        if (Array.isArray(v) && v.length === 0) continue;
-        if (typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === 0) continue;
+        if(v == null || v === '') continue;
+        if(Array.isArray(v) && v.length === 0) continue;
+        if(typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === 0) continue;
         return true;
       }
       return false;
     },
     /* 恢复前留一份当前数据的急救快照，最多保留最近 3 份，误操作可救回 */
     rescue(){
-      try { const list = this.get('__rescueList', []); list.unshift({ at: new Date().toISOString(), data: this.exportAll() }); this.set('__rescueList', list.slice(0, 3)); return true; } catch(e){ return false; }
+      try { const list = this.get('__rescueList', []); list.unshift({ at: new Date().toISOString(), data: this.exportAll() }); this.set('__rescueList', list.slice(0, 3)); return true; } catch { return false; }
     },
-    usedBytes(){ let n = 0; driver.keys().forEach(k => { if (k.startsWith(NS) || k.startsWith(SEC)) n += (k.length + String(localStorage.getItem(k) || '').length) * 2; }); return n; }
+    usedBytes(){
+      let n = 0;
+      _mem.forEach((v, k) => { n += (k.length + JSON.stringify(v).length) * 2; });
+      Object.keys(localStorage).forEach(k => { if(k.startsWith(NS) || k.startsWith(SEC)) n += (k.length + (localStorage.getItem(k)||'').length) * 2; });
+      return n;
+    }
   };
 })();
 const Util = {
@@ -1629,7 +1745,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-12-v26';
+const BUILD_VERSION = '2026-08-12-v27';
 const App = {
   current:'home',
   booting:true,
@@ -4039,14 +4155,9 @@ const CloudSync = {
 const AppCustom = {
   DB: 'bysdash-media', STORE: 'files', KEY: 'app_custom',
   cleanText(v, max){ return String(v ?? '').replace(/[<>"'`]/g, '').trim().slice(0, max); },
-  cleanIcon(v){
-    const s = String(v || '').trim();
-    if(!/^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+/=]+$/i.test(s)) return '';
-    return s.length <= 1800000 ? s : '';
-  },
   cleanCustom(c){
     c = c && typeof c === 'object' ? c : {};
-    return {name:this.cleanText(c.name, 24), shortName:this.cleanText(c.shortName, 8), icon:this.cleanIcon(c.icon)};
+    return {name:this.cleanText(c.name, 24), shortName:this.cleanText(c.shortName, 8), icon:''};
   },
   getName(){ const c = this.cleanCustom(Store.get('_appCustom')); return c.name || '小彘的工作台'; },
   getShortName(){ const c = this.cleanCustom(Store.get('_appCustom')); return c.shortName || '小彘'; },
@@ -4065,8 +4176,8 @@ const AppCustom = {
       q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error);
     });
   },
-  async save(name, shortName, iconDataUrl){
-    const custom = this.cleanCustom({name, shortName, icon: iconDataUrl});
+  async save(name, shortName){
+    const custom = this.cleanCustom({name, shortName});
     try {
       const db = await this.openIDB();
       await new Promise((res, rej) => {
@@ -4079,53 +4190,19 @@ const AppCustom = {
     this.apply();
     return custom;
   },
-  /* 把文件缩放到 size×size 正方形，返回 PNG data URL（用于自定义图标） */
-  fileToSquareDataUrl(file, size){
-    return new Promise((res, rej) => {
-      const img = new Image();
-      const obj = URL.createObjectURL(file);
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = size; canvas.height = size;
-        const ctx = canvas.getContext('2d');
-        const s = Math.min(img.width, img.height);
-        const sx = (img.width - s) / 2, sy = (img.height - s) / 2;
-        ctx.drawImage(img, sx, sy, s, s, 0, 0, size, size);
-        res(canvas.toDataURL('image/png'));
-        URL.revokeObjectURL(obj);
-      };
-      img.onerror = () => { URL.revokeObjectURL(obj); rej(new Error('图片读取失败')); };
-      img.src = obj;
-    });
-  },
-  /* 在设置页渲染当前值 + 预览 */
+  /* 在设置页渲染当前名称 */
   render(){
     const c = this.cleanCustom(Store.get('_appCustom'));
     const n = document.getElementById('appName'); if(n) n.value = c.name || '';
     const s = document.getElementById('appShortName'); if(s) s.value = c.shortName || '';
-    const prev = document.getElementById('appIconPrev');
-    if(prev){ if(c.icon){ prev.style.backgroundImage = `url("${c.icon}")`; prev.textContent=''; prev.classList.add('has'); } else { prev.style.backgroundImage=''; prev.textContent='默认'; prev.classList.remove('has'); } }
   },
   async applyFromSettings(){
     const name = document.getElementById('appName')?.value || '';
     const shortName = document.getElementById('appShortName')?.value || '';
-    let icon = this.cleanCustom(Store.get('_appCustom')).icon || '';
-    const fileInput = document.getElementById('appIconFile');
-    if(fileInput && fileInput.files && fileInput.files[0]){
-      try { icon = await this.fileToSquareDataUrl(fileInput.files[0], 512); }
-      catch(e){ UI.toast('图标处理失败：' + e.message); }
-    }
-    await this.save(name, shortName, icon);
+    await this.save(name, shortName);
     this.render();
     this.apply();
-    UI.toast('✅ 名称已生效。桌面图标名需删除旧图标后重新安装');
-  },
-  async clearIcon(){
-    const c = this.cleanCustom(Store.get('_appCustom'));
-    await this.save(c.name || '', c.shortName || '', '');
-    const fi = document.getElementById('appIconFile'); if(fi) fi.value = '';
-    this.render();
-    UI.toast('已恢复默认图标');
+    UI.toast('✅ 名称已生效。桌面名称需删除旧图标后重新安装');
   }
 };
 /* ==== 功能：App 外观自定义 END ==== */
@@ -4255,10 +4332,13 @@ const PWAInstall = {
   dismiss(){ Store.set('_pwaDismissed','1'); this.hideBanner(); }
 };
 /* ==== 功能：设置 END ==== */
-App.init();
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-  navigator.serviceWorker.register('./sw.js').catch(() => {});
-}
+(async () => {
+  try { await Store.init(); } catch(e){ console.error('Store init 失败：', e); }
+  App.init();
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+})();
 </script>
 </body>
 </html>

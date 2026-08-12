@@ -5,5 +5,9 @@ Transform_this_image_into_a_pe_*.png
 # 本地备份
 index.backup-*.html
 
+# 本地密钥文件（防御性：实际 token 永远存于 repo 外的 ~/.workbuddy/secrets/，本仓库绝不包含）
+*.token
+*.secret
+
 # 系统
 .DS_Store
