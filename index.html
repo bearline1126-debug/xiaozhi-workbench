@@ -392,6 +392,45 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 @media(min-width:768px){#pwaBanner{border-radius:22px 22px 0 0;bottom:8px;left:8px;right:auto;width:420px}}
 .install-btn{animation:pulse-install 2s ease-in-out infinite}
 @keyframes pulse-install{0%,100%{box-shadow:0 2px 8px rgba(107,152,79,.35)}50%{box-shadow:0 2px 16px rgba(107,152,79,.6),0 0 0 4px rgba(107,152,79,.15)}}
+/* 明日必做结构化编辑器 */
+.must-editor .must-item{display:flex;align-items:center;gap:6px;margin:6px 0}
+.must-editor .must-item .must-text{flex:1;min-width:0}
+.must-editor .must-item .must-quest{flex:0 0 40%}
+.must-editor .must-add{margin-top:6px}
+.must-editor .del{flex:0 0 auto}
+/* 主线任务卡片 */
+.quest-card{border:1px solid var(--line,#e6e6e6);border-radius:14px;padding:12px;margin-bottom:12px;background:#fff}
+.quest-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.quest-name{font-weight:600;font-size:15px}
+.quest-bar{height:10px;border-radius:6px;background:#eee;overflow:hidden;margin:10px 0 6px}
+.quest-fill{height:100%;background:linear-gradient(90deg,#6b984f,#8fbf6b);transition:width .3s ease}
+.quest-meta{display:flex;justify-content:space-between;font-size:13px}
+/* 日记本 */
+.book{display:flex;align-items:stretch;margin-top:10px}
+.book-edge{flex:0 0 38px;display:flex;align-items:center;justify-content:center;font-size:30px;color:#b3a98f;background:#f3f1ea;border-radius:14px 0 0 14px;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
+.book-edge.book-right{border-radius:0 14px 14px 0}
+.book-edge:active{background:#e7e4db}
+.book-page{flex:1;min-height:62vh;background:#fffdf8;border:1px solid #ece6d8;padding:16px;overflow:auto;box-shadow:inset 0 0 30px rgba(0,0,0,.03);transform-origin:left center}
+.book-page.flip{animation:dbFlip .5s ease}
+@keyframes dbFlip{0%{transform:rotateY(16deg);opacity:.25}100%{transform:rotateY(0);opacity:1}}
+.db-date{font-size:15px;font-weight:600;color:#6b7d63;margin-bottom:10px;border-bottom:1px dashed #ddd;padding-bottom:8px}
+.db-sec{margin:12px 0}
+.db-sec h3{font-size:14px;color:#8a7a5c;margin:0 0 6px}
+.db-list{margin:0;padding-left:18px}
+.db-list li{margin:3px 0;font-size:14px;line-height:1.5}
+.db-empty{font-size:13px;color:#aaa}
+.db-empty.big{text-align:center;color:#bbb;padding:40px 10px;line-height:1.8}
+.db-nav{display:flex;justify-content:space-between;font-size:12px;color:#aaa;margin-top:14px;border-top:1px dashed #eee;padding-top:8px}
+.db-weekdays{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.db-day{flex:1 0 40px;text-align:center;background:#f6f4ee;border-radius:10px;padding:6px 2px;font-size:12px;color:#888}
+.db-day.on{background:#eaf2e2;color:#5b8c3c}
+.db-day b{display:block;font-size:13px}
+.db-day span{color:#5b8c3c}
+.book-bar{display:flex;gap:10px;margin-top:12px}
+.img-grid{display:flex;flex-wrap:wrap;gap:6px}
+.img-grid>img,.img-cell>img{width:72px;height:72px;object-fit:cover;border-radius:10px;border:1px solid #eee}
+.img-cell{position:relative;display:inline-block;margin:0 6px 6px 0}
+.img-cell .del{position:absolute;top:-7px;right:-7px;padding:0 6px;line-height:20px;height:20px}
 </style>
 </head>
 <body>
@@ -453,13 +492,13 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
       <div class="page-title" id="hubTitle">分类</div><div class="page-sub" id="hubSub">把相关功能放在一起。</div>
       <div class="grid" id="hubGrid"></div>
     </section><!-- ==== 功能：分类 END ==== --><!-- ==== 功能：每日记录 START ==== --><section class="page" id="page-daily">
-      <div class="page-title">每日记录</div><div class="page-sub">感恩日记、追踪表、情绪日记合在一页，一次填完就好，不用来回点。没想写的部分留空也行。</div>
+      <div class="page-title">每日记录</div><div class="page-sub">每天一次填完：感恩、习惯与情绪、明日必做、昨晚作息。没想写的留空也行。</div>
       <div class="card">
         <h2>① 感恩日记</h2>
         <label>今天所有值得感恩的事情</label>
         <textarea id="dlWins" placeholder="一行一件，比如：读完一篇文献；认真散步了；拒绝了一件消耗我的事；学到了新东西；被人帮助了"></textarea>
         <label>明天必做事项，最多 3 件</label>
-        <textarea id="dlTomorrow" placeholder="一行一件，最多三行"></textarea>
+        <div id="dlMustBox" class="must-editor"></div>
         <label style="margin-top:10px">今天做的事，服务哪些年度计划？</label>
         <div class="pill-row" id="dlPlans" style="margin-top:6px"></div>
         <p class="hint">不强制每天都有，勾了才算关联一天。</p>
@@ -473,6 +512,14 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
         </select>
         <label>一句话总结情绪</label>
         <input id="dlMoodLine" placeholder="比如：今天整体平稳，下午被打断后有点焦虑">
+      </div>
+      <div class="card">
+        <h2>④ 昨晚睡眠</h2>
+        <div class="row">
+          <div style="flex:1"><label>昨日入睡时间</label><input id="dlSleep" type="time" value="23:00"></div>
+          <div style="flex:1"><label>今日起床时间</label><input id="dlWake" type="time" value="08:00"></div>
+        </div>
+        <p class="hint">入睡默认 23:00、起床默认 08:00；智能分析里会画出你的作息曲线。</p>
       </div>
       <div class="card">
         <div class="collapsible-head" onclick="DailyLog.toggleMood()">
@@ -492,12 +539,15 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
         <div id="dlHistory"></div>
       </div>
     </section><!-- ==== 功能：每日记录 END ==== --><!-- ==== 功能：感恩日记 START ==== --><section class="page" id="page-success">
-      <div class="page-title">感恩日记</div><div class="page-sub">每天晚上写一写：今天值得感恩的事（成就、学到、做对都可以放进来），以及明天最重要的 3 件事。</div>
+      <div class="page-title">感恩日记</div><div class="page-sub">每天晚上写一写：今天值得感恩的事（成就、学到、做对都行），明天最重要的 3 件事，还能上传一张感恩瞬间。</div>
       <div class="card">
         <h2>今天所有值得感恩的事情</h2>
         <textarea id="successWins" placeholder="一行一件，比如：读完一篇文献；认真散步了；拒绝了一件消耗我的事；学到了一个新方法；被人帮助了"></textarea>
         <label>明天必做事项，最多 3 件</label>
-        <textarea id="successTomorrow" placeholder="一行一件，最多三行"></textarea>
+        <div id="successMustBox" class="must-editor"></div>
+        <label style="margin-top:10px">感恩瞬间（可上传图片）</label>
+        <div class="row" style="align-items:center"><input id="successImgFile" type="file" accept="image/*" style="flex:1;font-size:14px"><button class="btn" onclick="Success.uploadGratitude()">上传</button></div>
+        <div class="img-grid" id="successImgs" style="margin-top:8px"></div>
         <button class="btn" style="margin-top:10px;width:100%" onclick="Success.save()">保存感恩日记</button>
       </div>
       <div class="card">
@@ -555,7 +605,22 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
         <h2>情绪日记列表</h2>
         <div id="moodList"></div>
       </div>
-    </section><!-- ==== 功能：情绪日记 END ==== --><!-- ==== 功能：零时闲话铺 START ==== --><section class="page" id="page-chat">
+    </section><!-- ==== 功能：情绪日记 END ==== --><!-- ==== 功能：主线任务 START ==== --><section class="page" id="page-mainquest">
+      <div class="page-title">主线任务</div><div class="page-sub">把想长期推进的事列成主线任务，每次打卡 +1，进度条看得见。在「每日记录」里把明日必做关联到某个主线任务，完成时它会自动 +1。</div>
+      <div class="card">
+        <h2>新增主线任务</h2>
+        <div class="row">
+          <input id="mqName" placeholder="任务名，如：连续早起 30 天">
+          <input id="mqGoal" type="number" min="1" style="flex:0 0 90px" placeholder="目标次数" value="30">
+          <button class="btn" onclick="MainQuest.add()">添加</button>
+        </div>
+        <p class="hint">目标次数是进度条满格的打卡数，不是上限；打够之后还能继续打。</p>
+      </div>
+      <div class="card">
+        <h2>我的主线任务</h2>
+        <div id="mainquestList"></div>
+      </div>
+    </section><!-- ==== 功能：主线任务 END ==== --><!-- ==== 功能：零时闲话铺 START ==== --><section class="page" id="page-chat">
       <div class="page-title">零时闲话铺</div><div class="page-sub">随时说两句，它会陪着你；遇到具体问题时，它会先翻你的经验摘录，命中就附在回答下面。聊得越多越懂你，也能据此写出你的个人使用说明书。</div>
       <div class="card">
         <div class="widget-head"><h2>和我聊聊 / 问我经验</h2><div class="widget-actions">
@@ -605,7 +670,18 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
         <button class="btn ghost" style="margin-top:10px;width:100%" onclick="Review.saveNote()">保存补充</button>
         <div id="reviewNotes"></div>
       </div>
-    </section><!-- ==== 功能：复盘中心 END ==== --><!-- ==== 功能：个人认知库 START ==== --><section class="page" id="page-self">
+    </section><!-- ==== 功能：复盘中心 END ==== --><!-- ==== 功能：日记本 START ==== --><section class="page" id="page-diarybook">
+      <div class="page-title">日记本</div><div class="page-sub">一页一天，把当天的事汇总成一本翻得到的日记。点左边往前翻、点右边往后翻；周末会多出一页本周汇总。</div>
+      <div class="book">
+        <div class="book-edge book-left" onclick="DiaryBook.prev()"><span>‹</span></div>
+        <div class="book-page" id="dbPage"></div>
+        <div class="book-edge book-right" onclick="DiaryBook.next()"><span>›</span></div>
+      </div>
+      <div class="book-bar">
+        <button class="btn ghost small" onclick="DiaryBook.go(Util.today())">回到今天</button>
+        <button class="btn ghost small" id="dbWeekBtn" onclick="DiaryBook.toggleWeek()">本周汇总</button>
+      </div>
+    </section><!-- ==== 功能：日记本 END ==== --><!-- ==== 功能：个人认知库 START ==== --><section class="page" id="page-self">
       <div class="page-title">个人认知库</div><div class="page-sub">优点、喜欢/不喜欢、关键词、边界，以及能控制和不能控制的事情。</div>
       <div class="card">
         <h2>快速添加</h2>
@@ -715,8 +791,25 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
         <button class="btn" style="margin-top:10px;width:100%" onclick="Cooking.add()">保存菜谱</button>
       </div>
       <div class="card"><h2>我的菜</h2><div id="dishList"></div></div>
-    </section><!-- ==== 功能：做菜栏 END ==== --><!-- ==== 功能：运动打卡 START ==== --><section class="page" id="page-sport">
-      <div class="page-title">运动打卡</div><div class="page-sub">选运动类型和时长即可，不运动就不用记录。</div>
+    </section><!-- ==== 功能：做菜栏 END ==== --><!-- ==== 功能：运动打卡 START ==== -->    <section class="page" id="page-sport">
+      <div class="page-title">运动打卡</div><div class="page-sub">先填身体档案，再看运动记录；不运动的日子就不记。</div>
+      <div class="card">
+        <h2>个人身体档案</h2>
+        <div class="row">
+          <select id="bodyGender"><option value="">性别</option><option value="女">女</option><option value="男">男</option></select>
+          <input id="bodyAge" type="number" placeholder="年龄">
+        </div>
+        <div class="row" style="margin-top:8px">
+          <input id="bodyHeight" type="number" placeholder="身高 cm">
+          <input id="bodyWeight" type="number" placeholder="当前体重 kg">
+        </div>
+        <div class="row" style="margin-top:8px">
+          <input id="bodyIdeal" type="number" placeholder="理想体重 kg（可选）">
+          <button class="btn" onclick="Sport.saveProfile()">保存</button>
+        </div>
+        <div id="bmiBox" style="margin-top:10px"></div>
+        <button class="btn ghost" style="margin-top:8px;width:100%" onclick="Sport.recordWeight()">记录今日体重（更新曲线）</button>
+      </div>
       <div class="grid">
         <div class="tile"><h3>运动天数</h3><div class="big" id="sportDays">0</div></div>
         <div class="tile"><h3>总时长</h3><div class="big" id="sportMinutes">0<small>min</small></div></div>
@@ -775,7 +868,25 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
         <div class="row"><input id="giftSearch" placeholder="搜索人名或事件" oninput="Gift.render()"><button class="btn ghost" onclick="Gift.render()">搜索</button></div>
         <div id="giftList" style="margin-top:10px"></div>
       </div>
-    </section><!-- ==== 功能：份子钱 END ==== --><!-- ==== 功能：生活智能分析 START ==== --><section class="page" id="page-lifeAnalysis">
+    </section><!-- ==== 功能：份子钱 END ==== --><!-- ==== 功能：心仪好物兑换铺 START ==== --><section class="page" id="page-wishshop">
+      <div class="page-title">心仪好物兑换铺</div><div class="page-sub">把想要的好物列进来，标上要攒多少金币；用每天认真生活赚到的金币去兑换，兑换就花掉对应金币。</div>
+      <div class="grid">
+        <div class="tile"><h3>我的金币</h3><div class="big" id="wishCoinTotal" style="color:#d4a017">0<small>枚</small></div></div>
+        <div class="tile"><h3>已兑换</h3><div class="big" id="wishRedeemed">0</div></div>
+      </div>
+      <div class="card">
+        <h2>添加一件心仪好物</h2>
+        <input id="wishShopName" placeholder="想要什么，如：一束花 / 一本好书 / 一顿火锅">
+        <div class="row" style="margin-top:8px"><input id="wishShopCost" type="number" placeholder="所需金币数" min="1"><button class="btn" onclick="WishShop.add()">添加</button></div>
+        <p class="hint">先写想要的，再定攒多少金币；攒够后会提示可兑换。</p>
+      </div>
+      <div class="card"><h2>我的心愿清单</h2><div id="wishShopList"></div></div>
+      <div class="card">
+        <h2>怎么赚金币</h2>
+        <p class="hint">每天最多攒 10 枚金币，认真生活就能慢慢攒起来：</p>
+        <div id="wishShopWays"></div>
+      </div>
+    </section><!-- ==== 功能：心仪好物兑换铺 END ==== --><!-- ==== 功能：生活智能分析 START ==== --><section class="page" id="page-lifeAnalysis">
       <div class="page-title">生活智能分析</div><div class="page-sub">把今日必做、心愿行动、运动、份子钱、做菜、英语和连续打卡放在一起看。</div>
       <div class="card" id="lifeCompact"></div>
       <div class="card">
@@ -1424,7 +1535,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-12-v19';
+const BUILD_VERSION = '2026-08-12-v20';
 const App = {
   current:'home',
   booting:true,
@@ -1437,6 +1548,8 @@ const App = {
     {id:'tracker',icon:'📊',name:'追踪表',onShow:()=>Tracker.render()},
     {id:'mood',icon:'💭',name:'情绪日记',onShow:()=>Mood.render()},
     {id:'review',icon:'🧠',name:'复盘中心',onShow:()=>Review.render()},
+    {id:'mainquest',icon:'🎯',name:'主线任务',onShow:()=>MainQuest.render()},
+    {id:'diarybook',icon:'📖',name:'日记本',onShow:()=>DiaryBook.render()},
     {id:'self',icon:'🪞',name:'认知库',onShow:()=>Self.render()},
     {id:'notes',icon:'📚',name:'经验摘录',onShow:()=>Notes.render()},
     {id:'english',icon:'📖',name:'英语积累',onShow:()=>English.render()},
@@ -1448,6 +1561,7 @@ const App = {
     {id:'outfit',icon:'👗',name:'穿搭助手',onShow:()=>Outfit.render()},
     {id:'lifeAnalysis',icon:'📈',name:'生活分析',onShow:()=>LifeAnalysis.render()},
     {id:'gift',icon:'🧧',name:'份子钱',onShow:()=>Gift.render()},
+    {id:'wishshop',icon:'🛍️',name:'兑换铺',onShow:()=>WishShop.render()},
     {id:'settings',icon:'⚙️',name:'设置',onShow:()=>Settings.render()}
   ],
   go(id, opts={}){
@@ -1612,9 +1726,9 @@ const Welcome = {
 };
 const Hub = {
   groups:{
-    diary:{title:'日记',sub:'记录自己、复盘自己、理解自己。',pages:['daily','chat','success','tracker','mood','review','self']},
+    diary:{title:'日记',sub:'记录自己、复盘自己、理解自己。',pages:['daily','chat','success','tracker','mood','mainquest','diarybook','review','self']},
     knowledge:{title:'知识',sub:'积累文字、英语、视觉灵感。',pages:['notes','quick','english','visual']},
-    life:{title:'生活',sub:'把日常琐事整理成能长期用的工具。',pages:['wish','cooking','gift','sport','outfit','lifeAnalysis']}
+    life:{title:'生活',sub:'把日常琐事整理成能长期用的工具。',pages:['wish','cooking','gift','wishshop','sport','outfit','lifeAnalysis']}
   },
   pages(group){ const base=this.groups[group].pages; const saved=Store.get('hub_pages_'+group); if(!saved) return base; return saved.filter(x=>base.includes(x)).concat(base.filter(x=>!saved.includes(x))); },
   open(group){
@@ -1626,7 +1740,7 @@ const Hub = {
     document.getElementById('groupHint').textContent = this.groups[group].title + '分类';
   },
   markBottom(id){
-    const map = {home:'home', hub:'home', daily:'diary', chat:'diary', success:'diary', tracker:'diary', mood:'diary', review:'diary', self:'diary', notes:'knowledge', quick:'knowledge', english:'knowledge', visual:'knowledge', wish:'life', cooking:'life', gift:'life', sport:'life', outfit:'life', lifeAnalysis:'life', settings:'home'};
+    const map = {home:'home', hub:'home', daily:'diary', chat:'diary', success:'diary', tracker:'diary', mood:'diary', mainquest:'diary', diarybook:'diary', review:'diary', self:'diary', notes:'knowledge', quick:'knowledge', english:'knowledge', visual:'knowledge', wish:'life', cooking:'life', gift:'life', sport:'life', outfit:'life', lifeAnalysis:'life', settings:'home'};
     document.querySelectorAll('#bottomNav button').forEach(b=>b.classList.toggle('on', b.dataset.group===map[id] || (id==='home' && b.dataset.group==='home')));
     document.getElementById('groupHint').textContent = {diary:'日记分类', knowledge:'知识分类', life:'生活分类', home:'本地优先 · 可离线使用'}[map[id]||'home'];
   },
@@ -1657,6 +1771,8 @@ const Hub = {
       success:'晚上写成就感和明日三件事',
       tracker:'习惯打卡 + 情绪记录 + 周月年统计',
       mood:'长文事件复盘，AI 立刻总结',
+      mainquest:'主线任务打卡，进度条看得见',
+      diarybook:'一页一天，翻看每天的汇总',
       review:'周总结 / 月总结 / 年总结 / 使用说明书',
       self:'优点、边界、可控 / 不可控',
       notes:'灵感、经验、句子、搜索',
@@ -1664,6 +1780,7 @@ const Hub = {
       english:'每日一句、单词、对话、写作',
       visual:'配色、构图、素材、展览',
       wish:'心愿与下一步行动分开',
+      wishshop:'用金币兑换心仪好物',
       cooking:'菜谱、图片、今天吃什么转盘',
       gift:'人情汇总、明细、净额',
       sport:'运动类型、时间、月历统计',
@@ -1740,7 +1857,7 @@ const Home = {
   todoItems(){
     const out=[];
     const tasks=Success.todayTasks(), done=Store.getDaily('task_done',[]);
-    tasks.forEach((t,i)=>{ if(!done.includes(i)) out.push({t,d:'今日必做',tag:'必做',cls:'',go:'home'}); });
+    tasks.forEach((it,i)=>{ if(!done.includes(i)) out.push({t:it.text,d:'今日必做',tag:'必做',cls:'',go:'home'}); });
     const rec=Store.get(Tracker.dayKey(),{habits:{}});
     Tracker.items().forEach(it=>{ if(!rec.habits?.[it.id]) out.push({t:it.name,d:'今天还没打卡',tag:'习惯',cls:'',go:'daily'}); });
     const s=Store.get(Success.key(),{});
@@ -1779,7 +1896,7 @@ const Home = {
     homeTopGrid.innerHTML=this.topTiles().map(id=>this.topTileHtml(id)).join('');
     const hidden=Store.get('home_hidden_widgets',[]);
     homeBoard.innerHTML=this.widgets().filter(w=>!hidden.includes(w.id)).map((w,i)=>this.widget(w,i)).join('');
-    if(document.getElementById('todayTasks')) todayTasks.innerHTML = tasks.length ? tasks.map((t,i)=>`<div class="item ${done.includes(i)?'done':''}" onclick="Home.toggleTask(${i})"><span class="check">${done.includes(i)?'✓':''}</span><div class="grow"><div class="title">${Util.esc(t)}</div></div></div>`).join('') : '<div class="empty">还没有今日必做。今晚在每日记录里写下明天 3 件事，明天会自动出现在这里。</div>';
+    if(document.getElementById('todayTasks')) todayTasks.innerHTML = tasks.length ? tasks.map((t,i)=>`<div class="item ${done.includes(i)?'done':''}" onclick="Home.toggleTask(${i})"><span class="check">${done.includes(i)?'✓':''}</span><div class="grow"><div class="title">${Util.esc(t.text||'')}</div></div></div>`).join('') : '<div class="empty">还没有今日必做。今晚在每日记录里写下明天 3 件事，明天会自动出现在这里。</div>';
     if(document.getElementById('homeTracker')) { homeTracker.innerHTML=Tracker.homeStats(); }
     if(document.getElementById('homeEntries')) homeEntries.innerHTML = this.entriesHtml();
     if(document.getElementById('homeLifeSummary')) homeLifeSummary.innerHTML=LifeAnalysis.compact();
@@ -1788,7 +1905,7 @@ const Home = {
   },
   titles:{todo:'今天要处理',tasks:'今日必做',tracker:'本周追踪',notesGift:'经验与人情',entries:'大入口',wheel:'今天吃什么',life:'生活智能分析',manage:'桌面管理'},
   widgetCatalog(){ return this.widgets().filter(w=>w.id!=='manage').map(w=>({id:w.id,label:this.titles[w.id]})); },
-  allEntryIds(){ return Store.get('home_entries',['self','wish','cooking','english','visual','sport','outfit','notes','lifeAnalysis','chat','quick','gift','review']); },
+  allEntryIds(){ return Store.get('home_entries',['self','wish','cooking','english','visual','sport','outfit','notes','lifeAnalysis','chat','quick','gift','review','mainquest','diarybook']); },
   entryCatalog(){ return this.allEntryIds().map(id=>({id,label:(App.routes.find(x=>x.id===id)||{}).name||id})); },
   widget(w,i){
     const body = w.collapsed ? '' : `<div class="widget-body">${this.widgetBody(w.id)}</div>`;
@@ -1922,20 +2039,246 @@ const Home = {
       Store.set('home_entries', a); this.render();
     }, {attr:'miniId'});
   },
-  toggleTask(i){ const done=Store.getDaily('task_done',[]); const next=done.includes(i)?done.filter(x=>x!==i):done.concat(i); Store.setDaily('task_done', next); this.render(); }
+  toggleTask(i){
+    const done=Store.getDaily('task_done',[]);
+    const was=done.includes(i);
+    const next=was?done.filter(x=>x!==i):done.concat(i);
+    Store.setDaily('task_done', next);
+    /* 关联到主线任务的必做项，打勾完成时自动 +1 */
+    if(!was){
+      const item = Success.todayTasks()[i];
+      if(item && item.questId) MainQuest.checkinById(item.questId);
+    }
+    this.render();
+  }
 };
 /* ==== 功能：首页 END ==== */
 /* ==== 功能：感恩日记 START ==== */
 const Success = {
   key(date=Util.today()){ return 'success:'+date; },
-  render(){ const d=Store.get(this.key(),{}); successWins.value=d.wins||''; successTomorrow.value=(d.tomorrow||[]).join('\n'); this.history(); },
-  save(){ const tomorrow=Util.lines(successTomorrow.value).slice(0,3); Store.set(this.key(),{date:Util.today(),wins:successWins.value.trim(),tomorrow}); UI.toast('感恩日记已保存'); Home.render(); this.history(); },
-  todayTasks(){ const today=Store.get(this.key(),{}); if (today.todayTasks?.length) return today.todayTasks; const y=Store.get(this.key(Util.dateAdd(Util.today(),-1)),{}); return y.tomorrow || []; },
+  norm(arr){ return (arr||[]).map(x => typeof x==='string' ? {text:x, questId:null} : x); },
+  render(){ const d=Store.get(this.key(),{}); if(document.getElementById('successWins')) successWins.value=d.wins||''; if(document.getElementById('successMustBox')) MustEditor.mount('successMustBox', this.norm(d.tomorrow)); if(document.getElementById('successImgs')) this.renderImages(); this.history(); },
+  renderImages(){
+    const box=document.getElementById('successImgs'); if(!box) return;
+    const imgs=Store.get(this.key(),{}).images||[];
+    box.innerHTML = imgs.length ? imgs.map(id=>`<div class="img-cell"><img data-media="${id}" alt="感恩瞬间" onclick="Media.openFull('${id}')"><button class="del" onclick="Success.removeImage('${id}')">✕</button></div>`).join('') : '<div class="empty" style="font-size:13px">还没有图片，上传一张今天的感恩瞬间。</div>';
+    Media.paint();
+  },
+  async uploadGratitude(){
+    const f=document.getElementById('successImgFile')?.files?.[0]; if(!f) return UI.toast('先选一张图片');
+    const dataUrl=await Util.compressImage(f, 900).catch(()=>'');
+    if(!dataUrl) return UI.toast('图片读不了');
+    const blob=Util.dataUrlToBlob(dataUrl);
+    const rec=await Media.save(blob).catch(()=>null);
+    if(!rec) return UI.toast('大仓库不可用，图片没存上');
+    const s=Store.get(this.key(),{});
+    Store.set(this.key(), {...s, images:[...(s.images||[]), rec.id]});
+    document.getElementById('successImgFile').value='';
+    this.renderImages(); UI.toast('已添加一张感恩瞬间');
+  },
+  removeImage(id){
+    Store.set(this.key(), {...Store.get(this.key(),{}), images:(Store.get(this.key(),{}).images||[]).filter(x=>x!==id)});
+    Media.del(id);
+    this.renderImages();
+  },
+  save(){ const old=Store.get(this.key(),{}); const tomorrow=MustEditor.collect('successMustBox'); const wins=(document.getElementById('successWins')?.value||'').trim(); Store.set(this.key(),{...old, date:Util.today(), wins, tomorrow}); UI.toast('感恩日记已保存'); Home.render(); this.history(); },
+  todayTasks(){ const today=Store.get(this.key(),{}); if (today.todayTasks?.length) return this.norm(today.todayTasks); const y=Store.get(this.key(Util.dateAdd(Util.today(),-1)),{}); return this.norm(y.tomorrow || []); },
+  tasksFor(date){ const d=Store.get(this.key(date),{}); if(d.todayTasks?.length) return this.norm(d.todayTasks); const y=Store.get(this.key(Util.dateAdd(date,-1)),{}); return this.norm(y.tomorrow || []); },
   todayWinCount(){ return Util.lines(Store.get(this.key(),{}).wins || '').length; },
-  history(){ const days=Util.rangeDays(14).reverse(); const rows=days.map(date=>[date,Store.get(this.key(date),null)]).filter(x=>x[1]); successHistory.innerHTML=rows.length?rows.map(([date,d])=>UI.item(date,`感恩：${Util.lines(d.wins||'').length} 条\n明日必做：${(d.tomorrow||[]).join(' / ')}`)).join(''):'<div class="empty">还没有感恩日记</div>'; },
+  history(){ const days=Util.rangeDays(14).reverse(); const rows=days.map(date=>[date,Store.get(this.key(date),null)]).filter(x=>x[1]); successHistory.innerHTML=rows.length?rows.map(([date,d])=>UI.item(date,`感恩：${Util.lines(d.wins||'').length} 条\n明日必做：${this.norm(d.tomorrow).map(x=>x.text).join(' / ')}`)).join(''):'<div class="empty">还没有感恩日记</div>'; },
   collect(days=7){ return Util.rangeDays(days).map(date=>({date,...Store.get(this.key(date),{})})).filter(x=>x.wins); }
 };
 /* ==== 功能：感恩日记 END ==== */
+/* ==== 功能：明日必做结构化编辑器 START ==== */
+const MustEditor = {
+  mount(boxId, items){
+    const box = document.getElementById(boxId);
+    if(!box) return;
+    box.innerHTML = `<div class="must-list" id="${boxId}_list"></div>
+      <div class="row must-add"><input id="${boxId}_input" placeholder="写一件明天必做的事"><button class="btn" onclick="MustEditor.add('${boxId}')">添加</button></div>
+      <p class="hint">最多 3 件；可关联到主线任务，完成时自动给主线任务 +1。</p>`;
+    this.paint(boxId, items || []);
+  },
+  paint(boxId, items){
+    const list = document.getElementById(boxId+'_list');
+    if(!list) return;
+    const q = MainQuest.list();
+    if(!items.length){ list.innerHTML = '<div class="empty">还没写，先加一件明天必做的事。</div>'; return; }
+    list.innerHTML = items.map((it, i)=>`
+      <div class="must-item">
+        <input class="must-text" data-mi="${i}" value="${Util.esc(it.text||'')}" placeholder="必做事项">
+        <select class="must-quest" data-mi="${i}">
+          <option value="">不关联</option>
+          ${q.map(x=>`<option value="${x.id}" ${x.id===it.questId?'selected':''}>${Util.esc(x.name)}</option>`).join('')}
+        </select>
+        <button class="del" title="删除" onclick="MustEditor.remove('${boxId}',${i})">✕</button>
+      </div>`).join('');
+  },
+  read(boxId){
+    const list = document.getElementById(boxId+'_list');
+    if(!list) return [];
+    return [...list.querySelectorAll('.must-item')].map(row=>({
+      text: row.querySelector('.must-text').value.trim(),
+      questId: row.querySelector('.must-quest').value || null
+    })).filter(x=>x.text);
+  },
+  add(boxId){
+    const input = document.getElementById(boxId+'_input');
+    const text = (input.value||'').trim();
+    if(!text) return UI.toast('先写点什么');
+    const cur = this.read(boxId);
+    if(cur.length>=3) return UI.toast('最多 3 件');
+    cur.push({text, questId:null});
+    input.value='';
+    this.paint(boxId, cur);
+  },
+  remove(boxId, i){
+    const cur = this.read(boxId);
+    cur.splice(i,1);
+    this.paint(boxId, cur);
+  },
+  collect(boxId){ return this.read(boxId).slice(0,3); }
+};
+/* ==== 功能：明日必做结构化编辑器 END ==== */
+/* ==== 功能：主线任务 START ==== */
+const MainQuest = {
+  list(){ return Store.get('mainquests', []); },
+  add(name, goal){
+    name = (document.getElementById('mqName')?.value || name || '').trim();
+    const g = parseInt(document.getElementById('mqGoal')?.value || goal || '1', 10);
+    const goalN = Math.max(1, isNaN(g) ? 1 : g);
+    if(!name) return UI.toast('先写任务名');
+    const list = this.list();
+    list.push({id:Util.uid(), name, goal:goalN, count:0, created:Util.today()});
+    Store.set('mainquests', list);
+    if(document.getElementById('mqName')) document.getElementById('mqName').value='';
+    if(document.getElementById('mqGoal')) document.getElementById('mqGoal').value='30';
+    this.render(); UI.toast('主线任务已添加');
+  },
+  checkin(id){
+    const list = this.list(); const q = list.find(x=>x.id===id); if(!q) return;
+    q.count = q.count + 1;
+    Store.set('mainquests', list);
+    this.logEvent(id);
+    this.render();
+    if(App.current==='home') Home.render();
+  },
+  checkinById(id){ this.checkin(id); },
+  logEvent(id){
+    const log = Store.get('quest_events', []);
+    log.push({id:Util.uid(), questId:id, date:Util.today(), ts:Date.now()});
+    Store.set('quest_events', log);
+  },
+  del(id){
+    if(!confirm('删除这个主线任务？打卡记录也会一起清掉。')) return;
+    Store.set('mainquests', this.list().filter(x=>x.id!==id));
+    Store.set('quest_events', Store.get('quest_events', []).filter(x=>x.questId!==id));
+    this.render();
+  },
+  dayLog(date){ return Store.get('quest_events', []).filter(x=>x.date===date); },
+  render(){
+    const box = document.getElementById('mainquestList');
+    if(!box) return;
+    const list = this.list();
+    box.innerHTML = list.length ? list.map(q=>{
+      const pct = Math.min(100, Math.round(q.count/q.goal*100));
+      return `<div class="quest-card">
+        <div class="quest-head"><span class="quest-name">${Util.esc(q.name)}</span>
+          <button class="del" onclick="MainQuest.del('${q.id}')">✕</button></div>
+        <div class="quest-bar"><div class="quest-fill" style="width:${pct}%"></div></div>
+        <div class="quest-meta"><span>${q.count} / ${q.goal} 次</span><span class="muted">${pct}%</span></div>
+        <button class="btn small" style="margin-top:8px;width:100%" onclick="MainQuest.checkin('${q.id}')">打卡 +1</button>
+      </div>`;
+    }).join('') : '<div class="empty">还没有主线任务，先在上面加一个。</div>';
+  }
+};
+/* ==== 功能：主线任务 END ==== */
+/* ==== 功能：日记本 START ==== */
+const DiaryBook = {
+  cur:null,
+  weekMode:false,
+  render(){ if(!this.cur) this.cur=Util.today(); this.weekMode=false; const b=document.getElementById('dbWeekBtn'); if(b) b.textContent='本周汇总'; this.renderDay(this.cur); },
+  go(date){ this.cur=date; this.weekMode=false; const b=document.getElementById('dbWeekBtn'); if(b) b.textContent='本周汇总'; this.renderDay(date); },
+  prev(){ if(this.weekMode){ this.cur=Util.dateAdd(this.cur,-7); this.renderWeek(this.cur); } else { this.go(Util.dateAdd(this.cur,-1)); } },
+  next(){ if(this.weekMode){ this.cur=Util.dateAdd(this.cur,7); this.renderWeek(this.cur); } else { this.go(Util.dateAdd(this.cur,1)); } },
+  toggleWeek(){
+    this.weekMode=!this.weekMode;
+    const b=document.getElementById('dbWeekBtn');
+    if(this.weekMode){ if(b) b.textContent='返回当日'; this.renderWeek(this.cur); }
+    else { if(b) b.textContent='本周汇总'; this.renderDay(this.cur); }
+  },
+  flip(frame){ frame.classList.remove('flip'); void frame.offsetWidth; frame.classList.add('flip'); },
+  mondayOf(date){ const d=new Date(date+'T00:00:00'); const dw=d.getDay()||7; return Util.dateAdd(date, 1-dw); },
+  navHtml(date){ const wd=['日','一','二','三','四','五','六'][new Date(date+'T00:00:00').getDay()]; return `<div class="db-nav"><span>‹ ${Util.dateAdd(date,-1)}</span><span>${date} 周${wd}</span><span>${Util.dateAdd(date,1)} ›</span></div>`; },
+  dayData(date){
+    const s=Store.get('success:'+date,null)||{};
+    const t=Store.get('tracker:'+date,null)||{};
+    const tasks=Success.tasksFor(date);
+    const done=Store.get('task_done:'+date,[])||[];
+    const doneTasks=tasks.filter((_,i)=>done.includes(i));
+    const habitsDone=Tracker.items().filter(it=>t.habits?.[it.id]);
+    const winLines=Util.lines(s.wins||'');
+    const moodDiary=Mood.list().filter(x=>x.date===date);
+    const whispers=Companion.dailyWhispers(date);
+    const questEvents=MainQuest.dayLog(date);
+    const images=s.images||[];
+    return {s,t,tasks,doneTasks,habitsDone,winLines,moodDiary,whispers,questEvents,images,
+      habitDoneN:habitsDone.length,
+      mood:t.mood, moodLine:t.line,
+      has: winLines.length||doneTasks.length||habitsDone.length||moodDiary.length||whispers.length||questEvents.length||images.length};
+  },
+  section(title, items, empty){
+    if(!items||!items.length) return empty?`<div class="db-sec"><h3>${title}</h3><div class="db-empty">${empty}</div></div>`:'';
+    return `<div class="db-sec"><h3>${title}</h3><ul class="db-list">${items.map(x=>`<li>${x}</li>`).join('')}</ul></div>`;
+  },
+  pageHtml(d, date){
+    if(!d.has) return `<div class="db-empty big">这一天还没有记录。<br>去「每日记录」写点今天的吧。</div>`;
+    const out=[];
+    /* 优先：日记记录 */
+    if(d.winLines.length) out.push(this.section('感恩日记', d.winLines.map(x=>Util.esc(x))));
+    if(d.images.length) out.push(`<div class="db-sec"><h3>感恩瞬间</h3><div class="img-grid">${d.images.map(id=>`<img data-media="${id}" alt="" onclick="Media.openFull('${id}')">`).join('')}</div></div>`);
+    if(d.moodDiary.length) out.push(this.section('情绪日记', d.moodDiary.map(x=>`${Util.esc(x.symbol||'')} ${Util.esc(x.text)}`)));
+    if(d.whispers.length) out.push(this.section('碎碎念', d.whispers.map(x=>Util.esc(x))));
+    /* 其次：今日完成事项 */
+    if(d.doneTasks.length) out.push(this.section('今日必做完成', d.doneTasks.map(x=>Util.esc(x.text))));
+    /* 习惯与情绪 */
+    if(d.habitsDone.length) out.push(this.section('习惯打卡', d.habitsDone.map(it=>`${Util.esc(it.name)} ✓`)));
+    if(d.mood) out.push(`<div class="db-sec"><h3>今日情绪</h3><p>${Util.esc(d.mood)}${d.moodLine?(' · '+Util.esc(d.moodLine)):''}</p></div>`);
+    /* 主线任务打卡 */
+    if(d.questEvents.length){
+      const byQ={}; d.questEvents.forEach(e=>{ byQ[e.questId]=(byQ[e.questId]||0)+1; });
+      const list=MainQuest.list();
+      out.push(this.section('主线任务打卡', Object.entries(byQ).map(([qid,n])=>{ const q=list.find(x=>x.id===qid); return `${q?Util.esc(q.name):'已删任务'} +${n}`; })));
+    }
+    if(d.s.sleepTime||d.s.wakeTime) out.push(`<div class="db-sec"><h3>作息</h3><p>入睡 ${Util.esc(d.s.sleepTime||'—')} · 起床 ${Util.esc(d.s.wakeTime||'—')}</p></div>`);
+    return out.join('');
+  },
+  renderDay(date){
+    const frame=document.getElementById('dbPage'); if(!frame) return;
+    this.flip(frame);
+    const wd=['日','一','二','三','四','五','六'][new Date(date+'T00:00:00').getDay()];
+    frame.innerHTML=`<div class="db-date">${date} · 周${wd}</div>`+this.pageHtml(this.dayData(date),date)+this.navHtml(date);
+    Media.paint(frame);
+  },
+  renderWeek(date){
+    const frame=document.getElementById('dbPage'); if(!frame) return;
+    this.flip(frame);
+    const monday=this.mondayOf(date);
+    const week=[]; for(let i=0;i<7;i++) week.push(Util.dateAdd(monday,i));
+    const data=week.map(d=>this.dayData(d));
+    const gratitudeDays=data.filter(d=>d.winLines.length).length;
+    const totalDone=data.reduce((s,d)=>s+d.doneTasks.length,0);
+    const habitDays=data.filter(d=>d.habitDoneN>0).length;
+    const moodDays=data.reduce((s,d)=>s+d.moodDiary.length,0);
+    const whisperDays=data.filter(d=>d.whispers.length).length;
+    const questN=data.reduce((s,d)=>s+d.questEvents.length,0);
+    const rows=[['写了感恩日记',gratitudeDays+' 天'],['完成今日必做',totalDone+' 件'],['有习惯打卡',habitDays+' 天'],['写了情绪日记',moodDays+' 篇'],['发了碎碎念',whisperDays+' 天'],['主线任务打卡',questN+' 次']];
+    const dayList=week.map((dt,i)=>{ const d=data[i]; const wd=['日','一','二','三','四','五','六'][new Date(dt+'T00:00:00').getDay()]; return `<div class="db-day ${d.has?'on':''}"><b>${dt.slice(5)}</b><small>周${wd}</small>${d.has?'<span>✓</span>':''}</div>`; }).join('');
+    frame.innerHTML=`<div class="db-date">本周汇总（${monday} ~ ${week[6]}）</div><div class="db-sec"><h3>本周一眼</h3><ul class="db-list">${rows.map(r=>`<li>${r[0]}：<b>${r[1]}</b></li>`).join('')}</ul></div><div class="db-weekdays">${dayList}</div>`+this.navHtml(monday);
+    Media.paint(frame);
+  }
+};
+/* ==== 功能：日记本 END ==== */
 /* ==== 功能：追踪表 START ==== */
 const Tracker = {
   range:'week',
@@ -2055,7 +2398,9 @@ const DailyLog = {
     Util.fillMoodSelect('dlMood'); dlMood.value = rec.mood || '😊';
     dlMoodLine.value = rec.line || '';
     const s = Store.get(Success.key(), {});
-    dlWins.value = s.wins||''; dlTomorrow.value = (s.tomorrow||[]).join('\n');
+    dlWins.value = s.wins||''; if(document.getElementById('dlMustBox')) MustEditor.mount('dlMustBox', Success.norm(s.tomorrow));
+    if(document.getElementById('dlSleep')) dlSleep.value = s.sleepTime || '23:00';
+    if(document.getElementById('dlWake')) dlWake.value = s.wakeTime || '08:00';
     const plans = Review.plans();
     const linked = Store.get('daily_plans:' + Util.today(), []);
     dlPlans.innerHTML = plans.length ? plans.map(p=>`<label class="pill"><input type="checkbox" data-dl-plan="${p.id}" ${linked.includes(p.id)?'checked':''} style="width:auto;min-height:auto;margin-right:6px">${Util.esc(p.title)}</label>`).join('') : '<span class="muted">还没列年度计划，去复盘中心加。</span>';
@@ -2075,7 +2420,7 @@ const DailyLog = {
     Store.set(Tracker.dayKey(), {...cur, date:Util.today(), habits, mood:dlMood.value, line:dlMoodLine.value.trim()});
     /* 2. 感恩日记 */
     const old = Store.get(Success.key(), {});
-    Store.set(Success.key(), {...old, date:Util.today(), wins:dlWins.value.trim(), tomorrow:Util.lines(dlTomorrow.value).slice(0,3)});
+    Store.set(Success.key(), {...old, date:Util.today(), wins:dlWins.value.trim(), tomorrow:MustEditor.collect('dlMustBox'), sleepTime:document.getElementById('dlSleep')?.value||'23:00', wakeTime:document.getElementById('dlWake')?.value||'08:00'});
     /* 3.5 年度计划关联（勾了才算关联一天） */
     const planIds = [...document.querySelectorAll('[data-dl-plan]')].filter(x => x.checked).map(x => x.dataset.dlPlan);
     Store.set('daily_plans:' + Util.today(), planIds);
@@ -2109,7 +2454,7 @@ const DailyLog = {
       const s = Store.get(Success.key(date), null), t = Store.get(Tracker.dayKey(date), null);
       if(!s && !t) return null;
       const doneN = items.filter(it => t?.habits?.[it.id]).length;
-      const desc = `习惯 ${doneN}/${items.length} · 情绪 ${t?.mood||'—'}${t?.line ? ' · ' + t.line : ''}\n成就 ${Util.lines(s?.wins||'').length} 条${s?.tomorrow?.length ? ' · 明日必做 ' + s.tomorrow.join(' / ') : ''}`;
+      const desc = `习惯 ${doneN}/${items.length} · 情绪 ${t?.mood||'—'}${t?.line ? ' · ' + t.line : ''}\n成就 ${Util.lines(s?.wins||'').length} 条${(s?.tomorrow||[]).length ? ' · 明日必做 ' + Success.norm(s.tomorrow).map(x=>x.text).join(' / ') : ''}`;
       return UI.item(date, desc);
     }).filter(Boolean);
     dlHistory.innerHTML = rows.length ? rows.join('') : '<div class="empty">还没有记录，今天开个头吧</div>';
@@ -2142,10 +2487,14 @@ const Companion = {
     box.scrollTop = box.scrollHeight;
   },
   push(msg){
-    const list = this.log().concat(msg).slice(-200);
+    const m = {...msg, date: msg.date || Util.today()};
+    const list = this.log().concat(m).slice(-200);
     Store.set(this.key(), list);
     this.paint();
   },
+  msgDate(m){ if(m.date) return m.date; const mm=(m.at||'').match(/(\d{2})\/(\d{2})/); if(mm){ return new Date().getFullYear()+'-'+mm[1]+'-'+mm[2]; } return ''; },
+  /* 某一天的「碎碎念」= 当天你发的用户消息 */
+  dailyWhispers(date){ return this.log().filter(m => m.role==='user' && this.msgDate(m)===date).map(m=>m.content).filter(Boolean); },
   clear(){
     if(!confirm('清空这里的对话记录？清掉之后写使用说明书就少了这部分素材。')) return;
     Store.set(this.key(), []);
@@ -2530,6 +2879,49 @@ const Wish = {
   del(id){ Store.set('wishes',this.list().filter(x=>x.id!==id)); this.render(); }
 };
 /* ==== 功能：心愿行动 END ==== */
+/* ==== 功能：心仪好物兑换铺 START ==== */
+const WishShop = {
+  list(){ return Store.get('wish_shop', []); },
+  add(){
+    const name = wishShopName.value.trim();
+    const cost = Number(wishShopCost.value);
+    if(!name) return UI.toast('先写好物名字');
+    if(!cost || cost < 1) return UI.toast('填一下要攒多少金币');
+    Store.set('wish_shop', [{id:Util.uid(), name, cost, done:false, createdAt:Util.today()}, ...this.list()]);
+    wishShopName.value = ''; wishShopCost.value = ''; this.render(); Home.render();
+  },
+  redeem(id){
+    const item = this.list().find(x => x.id === id);
+    if(!item || item.done) return;
+    if(Coin.spend(item.cost, '兑换：' + item.name)){
+      Store.set('wish_shop', this.list().map(x => x.id === id ? {...x, done:true, redeemedAt:Util.today()} : x));
+      this.render(); Home.render();
+    }
+  },
+  del(id){ Store.set('wish_shop', this.list().filter(x => x.id !== id)); this.render(); },
+  render(){
+    const total = Coin.total();
+    const el = document.getElementById('wishCoinTotal'); if(el) el.innerHTML = total + '<small>枚</small>';
+    const list = this.list();
+    const red = document.getElementById('wishRedeemed'); if(red) red.textContent = list.filter(x => x.done).length;
+    if(wishShopList){
+      wishShopList.innerHTML = list.length ? list.map(x => {
+        const have = Math.min(total, x.cost);
+        const pct = Math.round(have / x.cost * 100);
+        const can = total >= x.cost;
+        return `<div class="item ${x.done ? 'done' : ''}">
+          <div class="grow"><div class="title">${Util.esc(x.name)}</div>
+          <div class="desc">需要 ${x.cost} 枚金币 · 已攒 ${have}/${x.cost}</div>
+          <div style="height:8px;background:rgba(41,54,42,.08);border-radius:6px;overflow:hidden;margin-top:6px"><div style="height:100%;width:${pct}%;background:var(--accent);border-radius:6px;transition:width .3s"></div></div></div>
+          ${x.done ? '<span class="tag-chip">已兑换</span>' : (can ? `<button class="btn small" onclick="WishShop.redeem('${x.id}')">兑换</button>` : `<button class="btn small ghost" disabled style="opacity:.6">还差 ${x.cost - total} 枚</button>`)}
+          <button class="del" onclick="WishShop.del('${x.id}')">✕</button>
+        </div>`;
+      }).join('') : '<div class="empty">还没有心仪好物，先加一件想要的吧</div>';
+    }
+    if(wishShopWays) wishShopWays.innerHTML = Object.values(Coin.sources).map(s => `<div class="item"><span style="font-size:18px">${s.icon}</span><div class="grow"><div class="title">${s.name}</div><div class="desc">${s.desc}</div></div></div>`).join('');
+  }
+};
+/* ==== 功能：心仪好物兑换铺 END ==== */
 /* ==== 功能：英语积累 START ==== */
 const English = {
   content:[
@@ -2660,11 +3052,16 @@ const Coin = {
     streak3:{name:'连续3天',icon:'🔥',desc:'连续打开工作台 3 天'},
     streak7:{name:'连续7天',icon:'⭐',desc:'连续打开工作台 7 天'}
   },
+  DAILY_CAP: 10,
   history(){ return Store.get('coin_history',[]); },
   total(){ return this.history().reduce((s,x)=>s+x.amount,0); },
   todayTotal(){ const t=Util.today(); return this.history().filter(x=>x.date===t).reduce((s,x)=>s+x.amount,0); },
+  /* 今天「赚到」的金币（只算正数入账，不含兑换花掉的），用于每日上限判断 */
+  todayEarned(){ const t=Util.today(); return this.history().filter(x=>x.date===t && x.amount>0).reduce((s,x)=>s+x.amount,0); },
   earn(sourceKey, note){
     if(!this.sources[sourceKey]) return;
+    /* 每日上限：已经攒满 10 枚就不再入账 */
+    if(this.todayEarned() >= this.DAILY_CAP){ UI.toast('今日金币已攒满 '+this.DAILY_CAP+' 枚，明天再来～'); return; }
     /* 防重复：同一天同一来源只奖励一次 */
     const t=Util.today();
     const dup=this.history().find(x=>x.date===t && x.source===sourceKey);
@@ -2672,6 +3069,16 @@ const Coin = {
     const coin={id:Util.uid(),date:t,time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),source:sourceKey,name:this.sources[sourceKey].name,icon:this.sources[sourceKey].icon,amount:1,note:note||''};
     Store.set('coin_history',[coin,...this.history()]);
     UI.toast(`🪙 +1 金币：${this.sources[sourceKey].name}`);
+  },
+  /* 兑换铺消耗金币：以负数记录进历史，total() 会自动扣减 */
+  spend(amount, note){
+    amount = Number(amount) || 0;
+    if(amount <= 0) return false;
+    if(this.total() < amount){ UI.toast('金币不够，还差 ' + (amount - this.total()) + ' 枚'); return false; }
+    const coin={id:Util.uid(),date:Util.today(),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),source:'spend',name:note||'兑换',icon:'🛍️',amount:-amount};
+    Store.set('coin_history',[coin,...this.history()]);
+    UI.toast('🛍️ 已用掉 ' + amount + ' 枚金币');
+    return true;
   },
   /* 在各功能完成后调用 */
   checkDaily(){ /* 每日记录保存后调用 */ this.earn('daily',''); },
@@ -2743,7 +3150,10 @@ const Sport = {
   defaults(){ return [{id:'walk',icon:'🚶',name:'走路'},{id:'run',icon:'🏃',name:'跑步'},{id:'swim',icon:'🏊',name:'游泳'},{id:'badminton',icon:'🏸',name:'羽毛球'},{id:'pingpong',icon:'🏓',name:'乒乓球'},{id:'cycle',icon:'🚴',name:'骑行'},{id:'yoga',icon:'🧘',name:'瑜伽'},{id:'strength',icon:'🏋️',name:'力量训练'},{id:'dance',icon:'💃',name:'跳舞'}]; },
   types(){ const saved=Store.get('sport_types'); if(!saved){ Store.set('sport_types',this.defaults()); return this.defaults(); } const defIds=this.defaults().map(x=>x.id); return [...saved.filter(x=>defIds.includes(x.id)), ...saved.filter(x=>!defIds.includes(x.id))]; },
   logs(){ return Store.get('sport_logs',[]); },
+  profile(){ return Store.get('body_profile',{}); },
+  weightLogs(){ return Store.get('weight_logs',[]); },
   render(){
+    this.renderProfile();
     const all=this.types(), types=Util.byUse('sport_type',all.map(t=>t.id)).map(id=>all.find(t=>t.id===id)).filter(Boolean);
     sportType.innerHTML=types.map(t=>`<option value="${t.id}">${t.icon} ${Util.esc(t.name)}</option>`).join('');
     sportTypeCount.textContent=types.length;
@@ -2756,7 +3166,56 @@ const Sport = {
   addLog(){ const duration=Number(sportDuration.value); if(!duration)return UI.toast('先填运动时长'); const t=this.types().find(x=>x.id===sportType.value); Util.bump('sport_type',sportType.value); Store.set('sport_logs',[{id:Util.uid(),date:Util.today(),time:sportTime.value||new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),type:t,duration},...this.logs()]); sportDuration.value=''; Coin.checkSport(); this.render(); },
   calendar(logs){ const now=new Date(), y=now.getFullYear(), m=now.getMonth(); const last=new Date(y,m+1,0).getDate(); const by={}; logs.forEach(x=>by[Number(x.date.slice(8))]=(by[Number(x.date.slice(8))]||0)+x.duration); sportCalendar.innerHTML=Array.from({length:last},(_,i)=>`<div class="day-cell ${by[i+1]?'active':''}">${i+1}${by[i+1]?'<br>'+by[i+1]+'m':''}</div>`).join(''); },
   renderList(){ sportList.innerHTML=this.logs().length?this.logs().slice(0,20).map(x=>UI.item(`${x.type.icon} ${x.type.name} · ${x.duration} 分钟`,`${x.date} ${x.time}`,`<button class="del" onclick="Sport.del('${x.id}')">✕</button>`,`draggable="true" data-sort-id="${x.id}"`)).join(''):'<div class="empty">还没有运动记录</div>'; DragSort.bind('#sportList [data-sort-id]','sport_logs',()=>Sport.render()); },
-  del(id){ Store.set('sport_logs',this.logs().filter(x=>x.id!==id)); this.render(); }
+  del(id){ Store.set('sport_logs',this.logs().filter(x=>x.id!==id)); this.render(); },
+  renderProfile(){
+    const p=this.profile();
+    if(document.getElementById('bodyGender')) bodyGender.value=p.gender||'';
+    if(document.getElementById('bodyAge')) bodyAge.value=p.age||'';
+    if(document.getElementById('bodyHeight')) bodyHeight.value=p.height||'';
+    if(document.getElementById('bodyWeight')) bodyWeight.value=p.weight||'';
+    if(document.getElementById('bodyIdeal')) bodyIdeal.value=p.idealWeight||'';
+    this.paintBmi();
+  },
+  paintBmi(){
+    const box=document.getElementById('bmiBox'); if(!box) return;
+    const p=this.profile();
+    const h=Number(p.height), w=Number(p.weight);
+    if(h>0 && w>0){
+      const bmi=Math.round(w/Math.pow(h/100,2)*10)/10;
+      const tag = bmi<18.5?'偏瘦':bmi<=23.9?'正常':bmi<=27.9?'偏重':'肥胖';
+      box.innerHTML=`<div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:26px;font-weight:800;color:var(--accent)">BMI ${bmi}</span><span class="tag-chip">${tag}</span></div><p class="hint" style="margin-top:2px">健康 BMI 一般在 18.5–23.9 之间${p.idealWeight?('；理想体重约 '+p.idealWeight+' kg'):''}。</p>`;
+    } else {
+      box.innerHTML='<p class="hint">填好身高和体重，这里自动算 BMI。</p>';
+    }
+  },
+  pushWeight(weight){
+    const logs=this.weightLogs().filter(x=>x.date!==Util.today());
+    logs.push({date:Util.today(), weight:Number(weight)});
+    Store.set('weight_logs', logs);
+  },
+  saveProfile(){
+    const next={
+      gender: document.getElementById('bodyGender')?.value||'',
+      age: Number(document.getElementById('bodyAge')?.value)||'',
+      height: Number(document.getElementById('bodyHeight')?.value)||'',
+      weight: Number(document.getElementById('bodyWeight')?.value)||'',
+      idealWeight: Number(document.getElementById('bodyIdeal')?.value)||''
+    };
+    Store.set('body_profile', next);
+    if(next.weight>0) this.pushWeight(next.weight);
+    this.paintBmi();
+    UI.toast('身体档案已保存');
+    if(typeof LifeAnalysis!=='undefined') LifeAnalysis.render();
+  },
+  recordWeight(){
+    const w=Number(document.getElementById('bodyWeight')?.value);
+    if(!w) return UI.toast('先在「当前体重」里填一个数字');
+    const p=this.profile(); p.weight=w; Store.set('body_profile', p);
+    this.pushWeight(w);
+    this.paintBmi();
+    UI.toast('已记录今日体重');
+    if(typeof LifeAnalysis!=='undefined') LifeAnalysis.render();
+  }
 };
 /* ==== 功能：运动打卡 END ==== */
 /* ==== 功能：穿搭助手 START ==== */
@@ -2924,8 +3383,19 @@ const LifeAnalysis = {
       perHabit,
       streak: Daily.streak(),
       coinTotal: Coin.total(),
-      coinToday: Coin.todayTotal()
+      coinToday: Coin.todayTotal(),
+      sleepSeries: Util.rangeDays(days).map(day => { const s = Store.get(Success.key(day), {}); return s.sleepTime ? this.toHours(s.sleepTime) : null; }),
+      wakeSeries: Util.rangeDays(days).map(day => { const s = Store.get(Success.key(day), {}); return s.wakeTime ? this.toHours(s.wakeTime) : null; }),
+      sleepDurAvg: this.avgSleepDur(Util.rangeDays(days)),
+      weightSeries: (() => { const logs = Store.get('weight_logs', []); const map = {}; logs.forEach(x => map[x.date] = x.weight); const h = Number((Store.get('body_profile', {}) || {}).height) || 0; return Util.rangeDays(days).map(day => { const w = map[day]; return (w && h) ? Math.round(w / Math.pow(h/100, 2) * 10) / 10 : null; }); })()
     };
+  },
+  toHours(t){ const [h,m] = String(t||'').split(':').map(Number); return (h||0) + (m||0)/60; },
+  avgSleepDur(range){
+    const pairs = range.map(day => { const s = Store.get(Success.key(day), {}); return s.sleepTime && s.wakeTime ? [this.toHours(s.sleepTime), this.toHours(s.wakeTime)] : null; }).filter(Boolean);
+    if(!pairs.length) return null;
+    const total = pairs.reduce((sum,[sl,wk]) => sum + (wk >= sl ? wk - sl : wk + 24 - sl), 0);
+    return Math.round(total / pairs.length * 10) / 10;
   },
   compact(){
     const d=this.data(31);
@@ -2978,6 +3448,8 @@ const LifeAnalysis = {
       chats:       {title:'和 AI 说话',  value:d.chats+' 次'},
       giftNet:     {title:'份子钱净额',  value:'¥'+(d.giftIn-d.giftOut)},
       coinTotal:   {title:'🪙 金币库',    value:`${d.coinTotal} 枚（今日 +${d.coinToday}）`},
+      sleepDur:    {title:'平均睡眠',    value:d.sleepDurAvg!=null ? d.sleepDurAvg+' 小时' : '还没记录'},
+      bmiNow:      {title:'当前 BMI',    value:(()=>{ const p=Store.get('body_profile',{}); const h=Number(p.height), w=Number(p.weight); return (h>0&&w>0)?(Math.round(w/Math.pow(h/100,2)*10)/10):'待填'; })()},
       streak:      {title:'连续打卡',    value:d.streak+' 天'}
     };
   },
@@ -3011,7 +3483,22 @@ const LifeAnalysis = {
     return `<p class="hint">统计口径：${unit}</p>
       <h2 style="margin:10px 0 6px;font-size:15px">习惯完成次数</h2>${Chart.bars(habitRows,{max:d.days})}
       <h2 style="margin:14px 0 6px;font-size:15px">各项坚持天数</h2>${Chart.bars(lifeRows,{max:d.days})}
-      <h2 style="margin:14px 0 6px;font-size:15px">最近 ${range.length} 天完成率趋势</h2>${Chart.line(trend,{max:100})}`;
+      <h2 style="margin:14px 0 6px;font-size:15px">最近 ${range.length} 天完成率趋势</h2>${Chart.line(trend,{max:100})}
+      ${this.sleepCharts()}
+      ${this.weightChart(d)}`;
+  },
+  weightChart(d){
+    const pts = (d.weightSeries || []).filter(v => v != null);
+    if(pts.length < 2) return '';
+    return `<h2 style="font-size:15px;margin:14px 0 6px">BMI 变化曲线</h2>${Chart.line(pts, {max:40, color:'#9a7bb0'})}<p class="hint" style="margin-top:4px">健康范围约 18.5–23.9；虚线附近最稳。</p>`;
+  },
+  sleepCharts(){
+    const range = Util.rangeDays(31);
+    const sleepPts = range.map(day => { const s = Store.get(Success.key(day), {}); return s.sleepTime ? this.toHours(s.sleepTime) : null; }).filter(v => v != null);
+    const wakePts = range.map(day => { const s = Store.get(Success.key(day), {}); return s.wakeTime ? this.toHours(s.wakeTime) : null; }).filter(v => v != null);
+    const block = (title, pts, color, note) => `<h2 style="font-size:15px;margin:14px 0 6px">${title}</h2>${pts.length > 1 ? Chart.line(pts, {max:24, color}) : '<div class="empty">记录几天后才有趋势</div>'}<p class="hint" style="margin-top:4px">${note}</p>`;
+    return block('入睡时间趋势（点）', sleepPts, '#5b8ca8', '越靠下代表睡得越晚')
+      + block('起床时间趋势（点）', wakePts, '#e0a23c', '越靠下代表起得越晚');
   },
   setMode(m,btn){ this.mode=m; document.querySelectorAll('#page-lifeAnalysis .tab').forEach(x=>x.classList.remove('on')); btn.classList.add('on'); this.render(); },
   localReport(d){
@@ -3056,8 +3543,8 @@ const Backup = {
       UI.toast('已导出完整备份，含 ' + (pack.media || []).length + ' 个媒体文件');
     }catch(e){ UI.toast('完整备份失败：' + e.message); }
   },
-  markdown(){ const lines=['# 小彘的工作台日记本','','导出时间：'+new Date().toLocaleString('zh-CN'),'']; Success.collect(365).forEach(x=>{lines.push('## 成功日记 '+x.date, '', '### 成就感', x.wins||'', '### 学到了什么', x.learned||'', '### 做对了什么', x.right||'', '### 明日必做', ...(x.tomorrow||[]).map(t=>'- '+t), '');}); Mood.list().forEach(x=>lines.push('## 情绪日记 '+x.date+' '+x.time,'',x.symbol+' '+x.text,'',x.summary||'','')); return lines.join('\n'); },
-  csv(){ const rows=[['type','date','title','content']]; Success.collect(365).forEach(x=>rows.push(['success',x.date,'感恩日记',[x.wins,(x.tomorrow||[]).join(';')].join('\n')])); Mood.list().forEach(x=>rows.push(['mood',x.date,x.symbol,x.text])); Gift.list().forEach(x=>rows.push(['gift',x.date,x.person,`${x.type} ${x.amount} ${x.event} ${x.note}`])); return rows.map(r=>r.map(Util.csvCell).join(',')).join('\n'); },
+  markdown(){ const lines=['# 小彘的工作台日记本','','导出时间：'+new Date().toLocaleString('zh-CN'),'']; Success.collect(365).forEach(x=>{lines.push('## 成功日记 '+x.date, '', '### 成就感', x.wins||'', '### 学到了什么', x.learned||'', '### 做对了什么', x.right||'', '### 明日必做', ...Success.norm(x.tomorrow).map(t=>'- '+t.text), '');}); Mood.list().forEach(x=>lines.push('## 情绪日记 '+x.date+' '+x.time,'',x.symbol+' '+x.text,'',x.summary||'','')); return lines.join('\n'); },
+  csv(){ const rows=[['type','date','title','content']]; Success.collect(365).forEach(x=>rows.push(['success',x.date,'感恩日记',[x.wins,Success.norm(x.tomorrow).map(y=>y.text).join(';')].join('\n')])); Mood.list().forEach(x=>rows.push(['mood',x.date,x.symbol,x.text])); Gift.list().forEach(x=>rows.push(['gift',x.date,x.person,`${x.type} ${x.amount} ${x.event} ${x.note}`])); return rows.map(r=>r.map(Util.csvCell).join(',')).join('\n'); },
   importFile(input){ const f=input.files[0]; if(!f)return; const r=new FileReader(); r.onload=async e=>{ try{ const parsed=JSON.parse(e.target.result); if(!confirm('恢复备份会覆盖当前数据，确定吗？覆盖前会自动留一份急救快照，误操作也能救回。'))return; Store.rescue(); Store.importAll(parsed); if(Array.isArray(parsed.media)) await Media.restore(parsed.media); UI.toast('恢复成功'); setTimeout(()=>location.reload(),800); }catch{ UI.toast('备份文件读不了'); } }; r.readAsText(f); input.value=''; },
   /* 从最近一次恢复前自动留的急救快照救回（最多保留 3 份） */
   restoreRescue(){

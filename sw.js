@@ -1,6 +1,6 @@
-const CACHE = 'xiaozhi-workbench-v19';
+const CACHE = 'xiaozhi-workbench-v20';
 const ASSETS = ['./', './index.html', './manifest.json', './icon.png', './icon-192.png', './assets/welcome-default.jpg'];
-const BUILD = '2026-08-12-v19';
+const BUILD = '2026-08-12-v20';
 
 const DEFAULT_MANIFEST = {
   name: '小彘的工作台', short_name: '小彘',
