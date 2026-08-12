@@ -318,7 +318,10 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 /* ==== 生活分析瓦片排序与隐藏 ==== */
 .sort-tile{position:relative;padding:10px 34px 10px 12px;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.78);cursor:grab}
 .sort-tile:active{cursor:grabbing}
-.tile-hide{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:24px;height:24px;min-height:24px;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.92);font-size:12px;color:var(--text-dim);display:inline-flex;align-items:center;justify-content:center;padding:0;z-index:2}
+.tile-hide{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:24px;height:24px;min-height:24px;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.92);font-size:12px;color:var(--text-dim);display:inline-flex;align-items:center;justify-content:center;padding:0;z-index:2;opacity:0;pointer-events:none;transition:opacity .15s ease}
+/* 隐藏按钮（✕ / 🚫）平时不显示，长按住 / 拖动时才出现 */
+.x-close{opacity:0;pointer-events:none;transition:opacity .15s ease}
+.x-host.dragging .x-close,.x-host.x-open .x-close{opacity:1;pointer-events:auto}
 .hidden-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .hidden-list .pill{opacity:.65}
 .hidden-tip{font-size:11px;color:var(--text-dim);margin:4px 2px 0}
@@ -428,15 +431,17 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .book-left,.book-right{flex:1;background:#fffdf8;overflow-y:auto;padding:14px 16px;min-height:62vh;box-shadow:0 2px 12px rgba(0,0,0,.06);position:relative}
 .book-left{border-radius:12px 0 0 12px;border:1px solid #ece6d8;border-right:none}
 .book-right{border-radius:0 12px 12px 0;border:1px solid #ece6d8;border-left:none}
-/* 翻页动画：模拟书本翻页 —— 右页向左翻走变成左页，新页从右边滑入 */
-.book-left.flip-out{animation:flipLeftOut .35s ease forwards}
-.book-left.flip-in{animation:flipLeftIn .35s ease forwards}
-.book-right.flip-out{animation:flipRightOut .35s ease forwards}
-.book-right.flip-in{animation:flipRightIn .35s ease forwards}
-@keyframes flipLeftOut{0%{transform:translateX(0);opacity:1}100%{transform:translateX(-30%);opacity:.3}}
-@keyframes flipLeftIn{0%{transform:translateX(30%);opacity:.3}100%{transform:translateX(0);opacity:1}}
-@keyframes flipRightOut{0%{transform:translateX(0);opacity:1}100%{transform:translateX(-60%);opacity:0}}
-@keyframes flipRightIn{0%{transform:translateX(60%);opacity:0}100%{transform:translateX(0);opacity:1}}
+/* 翻页动画：真实书本翻页 —— 一页纸绕书脊(中缝)旋转翻走，背面是下一页 */
+.book-leaf{position:absolute;top:0;bottom:0;z-index:20;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.45,.05,.3,1);pointer-events:none}
+.book-leaf.next{left:50%;right:0;transform-origin:left center}
+.book-leaf.prev{left:0;right:50%;transform-origin:right center}
+.book-leaf-front,.book-leaf-back{position:absolute;inset:0;overflow:hidden;backface-visibility:hidden;background:#fffdf8}
+.book-leaf-front{box-shadow:inset -22px 0 32px -22px rgba(60,50,30,.30);border-radius:0 12px 12px 0}
+.book-leaf-back{transform:rotateY(180deg);box-shadow:inset 22px 0 32px -22px rgba(60,50,30,.30);border-radius:12px 0 0 12px}
+.book-leaf.next.turn{transform:rotateY(-178deg)}
+.book-leaf.prev.turn{transform:rotateY(178deg)}
+.book-leaf::after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(0,0,0,0) 55%,rgba(0,0,0,.16));opacity:0;transition:opacity .55s}
+.book-leaf.turn::after{opacity:1}
 .db-cal{margin-bottom:10px}
 .db-cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .db-cal-head b{font-size:15px;color:#5a6e52}
@@ -998,17 +1003,19 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
         </div>
         <label style="margin-top:12px"><input type="checkbox" id="autoBackupOn" style="width:auto;min-height:auto;margin-right:6px">开启每月自动备份</label>
         <button class="btn ghost small" style="margin-top:8px" onclick="AutoBackup.saveToggle()">保存开关</button>
+        <label style="margin-top:12px;display:block"><input type="checkbox" id="autoBackupExit" style="width:auto;min-height:auto;margin-right:6px" onchange="AutoBackup.saveExitToggle()">手机端：退出工作台时自动下载备份到本机下载目录</label>
+        <p class="hint">手机系统不允许网页直接写进指定文件夹。最稳的做法：用上面的「立即备份一次」导出到下载目录，再把你的云盘 App 同步目录设成下载目录。开启上面这项后，退出页面会尽量自动下载一份（部分手机浏览器会拦截自动下载，那时用按钮更稳）。</p>
         <p class="hint" id="autoBackupInfo"></p>
       </div>
       <div class="card">
         <h2>存储空间</h2>
-        <p class="hint">文字输入即保存到本机小仓库 localStorage；图片视频放在本机大仓库 IndexedDB。小仓库通常约 5 MB，适合文字；大仓库容量由手机浏览器按剩余空间分配。系统仍可能清理长期不用的站点数据，所以重要数据请定期备份。</p>
+        <p class="hint">从 v27 起，文字记录和图片视频都存进同一个本机大仓库 IndexedDB，不再受旧版 localStorage 约 5 MB 的限制——正常写几年日记都用不完。系统仍可能清理长期不用的站点数据，所以重要数据请定期备份。</p>
         <div style="margin-top:10px">
-          <div class="kv"><span>小仓库 · 文字记录</span><b id="lsUsage">-</b></div>
+          <div class="kv"><span>全部文字记录（IndexedDB 大仓库）</span><b id="lsUsage">-</b></div>
           <div class="meter" id="lsMeter"><span></span></div>
         </div>
         <div style="margin-top:12px">
-          <div class="kv"><span>大仓库 · 图片视频</span><b id="idbUsage">-</b></div>
+          <div class="kv"><span>图片视频（IndexedDB 大仓库）</span><b id="idbUsage">-</b></div>
           <div class="meter" id="idbMeter"><span></span></div>
         </div>
         <div class="kv" style="margin-top:10px"><span>大仓库文件数</span><b id="mediaCount">-</b></div>
@@ -1745,7 +1752,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-12-v27';
+const BUILD_VERSION = '2026-08-12-v28';
 const App = {
   current:'home',
   booting:true,
@@ -1988,9 +1995,10 @@ const Hub = {
     const pages=this.pages(group);
     hubGrid.innerHTML = pages.map(id => {
       const r = App.routes.find(x=>x.id===id);
-      return `<div class="tile big-entry" data-hub-id="${id}"><button class="grab" data-grab style="align-self:flex-end" onclick="event.stopPropagation()">⠿</button><button class="tile-hide" onclick="event.stopPropagation();Hub.hide('${group}','${id}')" title="隐藏这个功能">✕</button><button style="border:0;background:transparent;text-align:left;color:inherit;padding:0" onclick="App.go('${id}')"><div class="entry-ico">${r.icon}</div><h3>${r.name}</h3><p class="muted">${Hub.preview(id)}</p></button></div>`;
+      return `<div class="tile big-entry x-host" data-hub-id="${id}"><button class="grab" data-grab style="align-self:flex-end" onclick="event.stopPropagation()">⠿</button><button class="tile-hide x-close" onclick="event.stopPropagation();Hub.hide('${group}','${id}')" title="隐藏这个功能">✕</button><button style="border:0;background:transparent;text-align:left;color:inherit;padding:0" onclick="App.go('${id}')"><div class="entry-ico">${r.icon}</div><h3>${r.name}</h3><p class="muted">${Hub.preview(id)}</p></button></div>`;
     }).join('') + this.hiddenHtml(group);
     this.bindDrag(group);
+    bindCloseReveal();
   },
   bindDrag(group){
     DragSort.attach('[data-hub-id]', (from, to) => {
@@ -2034,6 +2042,24 @@ const Hub = {
   }
 };
 /* ==== 功能：首页 START ==== */
+/* 长按 / 拖动时才显示「隐藏」按钮：给带 x-host 的容器绑定长按，松开前标记 x-open 显示里面的 x-close 按钮 */
+function bindCloseReveal(root){
+  (root||document).querySelectorAll('.x-host').forEach(host=>{
+    if(host._closeBound) return; host._closeBound=true;
+    let t=null;
+    const onDown=()=>{ if(host._closeOpen) return; t=setTimeout(()=>{ host.classList.add('x-open'); host._closeOpen=true; try{navigator.vibrate?.(10);}catch{} }, 480); };
+    const onUp=()=>{ if(t){ clearTimeout(t); t=null; } };
+    host.addEventListener('pointerdown', onDown);
+    host.addEventListener('pointerup', onUp);
+    host.addEventListener('pointerleave', onUp);
+    host.addEventListener('pointercancel', onUp);
+  });
+}
+document.addEventListener('pointerdown', e=>{
+  if(e.target.closest('.x-close')) return;
+  document.querySelectorAll('.x-host.x-open').forEach(h=>{ h.classList.remove('x-open'); h._closeOpen=false; });
+}, true);
+
 const Home = {
   defaults(){
     return [
@@ -2144,6 +2170,7 @@ const Home = {
     if(document.getElementById('todayTasks')) todayTasks.innerHTML = tasks.length ? tasks.map((t,i)=>`<div class="item ${done.includes(i)?'done':''}" onclick="Home.toggleTask(${i})"><span class="check">${done.includes(i)?'✓':''}</span><div class="grow"><div class="title">${Util.esc(t.text||'')}</div></div></div>`).join('') : '<div class="empty">还没有今日必做。今晚在每日记录里写下明天 3 件事，明天会自动出现在这里。</div>';
     if(document.getElementById('homeTracker')) { homeTracker.innerHTML=Tracker.homeStats(); }
     if(document.getElementById('homeEntries')) homeEntries.innerHTML = this.entriesHtml();
+    bindCloseReveal();
     if(document.getElementById('homeLifeSummary')) homeLifeSummary.innerHTML=LifeAnalysis.compact();
     this.bindDrag();
     Cooking.paintWheelList();
@@ -2220,10 +2247,10 @@ const Home = {
   miniEntryHtml(id){
     const r=App.routes.find(x=>x.id===id); if(!r) return '';
     const pinned=this.topTiles().includes(id);
-    return `<div class="mini-entry" data-mini-id="${id}">
+    return `<div class="mini-entry x-host" data-mini-id="${id}">
       <div class="entry-actions">
         <button class="pin-btn" title="${pinned?'从首页顶部收回':'钉到首页桌面'}" onclick="event.stopPropagation();Home.${pinned?'unpin':'pin'}('${id}')">${pinned?'📍':'📌'}</button>
-        <button class="pin-btn" title="从首页隐藏" onclick="event.stopPropagation();Home.hideEntry('${id}')">🚫</button>
+        <button class="pin-btn x-close" title="从首页隐藏" onclick="event.stopPropagation();Home.hideEntry('${id}')">🚫</button>
       </div>
       <button style="border:0;background:transparent;text-align:left;color:inherit;padding:0;width:100%" onclick="App.go('${id}')">
         <div class="mini-ico">${r.icon}</div>
@@ -2529,26 +2556,38 @@ const DiaryBook = {
     return html;
   },
   renderSpread(date){
-    const left=document.getElementById('dbLeft'), right=document.getElementById('dbRight'), cal=document.getElementById('dbCalendar'), pick=document.getElementById('dbDatePick');
+    const left=document.getElementById('dbLeft'), right=document.getElementById('dbRight'), cal=document.getElementById('dbCalendar'), pick=document.getElementById('dbDatePick'), spread=document.getElementById('bookSpread');
     if(!left||!right) return;
-    /* 清除旧动画类 */
-    left.className='book-left'; right.className='book-right';
-    void left.offsetWidth;
-    /* 根据翻页方向施加动画：向前翻(下一页)→右页滑出左、新右页滑入；向后翻(上一页)→左页滑出新左页滑入 */
-    if(this._flipDir>0){
-      right.classList.add('flip-out'); left.classList.add('flip-in');
-    } else if(this._flipDir<0){
-      left.classList.add('flip-out'); right.classList.add('flip-in');
-    }
-    this._flipDir=0;
-    /* 右页 = 当天，左页 = 前一天（像真实书本：翻到下一页时，今天的右页变成明天的左页） */
     const prev=Util.dateAdd(date,-1);
     const wd=['日','一','二','三','四','五','六'];
     const wdN=new Date(date+'T00:00:00').getDay();
     const pwN=new Date(prev+'T00:00:00').getDay();
-    left.innerHTML=`<div class="db-date">${prev} · 周${wd[pwN]}</div>`+this.pageHtml(this.dayData(prev),prev);
-    right.innerHTML=`<div class="db-date">${date} · 周${wd[wdN]}</div>`+this.pageHtml(this.dayData(date),date);
-    Media.paint(left); Media.paint(right);
+    const prevHtml=`<div class="db-date">${prev} · 周${wd[pwN]}</div>`+this.pageHtml(this.dayData(prev),prev);
+    const curHtml=`<div class="db-date">${date} · 周${wd[wdN]}</div>`+this.pageHtml(this.dayData(date),date);
+    const dir=this._flipDir; this._flipDir=0;
+    if(dir && spread){
+      /* 真实翻书：一页纸绕书脊(中缝)旋转翻走。next=旧右页(=前一天)翻到左边；prev=旧左页(=当天)翻到右边 */
+      const leaf=document.createElement('div');
+      leaf.className='book-leaf '+(dir>0?'next':'prev');
+      const f=document.createElement('div'); f.className='book-leaf-front';
+      const b=document.createElement('div'); b.className='book-leaf-back';
+      const leafHtml = dir>0 ? prevHtml : curHtml;
+      f.innerHTML=leafHtml; b.innerHTML=leafHtml;
+      leaf.appendChild(f); leaf.appendChild(b);
+      spread.appendChild(leaf);
+      Media.paint(f); Media.paint(b);
+      /* 底下先摆好新的一摊，叶子盖在上面翻走 */
+      left.innerHTML=prevHtml; right.innerHTML=curHtml;
+      Media.paint(left); Media.paint(right);
+      void leaf.offsetWidth;
+      requestAnimationFrame(()=>leaf.classList.add('turn'));
+      const done=()=>{ if(leaf.isConnected) leaf.remove(); };
+      leaf.addEventListener('transitionend', done, {once:true});
+      setTimeout(done, 750);
+    } else {
+      left.innerHTML=prevHtml; right.innerHTML=curHtml;
+      Media.paint(left); Media.paint(right);
+    }
     if(pick) pick.value=date;
     if(cal) cal.innerHTML=this.calHtml(date);
   },
@@ -2556,9 +2595,6 @@ const DiaryBook = {
     const left=document.getElementById('dbLeft'), right=document.getElementById('dbRight'), cal=document.getElementById('dbCalendar'), pick=document.getElementById('dbDatePick');
     if(!left||!right) return;
     left.className='book-left'; right.className='book-right';
-    void left.offsetWidth;
-    if(this._flipDir>0){ right.classList.add('flip-out'); left.classList.add('flip-in'); }
-    else if(this._flipDir<0){ left.classList.add('flip-out'); right.classList.add('flip-in'); }
     this._flipDir=0;
     const monday=this.mondayOf(date);
     const week=[]; for(let i=0;i<7;i++) week.push(Util.dateAdd(monday,i));
@@ -2966,7 +3002,7 @@ const Chart = {
 };
 /* ==== 每月自动备份到本机同步文件夹 START ==== */
 const AutoBackup = {
-  cfg(){ return Store.get('autoBackup', {on:false, lastMonth:'', dirName:''}); },
+  cfg(){ return Store.get('autoBackup', {on:false, lastMonth:'', dirName:'', exitDl:false}); },
   save(p){ Store.set('autoBackup', {...this.cfg(), ...p}); },
   supported(){ return typeof window.showDirectoryPicker === 'function'; },
   fileName(){ return '小彘的工作台-备份.json'; },
@@ -3034,6 +3070,15 @@ const AutoBackup = {
     const ok = await this.runNow(true).catch(() => false);
     if(ok) UI.toast('这个月的自动备份已经写好了');
   },
+  /* 手机端：退出页面时尽量自动下载一份备份（部分浏览器会拦截自动下载） */
+  exitBackup(){
+    const c=this.cfg();
+    if(!c.exitDl) return;
+    if(!Store.hasUserData()) return;
+    const text=JSON.stringify(Store.exportAll(),null,2);
+    Util.download('小彘的工作台-退出备份-'+Util.today()+'.json', text, 'application/json');
+  },
+  saveExitToggle(){ this.save({exitDl: !!document.getElementById('autoBackupExit')?.checked}); this.render(); },
   saveToggle(){
     this.save({on: !!document.getElementById('autoBackupOn')?.checked});
     this.render();
@@ -3045,6 +3090,8 @@ const AutoBackup = {
     const c = this.cfg();
     const box = document.getElementById('autoBackupOn');
     if(box) box.checked = !!c.on;
+    const box2 = document.getElementById('autoBackupExit');
+    if(box2) box2.checked = !!c.exitDl;
     el.textContent = `${c.dirName ? '文件夹：' + c.dirName : '还没选文件夹'} · ${c.lastMonth ? '上次备份 ' + c.lastMonth : '还没备份过'}${this.supported() ? '' : ' · 当前浏览器不支持直接写文件夹，会改成下载'}`;
   },
   /* 首页一键恢复：桌面端直接读已选 360 同步文件夹里的固定一份「小彘的工作台-备份.json」；手机端退回本机选文件 */
@@ -3962,8 +4009,8 @@ const LifeAnalysis = {
     const missing=Object.keys(cat).filter(id=>!order.includes(id) && !hidden.includes(id));
     const full=[...visible, ...missing];
     if(document.getElementById('lifeCompact')) lifeCompact.innerHTML = this.compact();
-    lifeSummaryGrid.innerHTML = full.map(id=>`<div class="tile sort-tile" data-life-id="${id}" draggable="true" style="position:relative">
-      <button class="tile-hide" onclick="event.stopPropagation();LifeAnalysis.hide('${id}')" title="隐藏这个小栏目">✕</button>
+    lifeSummaryGrid.innerHTML = full.map(id=>`<div class="tile sort-tile x-host" data-life-id="${id}" draggable="true" style="position:relative">
+      <button class="tile-hide x-close" onclick="event.stopPropagation();LifeAnalysis.hide('${id}')" title="隐藏这个小栏目">✕</button>
       <h3>${cat[id].title}</h3><div class="big" style="font-size:22px">${cat[id].value}</div>
     </div>`).join('') + this.hiddenHtml(cat, hidden);
     DragSort.attach('#lifeSummaryGrid [data-life-id]', (from, to) => {
@@ -3972,6 +4019,7 @@ const LifeAnalysis = {
       const [m]=a.splice(fi,1); a.splice(ti,0,m);
       Store.set('life_tiles', a); this.render();
     }, {attr:'lifeId'});
+    bindCloseReveal();
     if(document.getElementById('lifeCharts')) lifeCharts.innerHTML=this.charts(d, unit);
     lifeReport.textContent=this.localReport(d);
   },
@@ -4224,9 +4272,9 @@ const Settings = {
   async renderStorage(){
     const lsBytes = Store.usedBytes();
     const lsEl = document.getElementById('lsUsage');
-    if(lsEl) lsEl.textContent = Util.bytes(lsBytes) + ' / 约 5 MB';
+    if(lsEl) lsEl.textContent = Util.bytes(lsBytes) + '（IndexedDB 大仓库，无 5 MB 限制）';
     const lsMeter = document.getElementById('lsMeter');
-    if(lsMeter && lsMeter.firstElementChild) lsMeter.firstElementChild.style.width = Math.min(100, lsBytes / (5*1024*1024) * 100).toFixed(1) + '%';
+    if(lsMeter && lsMeter.firstElementChild) lsMeter.firstElementChild.style.width = Math.min(100, lsBytes / (50*1024*1024) * 100).toFixed(1) + '%';
     if(!Media.supported()){
       const idbEl = document.getElementById('idbUsage'); if(idbEl) idbEl.textContent = '不支持';
       const mc = document.getElementById('mediaCount'); if(mc) mc.textContent = '-';
@@ -4338,6 +4386,9 @@ const PWAInstall = {
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
   }
+  /* 手机端退出时尽量自动下载一份备份 */
+  window.addEventListener('pagehide', () => { try { AutoBackup.exitBackup(); } catch(e){} });
+  document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'hidden'){ try { AutoBackup.exitBackup(); } catch(e){} } });
 })();
 </script>
 </body>
