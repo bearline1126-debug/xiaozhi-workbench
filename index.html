@@ -408,6 +408,10 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 /* 日记本 */
 /* 日记本 - 双页翻书 */
 .book-spread{display:flex;align-items:stretch;margin-top:10px;perspective:1200px;position:relative;min-height:62vh}
+.book-edge-btn{position:absolute;top:50%;transform:translateY(-50%);width:36px;height:56px;display:flex;align-items:center;justify-content:center;font-size:26px;color:#b3a98f;background:rgba(243,240,234,.85);border-radius:10px;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;border:1px solid #e6e0d0;flex-shrink:0;z-index:5;backdrop-filter:blur(4px);transition:background .15s,transform .15s}
+.book-edge-btn:active{background:#e7e4db;transform:translateY(-50%) scale(.92)}
+.book-edge-btn.left-edge{left:-8px}
+.book-edge-btn.right-edge{right:-8px}
 .book-spine{width:3px;background:linear-gradient(180deg,#d4c5a9,#e8dcc8,#d4c5a9);flex-shrink:0;border-radius:1px;box-shadow:0 0 8px rgba(0,0,0,.08),inset 0 0 3px rgba(0,0,0,.06);z-index:2}
 .book-left,.book-right{flex:1;background:#fffdf8;overflow-y:auto;padding:14px 16px;min-height:62vh;box-shadow:0 2px 12px rgba(0,0,0,.06)}
 .book-left{border-radius:12px 0 0 12px;border:1px solid #ece6d8;border-right:none;transform-origin:right center;transition:transform .4s ease}
@@ -432,6 +436,8 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .db-list li{margin:2px 0;font-size:13px;line-height:1.5}
 .db-empty{font-size:13px;color:#aaa}
 .db-empty.big{text-align:center;color:#bbb;padding:30px 10px;line-height:1.8}
+.db-empty.big.clickable{cursor:pointer;transition:background .15s;border-radius:12px;margin:4px 0}
+.db-empty.big.clickable:active{background:#f0f0e8}
 .db-nav{display:flex;justify-content:space-between;font-size:11px;color:#aaa;margin-top:12px;border-top:1px dashed #eee;padding-top:6px}
 .db-weekdays{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
 .db-day{flex:1 0 36px;text-align:center;background:#f6f4ee;border-radius:8px;padding:5px 2px;font-size:11px;color:#888}
@@ -444,7 +450,7 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .db-flip:active{background:#e7e4db;transform:scale(.92)}
 .db-cal-wrap{margin-top:12px;background:#faf8f3;border:1px solid #ece6d8;border-radius:14px;padding:12px}
 @keyframes starIn{from{opacity:0;transform:translateY(-20px) scale(.5)}to{opacity:1;transform:translateY(0) scale(1)}}
-@keyframes starFly{0%{opacity:1;transform:translateY(0) scale(1)}60%{opacity:1;transform:translateY(-120px) scale(1.4) rotate(15deg)}100%{opacity:0;transform:translateY(-180px) scale(.3) rotate(30deg)}}
+@keyframes starFly{0%{opacity:1;transform:translateY(-40px) scale(.6)}50%{opacity:1;transform:translateY(30px) scale(1.1)}80%{opacity:1;transform:translateY(70px) scale(.9)}100%{opacity:0;transform:translateY(100px) scale(.4)}}
 @keyframes twinkle{0%,100%{opacity:1}50%{opacity:.4}}
 .bottle-wrap{text-align:center;padding:20px 0 10px;position:relative}
 .bottle-svg{width:160px;height:200px;margin:0 auto;display:block}
@@ -709,9 +715,11 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
         <span class="db-flip db-flip-right" onclick="DiaryBook.next()">›</span>
       </div>
       <div class="book-spread" id="bookSpread">
+        <div class="book-edge-btn left-edge" onclick="DiaryBook.prev()">‹</div>
         <div class="book-spine"></div>
         <div class="book-left" id="dbLeft"></div>
         <div class="book-right" id="dbRight"></div>
+        <div class="book-edge-btn right-edge" onclick="DiaryBook.next()">›</div>
       </div>
       <div id="dbCalendar" class="db-cal-wrap"></div>
       <div class="book-bar">
@@ -851,7 +859,7 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
       </div>
       <div class="card">
         <h2>今天运动了</h2>
-        <div class="row"><select id="sportType" style="flex:1"></select><input id="sportDuration" type="number" placeholder="分钟" min="1" style="width:70px"><button class="btn" onclick="Sport.addLog()">打卡</button></div>
+        <div class="row"><select id="sportType" style="flex:1"></select><select id="sportDuration" style="flex:0.8"><option value="">时长</option><option value="30">0.5 小时</option><option value="60">1 小时</option><option value="90">1.5 小时</option><option value="120">2 小时</option><option value="150">2.5 小时</option><option value="180">3 小时</option></select><button class="btn" onclick="Sport.addLog()">打卡</button></div>
       </div>
       <div class="card"><h2>月度日历</h2><div class="calendar-grid" id="sportCalendar"></div></div>
       <div class="card"><h2>最近记录</h2><div id="sportList"></div></div>
@@ -917,6 +925,7 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
         <h2>✨ 星愿瓶</h2>
         <div id="wishBottleArea"></div>
       </div>
+      <div id="wishDoneCardsArea"></div>
       <p style="margin-top:8px;font-size:12px;color:#999;text-align:center">💰 每日最多 10 枚金币 · 打卡/复盘/运动/情绪日记/连续签到都能赚</p>
     </section><!-- ==== 功能：心仪好物兑换铺 END ==== --><!-- ==== 功能：生活智能分析 START ==== --><section class="page" id="page-lifeAnalysis">
       <div class="page-title">生活智能分析</div><div class="page-sub">把今日必做、心愿行动、运动、份子钱、做菜、英语和连续打卡放在一起看。</div>
@@ -1567,7 +1576,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-12-v22';
+const BUILD_VERSION = '2026-08-12-v23';
 const App = {
   current:'home',
   booting:true,
@@ -2231,6 +2240,7 @@ const DiaryBook = {
   weekMode:false,
   render(){ if(!this.cur) this.cur=Util.today(); this.weekMode=false; const b=document.getElementById('dbWeekBtn'); if(b) b.textContent='本周汇总'; const dp=document.getElementById('dbDatePick'); if(dp) dp.value=this.cur; this.renderSpread(this.cur); },
   go(date){ this.cur=date; this.weekMode=false; const b=document.getElementById('dbWeekBtn'); if(b) b.textContent='本周汇总'; const dp=document.getElementById('dbDatePick'); if(dp) dp.value=date; this.renderSpread(date); },
+  goDaily(date){ DailyLog._pendingDate=date; App.go('daily'); },
   prev(){ if(this.weekMode){ this.cur=Util.dateAdd(this.cur,-7); this.renderWeek(this.cur); } else { this.go(Util.dateAdd(this.cur,-1)); } },
   next(){ if(this.weekMode){ this.cur=Util.dateAdd(this.cur,7); this.renderWeek(this.cur); } else { this.go(Util.dateAdd(this.cur,1)); } },
   toggleWeek(){
@@ -2262,7 +2272,7 @@ const DiaryBook = {
     return `<div class="db-sec"><h3>${title}</h3><ul class="db-list">${items.map(x=>`<li>${x}</li>`).join('')}</ul></div>`;
   },
   pageHtml(d, date){
-    if(!d.has) return `<div class="db-empty big">这一天还没有记录。<br>去「每日记录」写点今天的吧。</div>`;
+    if(!d.has) return `<div class="db-empty big clickable" onclick="DiaryBook.goDaily('${date}')">这一天还没有记录。<br><span style="color:#6b984f;font-weight:600">点击这里 → 去补记每日记录</span></div>`;
     const out=[];
     if(d.winLines.length) out.push(this.section('感恩日记', d.winLines.map(x=>Util.esc(x))));
     if(d.images.length) out.push(`<div class="db-sec"><h3>感恩瞬间</h3><div class="img-grid">${d.images.map(id=>`<img data-media="${id}" alt="" onclick="Media.openFull('${id}')">`).join('')}</div></div>`);
@@ -2467,21 +2477,28 @@ const Mood = {
 /* ==== 功能：情绪日记 END ==== */
 /* ==== 功能：每日记录（感恩日记 + 追踪表 + 情绪日记 三合一） START ==== */
 const DailyLog = {
+  _pendingDate:null,
   render(){
-    const rec = Store.get(Tracker.dayKey(), {habits:{}, mood:'😊', line:''});
+    const d = this._pendingDate || Util.today();
+    const rec = Store.get(Tracker.dayKey(d), {habits:{}, mood:'😊', line:''});
     const items = Tracker.items();
     dlHabits.innerHTML = items.length
       ? items.map(it=>`<label class="pill"><input type="checkbox" data-dl-habit="${it.id}" ${rec.habits?.[it.id]?'checked':''} style="width:auto;min-height:auto;margin-right:6px"><span class="pill-text">${Util.esc(it.name)}</span></label>`).join('')
       : '<div class="empty">还没有追踪项，去「追踪表」里加两个</div>';
     Util.fillMoodSelect('dlMood'); dlMood.value = rec.mood || '😊';
     dlMoodLine.value = rec.line || '';
-    const s = Store.get(Success.key(), {});
+    const s = Store.get(Success.key(d), {});
     dlWins.value = s.wins||''; if(document.getElementById('dlMustBox')) MustEditor.mount('dlMustBox', Success.norm(s.tomorrow));
     if(document.getElementById('dlSleep')) dlSleep.value = s.sleepTime || '23:00';
     if(document.getElementById('dlWake')) dlWake.value = s.wakeTime || '08:00';
     const plans = Review.plans();
-    const linked = Store.get('daily_plans:' + Util.today(), []);
+    const linked = Store.get('daily_plans:' + d, []);
     dlPlans.innerHTML = plans.length ? plans.map(p=>`<label class="pill"><input type="checkbox" data-dl-plan="${p.id}" ${linked.includes(p.id)?'checked':''} style="width:auto;min-height:auto;margin-right:6px">${Util.esc(p.title)}</label>`).join('') : '<span class="muted">还没列年度计划，去复盘中心加。</span>';
+    /* 补记模式提示 */
+    if(this._pendingDate && this._pendingDate!==Util.today()){
+      const titleEl = document.querySelector('#page-daily .page-title');
+      if(titleEl) title.textContent = `补记 ${this._pendingDate}`;
+    }
     dlAi.textContent = '';
     if(Store.get('daily_mood_collapsed', null)===null) Store.set('daily_mood_collapsed', true);
     this.applyMoodCollapse();
@@ -2490,30 +2507,35 @@ const DailyLog = {
   toggleMood(){ Store.set('daily_mood_collapsed', !Store.get('daily_mood_collapsed', true)); this.applyMoodCollapse(); },
   applyMoodCollapse(){ const c=Store.get('daily_mood_collapsed', true); const box=document.getElementById('dlMoodBox'); const caret=document.getElementById('moodCaret'); if(box) box.style.display=c?'none':''; if(caret) caret.style.transform=c?'rotate(-90deg)':''; },
   saveAll(){
+    const d = this._pendingDate || Util.today();
     /* 1. 追踪表 */
     const habits = {};
     document.querySelectorAll('[data-dl-habit]').forEach(x => habits[x.dataset.dlHabit] = x.checked);
-    const cur = Store.get(Tracker.dayKey(), {habits:{}, mood:'😊', line:''});
+    const cur = Store.get(Tracker.dayKey(d), {habits:{}, mood:'😊', line:''});
     Util.bump('mood', dlMood.value);
-    Store.set(Tracker.dayKey(), {...cur, date:Util.today(), habits, mood:dlMood.value, line:dlMoodLine.value.trim()});
+    Store.set(Tracker.dayKey(d), {...cur, date:d, habits, mood:dlMood.value, line:dlMoodLine.value.trim()});
     /* 2. 感恩日记 */
-    const old = Store.get(Success.key(), {});
-    Store.set(Success.key(), {...old, date:Util.today(), wins:dlWins.value.trim(), tomorrow:MustEditor.collect('dlMustBox'), sleepTime:document.getElementById('dlSleep')?.value||'23:00', wakeTime:document.getElementById('dlWake')?.value||'08:00'});
+    const old = Store.get(Success.key(d), {});
+    Store.set(Success.key(d), {...old, date:d, wins:dlWins.value.trim(), tomorrow:MustEditor.collect('dlMustBox'), sleepTime:document.getElementById('dlSleep')?.value||'23:00', wakeTime:document.getElementById('dlWake')?.value||'08:00'});
     /* 3.5 年度计划关联（勾了才算关联一天） */
     const planIds = [...document.querySelectorAll('[data-dl-plan]')].filter(x => x.checked).map(x => x.dataset.dlPlan);
-    Store.set('daily_plans:' + Util.today(), planIds);
+    Store.set('daily_plans:' + d, planIds);
     /* 3. 情绪日记，写了才存 */
     let extra = '';
     const text = dlMoodText.value.trim();
     if(text){
-      const item = {id:Util.uid(), date:Util.today(), time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}), symbol:dlMood.value, text, summary:''};
+      const item = {id:Util.uid(), date:d, time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}), symbol:dlMood.value, text, summary:''};
       Store.set('moods', [item, ...Mood.list()]);
-      const t = Store.get(Tracker.dayKey(), {});
-      Store.set(Tracker.dayKey(), {...t, moodDiaryId:item.id});
+      const t = Store.get(Tracker.dayKey(d), {});
+      Store.set(Tracker.dayKey(d), {...t, moodDiaryId:item.id});
       dlMoodText.value = '';
       extra = '，情绪日记也存好了';
     }
-    UI.toast('今天的记录都保存好了' + extra);
+    UI.toast((this._pendingDate&&this._pendingDate!==Util.today()?this._pendingDate:'今天')+'的记录都保存好了' + extra);
+    this._pendingDate = null;
+    /* 恢复标题 */
+    const titleEl = document.querySelector('#page-daily .page-title');
+    if(titleEl) title.textContent = '每日记录';
     Coin.checkDaily();
     if(text) Coin.checkMoodDiary();
     Home.render();
@@ -3045,16 +3067,18 @@ const WishShop = {
     }
   },
   del(id){ Store.set('wish_shop', this.list().filter(x => x.id !== id)); this.render(); },
-  /* 星星飞入瓶子动画 */
+  /* 星星落入瓶子动画 */
   flyStar(name){
     const area=document.getElementById('wishBottleArea');
     if(!area) return;
+    const bottleSvg=area.querySelector('.bottle-svg');
+    const rect=bottleSvg?bottleSvg.getBoundingClientRect():{top:120,left:'50%',width:160};
     const star=document.createElement('div');
     star.textContent='⭐';
     star.className='bottle-star flying';
-    star.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-size:28px;z-index:999;pointer-events:none';
+    star.style.cssText=`position:fixed;top:${rect.top-10}px;left:${rect.left+rect.width/2-14}px;transform:translateY(-40px) scale(.6);font-size:26px;z-index:999;pointer-events:none`;
     document.body.appendChild(star);
-    setTimeout(()=>{ if(star.parentNode) star.parentNode.removeChild(star); },850);
+    setTimeout(()=>{ if(star.parentNode) star.parentNode.removeChild(star); },900);
   },
   /* 按年份分组已完成心愿 */
   byYear(){
@@ -3133,16 +3157,29 @@ const WishShop = {
       html+=`</div>`;
     }
 
-    /* 心愿星星卡片（当年） */
-    if(curYearDone.length){
-      html+=`<div style="margin-top:14px"><div style="font-size:13px;font-weight:600;color:#8a7a5c;margin-bottom:8px;display:flex;align-items:center;gap:6px"><span style="background:#6b984f;color:#fff;padding:2px 10px;border-radius:6px;font-size:12px">心愿星星</span>${curYear}年</div>`;
-      html+=`<div class="star-cards">${curYearDone.map(x=>`<div class="star-card"><div class="star-card-name">⭐ ${Util.esc(x.name)}</div><div class="star-card-date">${x.redeemedAt||''}</div></div>`).join('')}</div></div>`;
-    }
-
-    /* 往年展开区 */
+    /* 往年展开区（保留在瓶内，点击年份瓶展开） */
     html+=`<div id="yearCardsArea"></div>`;
 
     area.innerHTML=html;
+
+    /* ====== 心愿星星记录：渲染到底部区域 ====== */
+    const doneArea=document.getElementById('wishDoneCardsArea');
+    if(doneArea){
+      let doneHtml='';
+      /* 当年心愿星星 */
+      if(curYearDone.length){
+        doneHtml+=`<div class="card" style="margin-top:12px"><div style="font-size:14px;font-weight:700;color:#8a7a5c;margin-bottom:10px;display:flex;align-items:center;gap:6px"><span style="background:#6b984f;color:#fff;padding:3px 12px;border-radius:8px;font-size:13px">✨ 心愿星星</span>${curYear}年</div>`;
+        doneHtml+=`<div class="star-cards">${curYearDone.map(x=>`<div class="star-card"><div class="star-card-name">⭐ ${Util.esc(x.name)}</div><div class="star-card-date">${x.redeemedAt||''}</div></div>`).join('')}</div></div>`;
+      }
+      /* 往年汇总 */
+      pastYears.forEach(y=>{
+        const items=years[y]||[];
+        if(!items.length) return;
+        doneHtml+=`<div class="card" style="margin-top:10px"><div style="font-size:14px;font-weight:700;color:#8a7a5c;margin-bottom:8px">🫙 ${y}年 · ${items.length} 颗星</div>`;
+        doneHtml+=`<div class="star-cards">${items.map(x=>`<div class="star-card"><div class="star-card-name">⭐ ${Util.esc(x.name)}</div><div class="star-card-date">${x.cost} 枚 · ${x.redeemedAt||''}</div></div>`).join('')}</div></div>`;
+      });
+      doneArea.innerHTML=doneHtml;
+    }
   },
   showYearCards(year){
     const el=document.getElementById('yearCardsArea');
@@ -3399,7 +3436,7 @@ const Sport = {
     this.calendar(logs); this.renderList();
   },
   addType(){ const name=sportName.value.trim(); if(!name)return; Store.set('sport_types',[...this.types(),{id:Util.uid(),icon:sportIcon.value.trim()||'💪',name}]); sportName.value=sportIcon.value=''; this.render(); },
-  addLog(){ const duration=Number(sportDuration.value); const t=this.types().find(x=>x.id===sportType.value); if(!t)return UI.toast('先选运动类型'); Util.bump('sport_type',sportType.value); Store.set('sport_logs',[{id:Util.uid(),date:Util.today(),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),type:t,duration:duration||0},...this.logs()]); sportDuration.value=''; Coin.checkSport(); this.render(); },
+  addLog(){ const duration=Number(sportDuration.value); const t=this.types().find(x=>x.id===sportType.value); if(!t)return UI.toast('先选运动类型'); if(!duration)return UI.toast('先选运动时长'); Util.bump('sport_type',sportType.value); Store.set('sport_logs',[{id:Util.uid(),date:Util.today(),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),type:t,duration},...this.logs()]); sportDuration.value=''; Coin.checkSport(); this.render(); },
   calendar(logs){ const now=new Date(), y=now.getFullYear(), m=now.getMonth(); const last=new Date(y,m+1,0).getDate(); const by={}; logs.forEach(x=>by[Number(x.date.slice(8))]=(by[Number(x.date.slice(8))]||0)+x.duration); sportCalendar.innerHTML=Array.from({length:last},(_,i)=>`<div class="day-cell ${by[i+1]?'active':''}">${i+1}${by[i+1]?'<br>'+by[i+1]+'m':''}</div>`).join(''); },
   renderList(){ sportList.innerHTML=this.logs().length?this.logs().slice(0,20).map(x=>UI.item(`${x.type.icon} ${x.type.name} · ${x.duration} 分钟`,`${x.date} ${x.time}`,`<button class="del" onclick="Sport.del('${x.id}')">✕</button>`,`draggable="true" data-sort-id="${x.id}"`)).join(''):'<div class="empty">还没有运动记录</div>'; DragSort.bind('#sportList [data-sort-id]','sport_logs',()=>Sport.render()); },
   del(id){ Store.set('sport_logs',this.logs().filter(x=>x.id!==id)); this.render(); },
