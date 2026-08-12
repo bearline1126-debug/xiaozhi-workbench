@@ -1,0 +1,856 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>小彘的工作台 · 风格预览</title>
+  <style>
+    :root{
+      --bg:#eef6ef;
+      --panel:#fffdf8;
+      --panel-2:#f8fbf7;
+      --text:#243224;
+      --muted:#6f7d6d;
+      --accent:#4f7a55;
+      --accent-2:#d95c54;
+      --sidebar:#dde9dc;
+      --sidebar-text:#36503b;
+      --sidebar-active:#ffffff;
+      --line:rgba(54,80,59,.12);
+      --shadow:0 18px 50px rgba(38,54,40,.16);
+      --radius:22px;
+      --radius-sm:16px;
+      --title-font: "PingFang SC","Noto Serif SC","Songti SC",serif;
+      --body-font: -apple-system,BlinkMacSystemFont,"PingFang SC","Segoe UI",sans-serif;
+      --bg-photo-opacity:.28;
+    }
+    body.paper{
+      --bg:#f5efe5;
+      --panel:#fffaf3;
+      --panel-2:#fffdf9;
+      --text:#342e28;
+      --muted:#7e7369;
+      --accent:#a45a42;
+      --accent-2:#5f7c63;
+      --sidebar:#efe3d3;
+      --sidebar-text:#5b4a3e;
+      --sidebar-active:#fffaf4;
+      --line:rgba(90,70,52,.12);
+      --shadow:0 16px 40px rgba(87,67,52,.12);
+      --radius:18px;
+      --radius-sm:14px;
+      --title-font: "PingFang SC","STSong","Songti SC",serif;
+      --bg-photo-opacity:.24;
+    }
+    body.sky{
+      --bg:#edf6fb;
+      --panel:#ffffff;
+      --panel-2:#f8fcff;
+      --text:#1f2a33;
+      --muted:#6f8090;
+      --accent:#2d78d6;
+      --accent-2:#58a6ff;
+      --sidebar:#dcebf7;
+      --sidebar-text:#35506c;
+      --sidebar-active:#ffffff;
+      --line:rgba(45,120,214,.12);
+      --shadow:0 18px 44px rgba(28,72,132,.12);
+      --radius:18px;
+      --radius-sm:14px;
+      --title-font: "PingFang SC","Noto Serif SC","Songti SC",serif;
+      --bg-photo-opacity:.18;
+    }
+    body.forest{
+      --bg:#eef7ef;
+      --panel:#fffdf8;
+      --panel-2:#f8fbf7;
+      --text:#29362a;
+      --muted:#6f7d6d;
+      --accent:#6b984f;
+      --accent-2:#c85346;
+      --sidebar:#dfead6;
+      --sidebar-text:#3b5d3d;
+      --sidebar-active:#ffffff;
+      --line:rgba(67,96,57,.14);
+      --shadow:0 18px 50px rgba(38,54,40,.16);
+      --radius:22px;
+      --radius-sm:16px;
+      --title-font: "PingFang SC","Noto Serif SC","Songti SC",serif;
+      --bg-photo-opacity:.28;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      color:var(--text);
+      font-family:var(--body-font);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.46), rgba(255,255,255,.62)),
+        radial-gradient(circle at 15% 12%, rgba(255,255,255,.34), transparent 30%),
+        linear-gradient(135deg, #eef8ef 0%, #f6f9ef 42%, #eef7fb 100%);
+      overflow-x:hidden;
+    }
+    .bg-photo{
+      position:fixed;
+      inset:0;
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      filter: blur(26px) saturate(.82) contrast(.96) brightness(1.08);
+      opacity:var(--bg-photo-opacity);
+      transform:scale(1.08);
+      z-index:-2;
+      pointer-events:none;
+      user-select:none;
+    }
+    .veil{
+      position:fixed;
+      inset:0;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.56), rgba(255,255,255,.72)),
+        linear-gradient(135deg, rgba(235,246,239,.28), rgba(243,248,236,.22), rgba(228,242,245,.24));
+      z-index:-1;
+      pointer-events:none;
+    }
+    .page{
+      min-height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+    }
+    .preview-wrap{
+      width:min(420px, 100%);
+    }
+    .variant-bar{
+      display:flex;
+      gap:8px;
+      margin-bottom:12px;
+      flex-wrap:wrap;
+    }
+    .variant-btn{
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.75);
+      color:var(--text);
+      padding:10px 14px;
+      border-radius:999px;
+      font-size:13px;
+      cursor:pointer;
+      box-shadow:0 8px 20px rgba(0,0,0,.04);
+    }
+    .variant-btn.on{
+      background:var(--accent);
+      color:#fff;
+      border-color:transparent;
+    }
+    .phone{
+      position:relative;
+      border-radius:30px;
+      overflow:hidden;
+      box-shadow:var(--shadow);
+      background:rgba(255,255,255,.35);
+      border:1px solid rgba(255,255,255,.45);
+      backdrop-filter: blur(16px);
+    }
+    .status{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:10px 16px 8px;
+      font-size:13px;
+      color:var(--text);
+      background:linear-gradient(180deg, rgba(255,255,255,.70), rgba(255,255,255,.35));
+    }
+    .status strong{font-weight:700}
+    .status .right{
+      display:flex; gap:10px; align-items:center; color:var(--muted);
+    }
+    .shell{
+      display:grid;
+      grid-template-columns: 86px 1fr;
+      gap:0;
+      min-height:calc(100vh - 130px);
+    }
+    .sidebar{
+      background:linear-gradient(180deg, color-mix(in srgb, var(--sidebar) 88%, white), var(--sidebar));
+      border-right:1px solid var(--line);
+      display:flex;
+      flex-direction:column;
+      align-items:stretch;
+      padding:10px 8px 12px;
+    }
+    .brand{
+      height:70px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border-radius:18px;
+      background:rgba(255,255,255,.36);
+      border:1px solid rgba(255,255,255,.32);
+      margin-bottom:10px;
+      font-size:30px;
+    }
+    .nav{
+      list-style:none;
+      margin:0;
+      padding:0;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      overflow:auto;
+      scrollbar-width:none;
+    }
+    .nav::-webkit-scrollbar{display:none}
+    .nav li{
+      min-height:60px;
+      border-radius:18px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:4px;
+      color:var(--sidebar-text);
+      border:1px solid transparent;
+      background:rgba(255,255,255,.12);
+      cursor:pointer;
+      padding:8px 4px;
+      text-align:center;
+      line-height:1.08;
+    }
+    .nav li.on{
+      background:var(--sidebar-active);
+      color:var(--text);
+      border-color:var(--line);
+      box-shadow:0 8px 16px rgba(0,0,0,.05);
+    }
+    .nav .ico{font-size:22px;line-height:1}
+    .nav .txt{font-size:12px;letter-spacing:0}
+    .content{
+      padding:14px 14px 16px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .hero{
+      position:relative;
+      overflow:hidden;
+      border-radius:var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.84), rgba(255,255,255,.56)),
+        linear-gradient(135deg, rgba(255,246,234,.80), rgba(232,247,236,.58));
+      border:1px solid rgba(255,255,255,.42);
+      box-shadow:0 14px 30px rgba(0,0,0,.06);
+      padding:18px 16px 16px;
+      min-height:150px;
+    }
+    .hero::before{
+      content:"";
+      position:absolute;
+      inset:-12px -18px auto auto;
+      width:165px;
+      height:165px;
+      border-radius:42% 58% 37% 63% / 42% 46% 54% 58%;
+      background:radial-gradient(circle at 35% 30%, rgba(255,255,255,.88), rgba(255,255,255,.2) 40%, transparent 60%);
+      opacity:.7;
+      transform:rotate(12deg);
+    }
+    .hero-top{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      position:relative;
+      z-index:1;
+    }
+    .quote{
+      font-family:var(--title-font);
+      font-size:20px;
+      font-weight:700;
+      line-height:1.36;
+      max-width:210px;
+      margin:0 0 8px;
+    }
+    .sub{
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.5;
+    }
+    .today-chip{
+      min-width:112px;
+      text-align:right;
+      color:var(--text);
+      padding-top:4px;
+    }
+    .today-chip .label{font-size:12px;color:var(--muted)}
+    .today-chip .value{
+      font-family:var(--title-font);
+      font-size:18px;
+      font-weight:700;
+      margin-top:4px;
+    }
+    .progress{
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:12px;
+      align-items:center;
+      margin-top:14px;
+      position:relative;
+      z-index:1;
+    }
+    .bar{
+      height:12px;
+      background:rgba(255,255,255,.6);
+      border-radius:999px;
+      overflow:hidden;
+      box-shadow:inset 0 0 0 1px rgba(0,0,0,.04);
+    }
+    .bar > span{
+      display:block;
+      height:100%;
+      width:62%;
+      background:linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 45%, white));
+      border-radius:999px;
+    }
+    .progress small{color:var(--muted);font-size:12px}
+    .stats{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;
+    }
+    .card{
+      background:rgba(255,255,255,.84);
+      border:1px solid var(--line);
+      border-radius:var(--radius-sm);
+      padding:12px;
+      box-shadow:0 8px 20px rgba(0,0,0,.04);
+      min-height:94px;
+    }
+    button.card{
+      width:100%;
+      color:inherit;
+      font:inherit;
+      text-align:left;
+      cursor:pointer;
+    }
+    button.card:hover,
+    button.card:focus-visible{
+      transform:translateY(-1px);
+      border-color:color-mix(in srgb, var(--accent) 35%, white);
+      outline:none;
+    }
+    .card h3{
+      margin:0;
+      font-family:var(--title-font);
+      font-size:16px;
+      line-height:1.2;
+    }
+    .card .meta{
+      color:var(--muted);
+      font-size:12px;
+      margin-top:8px;
+      line-height:1.45;
+    }
+    .card .big{
+      font-size:28px;
+      font-weight:800;
+      color:var(--accent);
+      margin-top:8px;
+      line-height:1;
+    }
+    .card .big span{font-size:13px;font-weight:600;color:var(--muted);margin-left:4px}
+    .section-title{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin:2px 2px 0;
+      font-size:13px;
+      color:var(--muted);
+    }
+    .section-title strong{
+      color:var(--text);
+      font-family:var(--title-font);
+      font-size:16px;
+    }
+    .list{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .row{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+      padding:12px;
+      background:rgba(255,255,255,.80);
+      border:1px solid var(--line);
+      border-radius:16px;
+    }
+    .row .left{min-width:0}
+    .row .title{
+      font-size:14px;
+      font-weight:700;
+      line-height:1.35;
+      margin:0 0 4px;
+    }
+    .row .desc{
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.45;
+    }
+    .tag{
+      flex:0 0 auto;
+      align-self:center;
+      font-size:12px;
+      color:var(--accent);
+      background:color-mix(in srgb, var(--accent) 12%, white);
+      border:1px solid color-mix(in srgb, var(--accent) 15%, white);
+      padding:6px 10px;
+      border-radius:999px;
+      white-space:nowrap;
+    }
+    .grid-2{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;
+    }
+    .mini{
+      min-height:104px;
+      background:rgba(255,255,255,.82);
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:12px;
+    }
+    .mini .k{
+      color:var(--muted);
+      font-size:12px;
+      margin-bottom:8px;
+    }
+    .mini .v{
+      font-family:var(--title-font);
+      font-size:16px;
+      line-height:1.34;
+      font-weight:700;
+    }
+    .mini .s{
+      color:var(--muted);
+      font-size:12px;
+      margin-top:8px;
+    }
+    .tracker{
+      overflow:auto;
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:rgba(255,255,255,.82);
+    }
+    .tracker table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:320px;
+      font-size:12px;
+    }
+    .tracker th,
+    .tracker td{
+      padding:9px 7px;
+      border-bottom:1px solid var(--line);
+      text-align:center;
+      white-space:nowrap;
+    }
+    .tracker th:first-child,
+    .tracker td:first-child{
+      text-align:left;
+      padding-left:12px;
+    }
+    .tracker th{
+      color:var(--muted);
+      font-weight:600;
+      background:rgba(255,255,255,.45);
+    }
+    .tracker tr:last-child td{border-bottom:0}
+    .mark{
+      display:inline-flex;
+      width:22px;
+      height:22px;
+      align-items:center;
+      justify-content:center;
+      border-radius:50%;
+      background:color-mix(in srgb, var(--accent) 14%, white);
+      color:var(--accent);
+      font-weight:800;
+    }
+    .emotion-dot{
+      display:inline-flex;
+      width:22px;
+      height:22px;
+      align-items:center;
+      justify-content:center;
+      border-radius:50%;
+      color:var(--accent-2);
+      background:color-mix(in srgb, var(--accent-2) 12%, white);
+    }
+    .roulette{
+      display:grid;
+      grid-template-columns:112px 1fr;
+      gap:12px;
+      align-items:center;
+      background:rgba(255,255,255,.82);
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:12px;
+    }
+    .wheel{
+      position:relative;
+      width:104px;
+      height:104px;
+      border-radius:50%;
+      background:conic-gradient(#c85346 0 45deg,#f0c35a 45deg 90deg,#6b984f 90deg 135deg,#62aeb5 135deg 180deg,#d99365 180deg 225deg,#8aa75e 225deg 270deg,#e6a95a 270deg 315deg,#8bb6a8 315deg 360deg);
+      border:6px solid rgba(255,255,255,.88);
+      box-shadow:0 8px 18px rgba(0,0,0,.12);
+      transition:transform 1.35s cubic-bezier(.16,.76,.18,1);
+    }
+    .wheel::after{
+      content:"";
+      position:absolute;
+      inset:37px;
+      border-radius:50%;
+      background:var(--panel);
+      box-shadow:0 0 0 3px rgba(255,255,255,.72);
+    }
+    .wheel::before{
+      content:"";
+      position:absolute;
+      top:-15px;
+      left:42px;
+      border-left:10px solid transparent;
+      border-right:10px solid transparent;
+      border-top:18px solid var(--accent-2);
+      z-index:2;
+    }
+    .roulette h3{margin:0 0 5px;font-family:var(--title-font);font-size:16px}
+    .roulette p{margin:0;color:var(--muted);font-size:12px;line-height:1.45}
+    .spin-btn,
+    .export-btn{
+      border:0;
+      border-radius:999px;
+      background:var(--accent);
+      color:#fff;
+      padding:8px 12px;
+      font:inherit;
+      font-size:12px;
+      cursor:pointer;
+      margin-top:9px;
+    }
+    .spin-btn:focus-visible,
+    .export-btn:focus-visible{outline:3px solid color-mix(in srgb, var(--accent) 28%, white);outline-offset:2px}
+    .result{
+      min-height:18px;
+      margin-top:7px;
+      color:var(--accent-2);
+      font-weight:700;
+      font-size:13px;
+    }
+    .backup{
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:10px;
+      align-items:center;
+      background:rgba(255,255,255,.82);
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:12px;
+    }
+    .backup h3{margin:0 0 4px;font-family:var(--title-font);font-size:16px}
+    .backup p{margin:0;color:var(--muted);font-size:12px;line-height:1.45}
+    .backup select{
+      width:100%;
+      margin-top:9px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.78);
+      color:var(--text);
+      border-radius:10px;
+      padding:8px 10px;
+      font:inherit;
+      font-size:12px;
+    }
+    .toast{
+      position:fixed;
+      left:50%;
+      bottom:22px;
+      transform:translate(-50%, 20px);
+      opacity:0;
+      pointer-events:none;
+      background:rgba(35,46,36,.92);
+      color:#fff;
+      padding:10px 14px;
+      border-radius:999px;
+      font-size:12px;
+      transition:.22s ease;
+      z-index:5;
+    }
+    .toast.show{opacity:1;transform:translate(-50%,0)}
+    .pill-row{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .pill{
+      padding:8px 10px;
+      background:rgba(255,255,255,.74);
+      border:1px solid var(--line);
+      border-radius:999px;
+      font-size:12px;
+      color:var(--text);
+    }
+    .footer-note{
+      text-align:center;
+      color:var(--muted);
+      font-size:11px;
+      padding:2px 0 0;
+    }
+    .phone{
+      max-width:420px;
+      margin:0 auto;
+    }
+    .note{
+      color:var(--muted);
+      font-size:12px;
+      margin:10px 2px 0;
+      line-height:1.5;
+    }
+    @media (max-width: 420px){
+      .page{padding:8px}
+      .preview-wrap{width:100%}
+      .phone{border-radius:24px}
+      .shell{grid-template-columns:82px 1fr}
+      .content{padding:12px}
+      .quote{font-size:18px;max-width:180px}
+      .stats,.grid-2{gap:8px}
+    }
+  </style>
+</head>
+<body class="forest">
+  <img class="bg-photo" id="bgPhoto" alt="" src="file:///F:/xwechat_files/wxid_zrt1m5ceetok51_e34d/temp/RWTemp/2026-08/9e20f478899dc29eb19741386f9343c8/4743dc52858fd5f2da4f9cb8bcff4d40.jpg">
+  <div class="veil"></div>
+  <div class="page">
+    <div class="preview-wrap">
+      <div class="variant-bar">
+        <button class="variant-btn" data-theme="sky">清爽蓝</button>
+        <button class="variant-btn" data-theme="paper">暖纸感</button>
+        <button class="variant-btn on" data-theme="forest">照片绿荫</button>
+      </div>
+      <div class="phone">
+        <div class="status">
+          <strong>21:11</strong>
+          <div class="right">
+            <span>☀️</span>
+            <span>5G</span>
+            <span>100%</span>
+          </div>
+        </div>
+        <div class="shell">
+          <aside class="sidebar">
+            <div class="brand">☀️</div>
+            <ul class="nav" id="nav">
+              <li class="on"><span class="ico">☀️</span><span class="txt">首页</span></li>
+              <li><span class="ico">📝</span><span class="txt">成功日记</span></li>
+              <li><span class="ico">📊</span><span class="txt">追踪表</span></li>
+              <li><span class="ico">💭</span><span class="txt">情绪日记</span></li>
+              <li><span class="ico">🧠</span><span class="txt">复盘中心</span></li>
+              <li><span class="ico">🪞</span><span class="txt">认知库</span></li>
+              <li><span class="ico">📌</span><span class="txt">灵感速记</span></li>
+              <li><span class="ico">✅</span><span class="txt">行动清单</span></li>
+              <li><span class="ico">🍲</span><span class="txt">做菜栏</span></li>
+              <li><span class="ico">🧧</span><span class="txt">份子钱</span></li>
+              <li><span class="ico">⚙️</span><span class="txt">设置</span></li>
+            </ul>
+          </aside>
+          <main class="content">
+            <section class="hero">
+              <div class="hero-top">
+                <div>
+                  <p class="quote">把简单的事重复做，做扎实。</p>
+                  <div class="sub">小彘的工作台 · 2026年8月10日 · 晚上整理</div>
+                </div>
+                <div class="today-chip">
+                  <div class="label">今日进度</div>
+                  <div class="value">明日必做 3 件</div>
+                </div>
+              </div>
+              <div class="progress">
+                <div class="bar"><span></span></div>
+                <small>成功日记完成度 62%</small>
+              </div>
+            </section>
+
+            <section class="stats">
+              <div class="card">
+                <h3>连续打卡</h3>
+                <div class="big">12<span>天</span></div>
+                <div class="meta">习惯和情绪只要点一下，压力低，能长期用。</div>
+              </div>
+              <div class="card">
+                <h3>倒计时</h3>
+                <div class="big">228<span>天</span></div>
+                <div class="meta">可换成考试、会议、纪念日，默认可删减。</div>
+              </div>
+              <button class="card" data-view="成功日记">
+                <h3>今日成就感</h3>
+                <div class="meta">写下今天做对了什么、学到了什么。</div>
+                <div class="big" style="font-size:20px;color:var(--text)">3 条</div>
+              </button>
+              <button class="card" data-view="情绪日记">
+                <h3>情绪日记</h3>
+                <div class="meta">遇到事再写，AI 会自动总结并关联到追踪表。</div>
+                <div class="big" style="font-size:20px;color:var(--accent-2)">◔</div>
+              </button>
+            </section>
+
+            <section>
+              <div class="section-title">
+                <strong>今日必做</strong>
+                <span>最多 3 件</span>
+              </div>
+              <div class="list">
+                <div class="row">
+                  <div class="left">
+                    <div class="title">整理文献笔记，输出一段费曼复述</div>
+                    <div class="desc">今晚最重要的研究动作，优先级最高。</div>
+                  </div>
+                  <div class="tag">必做 1</div>
+                </div>
+                <div class="row">
+                  <div class="left">
+                    <div class="title">给论文第二部分补一个过渡段</div>
+                    <div class="desc">只做最关键的一小步，不追求一次写完。</div>
+                  </div>
+                  <div class="tag">必做 2</div>
+                </div>
+                <div class="row">
+                  <div class="left">
+                    <div class="title">晚饭后走 6000 步</div>
+                    <div class="desc">身心维护项，尽量每天稳定执行。</div>
+                  </div>
+                  <div class="tag">必做 3</div>
+                </div>
+              </div>
+            </section>
+
+            <section>
+              <div class="section-title">
+                <strong>今日追踪</strong>
+                <span>每天只填今天</span>
+              </div>
+              <div class="tracker">
+                <table>
+                  <thead>
+                    <tr><th>项目</th><th>今天</th><th>昨天</th><th>前天</th><th>趋势</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td>晒太阳 10 分钟</td><td><span class="mark">✓</span></td><td><span class="mark">✓</span></td><td>—</td><td>稳定</td></tr>
+                    <tr><td>走路 6000 步</td><td><span class="mark">✓</span></td><td>—</td><td><span class="mark">✓</span></td><td>上升</td></tr>
+                    <tr><td>睡前不看手机</td><td>—</td><td><span class="mark">✓</span></td><td><span class="mark">✓</span></td><td>保持</td></tr>
+                    <tr><td>今日情绪</td><td><span class="emotion-dot">◔</span></td><td><span class="emotion-dot">●</span></td><td><span class="emotion-dot">△</span></td><td>平稳</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="grid-2">
+              <div class="mini">
+                <div class="k">灵感速记</div>
+                <div class="v">先记下来</div>
+                <div class="s">一句灵感，之后再归入经验摘录或行动清单。</div>
+              </div>
+              <div class="mini">
+                <div class="k">份子钱</div>
+                <div class="v">人情汇总</div>
+                <div class="s">收到 / 付出 / 净额，一眼能看懂。</div>
+              </div>
+            </section>
+
+            <section class="roulette">
+              <div class="wheel" id="wheel"></div>
+              <div>
+                <h3>今天吃什么</h3>
+                <p>把你会吃、想吃的菜名填进做菜栏，今天直接转一下。</p>
+                <button class="spin-btn" id="spinBtn">转一下</button>
+                <div class="result" id="result">等待选择</div>
+              </div>
+            </section>
+
+            <section>
+              <div class="section-title">
+                <strong>快捷入口</strong>
+                <span>最底部 · 可排序</span>
+              </div>
+              <div class="pill-row">
+                <span class="pill">周复盘</span>
+                <span class="pill">心愿清单</span>
+                <span class="pill">灵感速记</span>
+                <span class="pill">做菜栏</span>
+                <span class="pill">份子钱</span>
+                <span class="pill">本地密码锁</span>
+              </div>
+            </section>
+
+            <div class="footer-note">本地工作台 · 数据只存在手机里 · 需要时才做 AI 分析</div>
+          </main>
+        </div>
+      </div>
+      <div class="note">这个预览已经按“手机打开像 App”的方向做了：桌面图标、左侧功能栏、卡片流、轻量背景和更安静的配色都会保留到正式版。</div>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+  <script>
+    const themes = {
+      sky: {
+        title: '清爽蓝',
+        body: 'sky'
+      },
+      paper: {
+        title: '暖纸感',
+        body: 'paper'
+      },
+      forest: {
+        title: '绿荫光',
+        body: ''
+      }
+    };
+    const nav = document.getElementById('nav');
+    nav.addEventListener('click', e => {
+      const li = e.target.closest('li');
+      if (!li) return;
+      [...nav.children].forEach(x => x.classList.remove('on'));
+      li.classList.add('on');
+    });
+    const toast = document.getElementById('toast');
+    let toastTimer;
+    document.querySelectorAll('[data-view]').forEach(card => {
+      card.addEventListener('click', () => {
+        toast.textContent = '已打开 ' + card.dataset.view;
+        toast.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.remove('show'), 1400);
+      });
+    });
+    const buttons = document.querySelectorAll('.variant-btn');
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        buttons.forEach(b => b.classList.remove('on'));
+        btn.classList.add('on');
+        document.body.className = btn.dataset.theme;
+      });
+    });
+    const dishes = ['番茄鸡蛋面', '青椒土豆丝', '咖喱鸡肉饭', '蒜蓉西兰花', '番茄牛腩', '鸡蛋炒饭'];
+    const wheel = document.getElementById('wheel');
+    const result = document.getElementById('result');
+    let rotation = 0;
+    document.getElementById('spinBtn').addEventListener('click', () => {
+      const picked = dishes[Math.floor(Math.random() * dishes.length)];
+      rotation += 720 + Math.floor(Math.random() * 360);
+      wheel.style.transform = 'rotate(' + rotation + 'deg)';
+      result.textContent = '今天吃：' + picked;
+    });
+  </script>
+</body>
+</html>

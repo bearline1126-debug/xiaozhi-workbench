@@ -1,0 +1,9 @@
+# AI 生成的原始素材图（非部署所需，体积大）
+Modern_mobile_app_icon__*.png
+Transform_this_image_into_a_pe_*.png
+
+# 本地备份
+index.backup-*.html
+
+# 系统
+.DS_Store
