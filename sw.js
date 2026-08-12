@@ -1,16 +1,17 @@
-const CACHE = 'xiaozhi-workbench-v24';
+const CACHE = 'xiaozhi-workbench-v26';
 const ASSETS = ['./', './index.html', './manifest.json', './icon.png', './icon-192.png', './assets/welcome-default.jpg'];
-const BUILD = '2026-08-12-v24';
+const BUILD = '2026-08-12-v26';
 
 const DEFAULT_MANIFEST = {
   name: '小彘的工作台', short_name: '小彘',
   description: '小彘的本地个人复盘工作台',
-  start_url: './index.html', scope: './', display: 'standalone', orientation: 'portrait',
+  id: '/xiaozhi-workbench/',
+  start_url: './index.html', scope: './', display: 'standalone', display_override: ['standalone','minimal-ui'], orientation: 'portrait',
   background_color: '#eef7ef', theme_color: '#dfead6',
   categories: ['productivity', 'lifestyle', 'utilities'],
   icons: [
-    {src: 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any'},
-    {src: 'icon.png', sizes: '512x512', type: 'image/png', purpose: 'any'}
+    {src: 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable'},
+    {src: 'icon.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable'}
   ]
 };
 
@@ -78,12 +79,13 @@ async function buildManifest(url){
       name: custom.name || DEFAULT_MANIFEST.name,
       short_name: custom.shortName || DEFAULT_MANIFEST.short_name,
       description: DEFAULT_MANIFEST.description,
-      start_url: './index.html', scope: './', display: 'standalone', orientation: 'portrait',
+      id: DEFAULT_MANIFEST.id,
+      start_url: './index.html', scope: './', display: 'standalone', display_override: DEFAULT_MANIFEST.display_override, orientation: 'portrait',
       background_color: '#eef7ef', theme_color: '#dfead6',
       categories: DEFAULT_MANIFEST.categories,
       icons: hasIcon ? [
-        {src: './custom-icon.png', sizes: '512x512', type: 'image/png', purpose: 'any'},
-        {src: './icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any'}
+        {src: './custom-icon.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable'},
+        {src: './icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable'}
       ] : DEFAULT_MANIFEST.icons
     };
     return new Response(JSON.stringify(manifest), {
@@ -98,6 +100,7 @@ async function buildManifest(url){
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
+  if (url.origin !== self.location.origin) return;
 
   /* 自定义图标：从 IndexedDB 读取并返回图片（关键修复！不再用 data URL） */
   if (url.pathname.endsWith('custom-icon.png')) {

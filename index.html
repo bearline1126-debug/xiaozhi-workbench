@@ -157,6 +157,7 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
   min-height:128px;display:flex;flex-direction:column;justify-content:space-between;
   background:linear-gradient(135deg,rgba(255,255,255,.84),rgba(255,255,255,.62));
 }
+.big-entry .tile-hide{top:8px;right:8px;transform:none}
 .big-entry .entry-ico{font-size:28px;margin-bottom:10px}
 .tile h3{font-family:var(--title-font);font-size:16px;margin-bottom:8px}
 .big{font-size:28px;font-weight:900;color:var(--accent);line-height:1}
@@ -192,7 +193,7 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
   display:inline-flex;align-items:center;gap:5px;padding:8px 10px;border-radius:999px;
   border:1px solid var(--line);background:rgba(255,255,255,.72);font-size:12px;color:var(--text);
 }
-.tracker{overflow:auto;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.78)}
+.tracker,.habit-board{overflow-x:auto;overflow-y:hidden;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.78);padding:10px;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
 .tracker table{width:100%;border-collapse:collapse;min-width:350px;font-size:12px}
 .tracker th,.tracker td{padding:9px 7px;border-bottom:1px solid var(--line);text-align:center;white-space:nowrap}
 .tracker th:first-child,.tracker td:first-child{text-align:left;padding-left:12px}
@@ -202,6 +203,17 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
   background:rgba(107,152,79,.14);color:var(--accent);font-weight:800;
 }
 .emotion{background:rgba(200,83,70,.12);color:var(--accent-2)}
+.habit-grid{display:grid;grid-auto-rows:22px;gap:6px;align-items:center;width:max-content;min-width:100%}
+.habit-label{position:sticky;left:0;z-index:2;min-width:92px;max-width:112px;background:rgba(255,253,248,.94);font-size:12px;font-weight:800;color:var(--text);padding-right:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.habit-count{font-size:11px;color:var(--accent);font-weight:800;margin-left:4px}
+.habit-day{width:18px;height:18px;border-radius:5px;background:rgba(41,54,42,.08);display:grid;place-items:center;font-size:11px;color:rgba(41,54,42,.36)}
+.habit-day.on{background:#779679;color:#fff}
+.habit-day.mood{background:rgba(200,83,70,.11);color:var(--accent-2);font-size:13px}
+.habit-date{font-size:10px;color:var(--text-dim);text-align:center;align-self:end}
+.habit-date.tick{font-weight:700;color:#9a7c66}
+.habit-board::-webkit-scrollbar{height:8px}
+.habit-board::-webkit-scrollbar-thumb{background:rgba(67,96,57,.38);border-radius:999px}
+.habit-board::-webkit-scrollbar-track{background:rgba(41,54,42,.06);border-radius:999px}
 .tabs{display:flex;gap:8px;overflow:auto;padding-bottom:2px}
 .tab{border:1px solid var(--line);background:rgba(255,255,255,.65);color:var(--text);border-radius:999px;padding:8px 12px;white-space:nowrap}
 .tab.on{background:var(--accent);color:#fff;border-color:transparent}
@@ -491,7 +503,7 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 <body>
 <div class="lock" id="lockScreen">
   <div class="lock-card">
-    <div class="page-title">小彘的工作台</div><p class="page-sub" style="margin:6px 0 14px">输入本地密码解锁。密码只存在这台设备里。</p>
+    <div class="page-title" id="lockTitle">小彘的工作台</div><p class="page-sub" style="margin:6px 0 14px">输入本地密码解锁。密码只存在这台设备里。</p>
     <input type="password" id="unlockPassword" placeholder="输入密码">
     <button class="btn" style="width:100%;margin-top:10px" onclick="Lock.unlock()">解锁</button>
   </div>
@@ -522,7 +534,7 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
     <div class="topbar">
       <button class="menu-btn" onclick="App.openDrawer()">☰</button>
       <div>
-        <div class="top-title">小彘的工作台</div>
+        <div class="top-title" id="appTopTitle">小彘的工作台</div>
         <div class="muted" id="groupHint">本地优先 · 可离线使用</div>
       </div>
       <button class="menu-btn" style="width:34px;height:34px;font-size:16px" title="恢复备份：读取已选 360 同步文件夹里的固定一份「小彘的工作台-备份.json」；没选则在本机选文件" onclick="AutoBackup.restore()">📂</button>
@@ -584,6 +596,7 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
         </div>
       </div>
       <button class="btn" style="width:100%" onclick="DailyLog.saveAll()">一次保存今天的全部记录</button>
+      <p class="hint" id="dailyAutoSaveHint" style="text-align:center;margin-top:-4px">输入后会自动保存到本机。</p>
       <div class="card">
         <h2>最近 14 天</h2>
         <div id="dlHistory"></div>
@@ -615,7 +628,7 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
         </select>
         <label>一句话总结情绪</label>
         <input id="trackerMoodLine" placeholder="一句话总结">
-        <button class="btn" style="margin-top:10px;width:100%" onclick="Tracker.saveToday()">保存本周追踪</button>
+        <button class="btn" style="margin-top:10px;width:100%" onclick="Tracker.saveToday()">保存今日追踪</button>
       </div>
       <div class="card">
         <h2>统计视图</h2>
@@ -989,7 +1002,7 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
       </div>
       <div class="card">
         <h2>存储空间</h2>
-        <p class="hint">日记文字放在小仓库，图片视频放在大仓库。小仓库上限只有 5 MB 左右，所以图片一定要放大仓库，否则用久了会写不进去。</p>
+        <p class="hint">文字输入即保存到本机小仓库 localStorage；图片视频放在本机大仓库 IndexedDB。小仓库通常约 5 MB，适合文字；大仓库容量由手机浏览器按剩余空间分配。系统仍可能清理长期不用的站点数据，所以重要数据请定期备份。</p>
         <div style="margin-top:10px">
           <div class="kv"><span>小仓库 · 文字记录</span><b id="lsUsage">-</b></div>
           <div class="meter" id="lsMeter"><span></span></div>
@@ -1072,6 +1085,26 @@ const SCHEMA_VERSION = 3;
 const Store = (() => {
   const NS = 'bysdash:';
   const SEC = 'bysdash$secret:';
+  const cleanText = (v, max = 80) => String(v ?? '').replace(/[<>"'`]/g, '').trim().slice(0, max);
+  const cleanDataIcon = v => {
+    const s = String(v || '').trim();
+    if(!/^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+/=]+$/i.test(s)) return '';
+    return s.length <= 1800000 ? s : '';
+  };
+  const cleanHttpsUrl = v => {
+    const s = String(v || '').trim();
+    if(!s) return '';
+    try { const u = new URL(s); return u.protocol === 'https:' ? u.href : ''; }
+    catch { return ''; }
+  };
+  const cleanImportValue = (key, value) => {
+    if(key === '_appCustom'){
+      const c = value && typeof value === 'object' ? value : {};
+      return {name: cleanText(c.name, 24), shortName: cleanText(c.shortName, 8), icon: cleanDataIcon(c.icon)};
+    }
+    if(key === 'aiBase' || key === 'syncUrl') return cleanHttpsUrl(value);
+    return value;
+  };
   const driver = {
     get(k){ try { const raw = localStorage.getItem(k); return raw == null ? null : JSON.parse(raw); } catch { return null; } },
     set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch(e){ UI.toast('文字仓库满了，请到设置里把图片搬进大仓库或先导出备份'); console.error(e); return false; } },
@@ -1089,7 +1122,13 @@ const Store = (() => {
     keyList(){ return driver.keys().filter(k => k.startsWith(NS)).map(k => k.slice(NS.length)); },
     exportAll(){ const data = {}; driver.keys().filter(k => k.startsWith(NS)).forEach(k => data[k.slice(NS.length)] = driver.get(k)); return {app:'小彘的工作台',version:1,schemaVersion:SCHEMA_VERSION,exportedAt:new Date().toISOString(),data}; },
     /* 只覆盖备份里出现过的 key，本机多出来的内容一律保留，避免任何一侧的数据被抹掉 */
-    importAll(parsed){ if (!parsed.data) throw new Error('格式不对'); Object.entries(parsed.data).forEach(([k,v]) => { if (v !== undefined) driver.set(NS + k, v); }); },
+    importAll(parsed){
+      if (!parsed || parsed.app !== '小彘的工作台' || !parsed.data || typeof parsed.data !== 'object') throw new Error('格式不对');
+      Object.entries(parsed.data).forEach(([k,v]) => {
+        if(typeof k !== 'string' || k.length > 100 || /[\x00-\x1f]/.test(k)) return;
+        if (v !== undefined) driver.set(NS + k, cleanImportValue(k, v));
+      });
+    },
     /* 判断当前是否真的有用户数据（排除纯配置项），用于防止空数据覆盖云盘里的有效备份 */
     hasUserData(){
       const data = this.exportAll().data;
@@ -1118,6 +1157,7 @@ const Util = {
   esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); },
   lines(s){ return String(s || '').split(/\n+/).map(x => x.trim()).filter(Boolean); },
   download(name, text, type){ const blob = new Blob([text], {type}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); },
+  debounce(fn, wait=650){ let timer; return (...args) => { clearTimeout(timer); timer=setTimeout(()=>fn(...args), wait); }; },
   rangeDays(n){ const arr=[]; for(let i=n-1;i>=0;i--) arr.push(this.dateAdd(this.today(), -i)); return arr; },
   diffDays(from, to){ const a=new Date(String(from)+'T00:00:00'), b=new Date(String(to)+'T00:00:00'); if(isNaN(a)||isNaN(b)) return 0; return Math.round((b-a)/86400000); },
   csvCell(v){ return '"' + String(v ?? '').replace(/"/g,'""') + '"'; },
@@ -1589,7 +1629,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-12-v24';
+const BUILD_VERSION = '2026-08-12-v26';
 const App = {
   current:'home',
   booting:true,
@@ -1644,7 +1684,9 @@ const App = {
     }, {passive:true});
   },
   init(){
-    document.getElementById('nav').innerHTML = this.routes.map(r=>`<button data-id="${r.id}" onclick="App.go('${r.id}')"><span class="ico">${r.icon}</span>${r.name}</button>`).join('');
+    AppCustom.apply();
+    StorageGuard.request();
+    document.getElementById('nav').innerHTML = this.visibleRoutes().map(r=>`<button data-id="${r.id}" onclick="App.go('${r.id}')"><span class="ico">${r.icon}</span>${r.name}</button>`).join('');
     this.bindSwipe();
     window.addEventListener('popstate', e => this.go(e.state?.page || 'home', {push:false}));
     Lock.check();
@@ -1669,6 +1711,29 @@ const App = {
     history.replaceState({page:start}, '', '#'+start);
     this.go(start, {push:false});
     this.booting=false;
+  }
+  ,
+  hiddenRoutes(){
+    return Object.keys(Hub.groups || {}).flatMap(g => Store.get('hub_hidden_'+g, []));
+  },
+  visibleRoutes(){
+    const hidden=this.hiddenRoutes();
+    return this.routes.filter(r => ['home','hub','settings'].includes(r.id) || !hidden.includes(r.id));
+  },
+  refreshNav(){
+    const nav=document.getElementById('nav'); if(!nav) return;
+    nav.innerHTML=this.visibleRoutes().map(r=>`<button data-id="${r.id}" onclick="App.go('${r.id}')"><span class="ico">${r.icon}</span>${r.name}</button>`).join('');
+    document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on', b.dataset.id===this.current));
+  }
+};
+const StorageGuard = {
+  async request(){
+    try{
+      if(navigator.storage?.persist){
+        const ok = await navigator.storage.persist();
+        Store.set('_storagePersisted', !!ok);
+      }
+    }catch(e){}
   }
 };
 const Daily = {
@@ -1784,7 +1849,8 @@ const Hub = {
     knowledge:{title:'知识',sub:'积累文字、英语、视觉灵感。',pages:['notes','quick','english','visual']},
     life:{title:'生活',sub:'把日常琐事整理成能长期用的工具。',pages:['wish','cooking','gift','wishshop','sport','outfit','lifeAnalysis']}
   },
-  pages(group){ const base=this.groups[group].pages; const saved=Store.get('hub_pages_'+group); if(!saved) return base; return saved.filter(x=>base.includes(x)).concat(base.filter(x=>!saved.includes(x))); },
+  pages(group){ const base=this.groups[group].pages; const saved=Store.get('hub_pages_'+group); const ordered=saved?saved.filter(x=>base.includes(x)).concat(base.filter(x=>!saved.includes(x))):base; const hidden=Store.get('hub_hidden_'+group,[]); return ordered.filter(x=>!hidden.includes(x)); },
+  hiddenPages(group){ const base=this.groups[group].pages; const hidden=Store.get('hub_hidden_'+group,[]); return hidden.filter(x=>base.includes(x)); },
   open(group){
     if(group==='home') return App.go('home');
     this.group = group;
@@ -1802,12 +1868,13 @@ const Hub = {
     const g = this.groups[this.group || 'diary'];
     hubTitle.textContent = g.title;
     hubSub.textContent = g.sub;
-    const pages=this.pages(this.group || 'diary');
+    const group=this.group || 'diary';
+    const pages=this.pages(group);
     hubGrid.innerHTML = pages.map(id => {
       const r = App.routes.find(x=>x.id===id);
-      return `<div class="tile big-entry" data-hub-id="${id}"><button class="grab" data-grab style="align-self:flex-end" onclick="event.stopPropagation()">⠿</button><button style="border:0;background:transparent;text-align:left;color:inherit;padding:0" onclick="App.go('${id}')"><div class="entry-ico">${r.icon}</div><h3>${r.name}</h3><p class="muted">${Hub.preview(id)}</p></button></div>`;
-    }).join('');
-    this.bindDrag(this.group || 'diary');
+      return `<div class="tile big-entry" data-hub-id="${id}"><button class="grab" data-grab style="align-self:flex-end" onclick="event.stopPropagation()">⠿</button><button class="tile-hide" onclick="event.stopPropagation();Hub.hide('${group}','${id}')" title="隐藏这个功能">✕</button><button style="border:0;background:transparent;text-align:left;color:inherit;padding:0" onclick="App.go('${id}')"><div class="entry-ico">${r.icon}</div><h3>${r.name}</h3><p class="muted">${Hub.preview(id)}</p></button></div>`;
+    }).join('') + this.hiddenHtml(group);
+    this.bindDrag(group);
   },
   bindDrag(group){
     DragSort.attach('[data-hub-id]', (from, to) => {
@@ -1817,6 +1884,13 @@ const Hub = {
       const [m] = a.splice(fi, 1); a.splice(ti, 0, m);
       Store.set('hub_pages_' + group, a); this.render();
     }, {attr:'hubId'});
+  },
+  hide(group,id){ Store.set('hub_hidden_'+group,[...new Set(Store.get('hub_hidden_'+group,[]).concat(id))]); App.refreshNav(); if(App.current===id) App.go('hub'); else this.render(); UI.toast('已隐藏，可在底部恢复'); },
+  show(group,id){ Store.set('hub_hidden_'+group,Store.get('hub_hidden_'+group,[]).filter(x=>x!==id)); App.refreshNav(); this.render(); UI.toast('已恢复显示'); },
+  hiddenHtml(group){
+    const ids=this.hiddenPages(group);
+    if(!ids.length) return '';
+    return `<section class="card" style="grid-column:1/-1;box-shadow:none;padding:12px"><h2 style="font-size:15px;margin-bottom:6px">已隐藏功能</h2><div class="hidden-list">${ids.map(id=>{ const r=App.routes.find(x=>x.id===id); return `<button class="pill" onclick="Hub.show('${group}','${id}')">＋ ${r?Util.esc(r.name):id}</button>`; }).join('')}</div></section>`;
   },
   preview(id){
     return {
@@ -2408,7 +2482,15 @@ const Tracker = {
   ]; },
   items(){ const items=Store.get('tracker_items'); if(items) return items; Store.set('tracker_items', this.defaults()); return this.defaults(); },
   dayKey(date=Util.today()){ return 'tracker:'+date; },
-  render(){ const rec=Store.get(this.dayKey(),{habits:{},mood:'😊',line:''}); trackerToday.innerHTML=this.items().map(it=>`<label class="pill" style="margin:5px 6px 5px 0"><input type="checkbox" data-habit="${it.id}" ${rec.habits?.[it.id]?'checked':''} style="width:auto;min-height:auto;margin-right:6px"><span class="pill-text">${Util.esc(it.name)}${it.desc?`<br><small class="habit-desc">${Util.esc(it.desc)}</small>`:''}</span></label>`).join(''); trackerMood.value=rec.mood||'😊'; Util.fillMoodSelect('trackerMood'); trackerMood.value=rec.mood||'😊'; trackerMoodLine.value=rec.line||''; this.renderItems(); this.stats(); },
+  render(){ const rec=Store.get(this.dayKey(),{habits:{},mood:'😊',line:''}); trackerToday.innerHTML=this.items().map(it=>`<label class="pill" style="margin:5px 6px 5px 0"><input type="checkbox" data-habit="${it.id}" ${rec.habits?.[it.id]?'checked':''} style="width:auto;min-height:auto;margin-right:6px"><span class="pill-text">${Util.esc(it.name)}${it.desc?`<br><small class="habit-desc">${Util.esc(it.desc)}</small>`:''}</span></label>`).join(''); trackerMood.value=rec.mood||'😊'; Util.fillMoodSelect('trackerMood'); trackerMood.value=rec.mood||'😊'; trackerMoodLine.value=rec.line||''; this.bindAutosave(); this.renderItems(); this.stats(); },
+  bindAutosave(){
+    if(this._autosaveBound) return;
+    this._autosaveBound=true;
+    this._autosave=Util.debounce(()=>this.saveToday({silent:true}),700);
+    ['input','change'].forEach(evt=>document.getElementById('page-tracker')?.addEventListener(evt,e=>{
+      if(e.target.matches('[data-habit],#trackerMood,#trackerMoodLine')) this._autosave();
+    }));
+  },
   homeEditor(){
     const rec=Store.get(this.dayKey(),{habits:{},mood:'😊',line:''});
     return `<div class="pill-row">${this.items().map(it=>`<label class="pill"><input type="checkbox" data-home-habit="${it.id}" ${rec.habits?.[it.id]?'checked':''} style="width:auto;min-height:auto;margin-right:6px"><span class="pill-text">${Util.esc(it.name)}${it.desc?`<br><small class="habit-desc">${Util.esc(it.desc)}</small>`:''}</span></label>`).join('')}</div>
@@ -2451,7 +2533,7 @@ const Tracker = {
     const habits = {};
     document.querySelectorAll('[data-home-habit]').forEach(x=>habits[x.dataset.homeHabit]=x.checked);
     Util.bump('mood',homeMood.value); Store.set(this.dayKey(), {...current, date:Util.today(), habits, mood:homeMood.value, line:homeMoodLine.value.trim()});
-    UI.toast('本周追踪已保存');
+    if(!extra.silent) UI.toast('今日追踪已保存');
     Home.render();
   },
   saveToday(extra={}){
@@ -2462,7 +2544,7 @@ const Tracker = {
     const mood = extra.mood || (document.getElementById('trackerMood')?.value || current.mood || '●');
     const line = extra.line || (document.getElementById('trackerMoodLine')?.value.trim() || current.line || '');
     Util.bump('mood',mood); Store.set(this.dayKey(), {date:Util.today(), ...current, habits, mood, line, ...extra});
-    UI.toast('本周追踪已保存');
+    UI.toast('今日追踪已保存');
     Home.render();
     this.stats();
   },
@@ -2471,22 +2553,18 @@ const Tracker = {
   moveItem(i,d){ const a=this.items(); const j=i+d; if(j<0||j>=a.length)return; [a[i],a[j]]=[a[j],a[i]]; Store.set('tracker_items', a); this.render(); },
   renderItems(){ trackerItems.innerHTML=this.items().map((it,i)=>UI.item(it.name, it.desc||'',`<button class="del" onclick="Tracker.moveItem(${i},-1)">↑</button><button class="del" onclick="Tracker.moveItem(${i},1)">↓</button><button class="del" onclick="Tracker.delItem('${it.id}')">✕</button>`,`draggable="true" data-sort-id="${it.id}"`)).join(''); DragSort.bind('#trackerItems [data-sort-id]','tracker_items',()=>Tracker.render()); },
   todayRate(){ const items=this.items(); const rec=Store.get(this.dayKey(),{habits:{}}); if(!items.length) return 0; return Math.round(items.filter(it=>rec.habits?.[it.id]).length/items.length*100); },
-  table(n=7){ const days=Util.rangeDays(n); const items=this.items(); return `<table><thead><tr><th>项目</th>${days.map(d=>`<th>${d.slice(5)}</th>`).join('')}</tr></thead><tbody>${items.map(it=>`<tr><td>${Util.esc(it.name)}</td>${days.map(d=>`<td>${Store.get(this.dayKey(d),{habits:{}}).habits?.[it.id]?'<span class="mark">✓</span>':'—'}</td>`).join('')}</tr>`).join('')}<tr><td>情绪</td>${days.map(d=>`<td><span class="emotion">${Util.esc(Store.get(this.dayKey(d),{mood:'-' }).mood||'-')}</span></td>`).join('')}</tr></tbody></table>`; },
   setRange(r,btn){ this.range=r; document.querySelectorAll('#page-tracker .tab').forEach(x=>x.classList.remove('on')); btn.classList.add('on'); this.stats(); },
-  stats(){ const n=this.range==='year'?365:this.range==='month'?31:7; trackerStats.innerHTML=this.charts(n)+this.table(n); },
-  charts(n){
+  stats(){ const n=this.range==='year'?365:this.range==='month'?31:7; trackerStats.innerHTML=this.detailBoard(n); },
+  detailBoard(n){
     const days=Util.rangeDays(n), items=this.items();
-    const recs=days.map(d=>Store.get(this.dayKey(d),null));
-    const bars=items.map(it=>{ const c=recs.filter(r=>r?.habits?.[it.id]).length; return {label:it.name, value:c, text:`${c} 天 · ${Math.round(c/days.length*100)}%`}; });
-    const counts={};
-    recs.forEach(r=>{ if(r?.mood) counts[r.mood]=(counts[r.mood]||0)+1; });
-    const pie=Object.entries(counts).map(([k,v])=>({label:`${k} ${moodLabel(k)}`.trim(), value:v}));
-    const total=pie.reduce((s,x)=>s+x.value,0);
-    const trend=recs.map(r=>items.length?Math.round(items.filter(it=>r?.habits?.[it.id]).length/items.length*100):0);
-    return `<h2 style="font-size:15px;margin-bottom:6px">习惯完成情况</h2>${Chart.bars(bars,{max:days.length})}
-      <h2 style="font-size:15px;margin:14px 0 6px">情绪分布</h2>${Chart.donut(pie,{center:total,centerSub:'天有记录'})}
-      <h2 style="font-size:15px;margin:14px 0 6px">完成率趋势</h2>${Chart.line(trend.slice(-31),{max:100})}
-      <h2 style="font-size:15px;margin:14px 0 6px">明细表</h2>`;
+    const cols=Math.max(1, days.length);
+    const dateRow = `<div></div>${days.map((d,i)=>`<div class="habit-date ${i%5===0||i===days.length-1?'tick':''}">${i%5===0||i===days.length-1?d.slice(8):''}</div>`).join('')}`;
+    const rows = items.map(it=>{
+      const done=days.filter(d=>Store.get(this.dayKey(d),{habits:{}}).habits?.[it.id]).length;
+      return `<div class="habit-label" title="${Util.esc(it.name)}">${Util.esc(it.name)}<span class="habit-count">${done}天</span></div>${days.map(d=>`<div class="habit-day ${Store.get(this.dayKey(d),{habits:{}}).habits?.[it.id]?'on':''}" title="${d} ${Util.esc(it.name)}"></div>`).join('')}`;
+    }).join('');
+    const moodRow = `<div class="habit-label">情绪</div>${days.map(d=>{ const m=Store.get(this.dayKey(d),{mood:''}).mood||''; return `<div class="habit-day mood" title="${d} ${Util.esc(moodLabel(m)||m)}">${Util.esc(m||'')}</div>`; }).join('')}`;
+    return `<h2 style="font-size:15px;margin-bottom:8px">习惯明细</h2><p class="hint" style="margin-bottom:8px">左右滑动查看全部日期。</p><div class="habit-board"><div class="habit-grid" style="grid-template-columns:112px repeat(${cols},18px)">${dateRow}${rows}${moodRow}</div></div>`;
   },
   async aiAnalyze(){ trackerAi.textContent='分析中...'; try{ trackerAi.textContent=await AI.ask('请分析我的习惯和情绪趋势，给出简短统计、触发模式和三个优化建议：\n'+JSON.stringify(Util.rangeDays(31).map(d=>({date:d,track:Store.get(this.dayKey(d),{})})))); }catch(e){ trackerAi.textContent=e.message; } }
 };
@@ -2524,12 +2602,32 @@ const DailyLog = {
     /* 补记模式提示 */
     if(this._pendingDate && this._pendingDate!==Util.today()){
       const titleEl = document.querySelector('#page-daily .page-title');
-      if(titleEl) title.textContent = `补记 ${this._pendingDate}`;
+      if(titleEl) titleEl.textContent = `补记 ${this._pendingDate}`;
     }
     dlAi.textContent = '';
     if(Store.get('daily_mood_collapsed', null)===null) Store.set('daily_mood_collapsed', true);
     this.applyMoodCollapse();
+    this.bindAutosave();
     this.history();
+  },
+  bindAutosave(){
+    if(this._autosaveBound) return;
+    this._autosaveBound = true;
+    const save = Util.debounce(() => this.saveDraft(), 700);
+    ['input','change'].forEach(evt => document.getElementById('page-daily')?.addEventListener(evt, e => {
+      if(e.target.matches('input,textarea,select')) save();
+    }));
+  },
+  saveDraft(){
+    const d = this._pendingDate || Util.today();
+    const habits = {};
+    document.querySelectorAll('[data-dl-habit]').forEach(x => habits[x.dataset.dlHabit] = x.checked);
+    const cur = Store.get(Tracker.dayKey(d), {habits:{}, mood:'😊', line:''});
+    Store.set(Tracker.dayKey(d), {...cur, date:d, habits, mood:dlMood.value, line:dlMoodLine.value.trim()});
+    const old = Store.get(Success.key(d), {});
+    Store.set(Success.key(d), {...old, date:d, wins:dlWins.value.trim(), tomorrow:MustEditor.collect('dlMustBox'), sleepTime:document.getElementById('dlSleep')?.value||'23:00', wakeTime:document.getElementById('dlWake')?.value||'08:00'});
+    Store.set('daily_plans:' + d, [...document.querySelectorAll('[data-dl-plan]')].filter(x => x.checked).map(x => x.dataset.dlPlan));
+    const hint=document.getElementById('dailyAutoSaveHint'); if(hint) hint.textContent='已自动保存到本机 · '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
   },
   toggleMood(){ Store.set('daily_mood_collapsed', !Store.get('daily_mood_collapsed', true)); this.applyMoodCollapse(); },
   applyMoodCollapse(){ const c=Store.get('daily_mood_collapsed', true); const box=document.getElementById('dlMoodBox'); const caret=document.getElementById('moodCaret'); if(box) box.style.display=c?'none':''; if(caret) caret.style.transform=c?'rotate(-90deg)':''; },
@@ -2562,7 +2660,7 @@ const DailyLog = {
     this._pendingDate = null;
     /* 恢复标题 */
     const titleEl = document.querySelector('#page-daily .page-title');
-    if(titleEl) title.textContent = '每日记录';
+    if(titleEl) titleEl.textContent = '每日记录';
     Coin.checkDaily();
     if(text) Coin.checkMoodDiary();
     Home.render();
@@ -3896,9 +3994,14 @@ const CloudSync = {
     return h;
   },
   url(){ return Store.get('syncUrl','').trim(); },
+  validUrl(url){
+    try { return new URL(url).protocol === 'https:'; }
+    catch { return false; }
+  },
   async push(){
     const url=this.url();
     if(!url) return UI.toast('先在设置里填写同步地址');
+    if(!this.validUrl(url)) return UI.toast('同步地址必须是 https 链接');
     syncInfo.textContent='正在上传...';
     try{
       const r=await fetch(url,{method:'PUT',headers:this.headers(),body:JSON.stringify(Store.exportAll())});
@@ -3913,12 +4016,14 @@ const CloudSync = {
   async pull(){
     const url=this.url();
     if(!url) return UI.toast('先在设置里填写同步地址');
+    if(!this.validUrl(url)) return UI.toast('同步地址必须是 https 链接');
     if(!confirm('拉取云端数据会覆盖本机数据，确定吗？')) return;
     syncInfo.textContent='正在拉取...';
     try{
       const r=await fetch(url,{headers:this.headers()});
       if(!r.ok) throw new Error(r.status);
       const data=await r.json();
+      Store.rescue();
       Store.importAll(data);
       UI.toast('拉取成功，正在刷新');
       setTimeout(()=>location.reload(),800);
@@ -3932,8 +4037,26 @@ const CloudSync = {
  * 这样「安装到桌面」时用的就是用户自己的图标和名称。同时镜像到 localStorage 供 App 内显示。 */
 const AppCustom = {
   DB: 'bysdash-media', STORE: 'files', KEY: 'app_custom',
-  getName(){ const c = Store.get('_appCustom'); return c && c.name ? c.name : '小彘的工作台'; },
-  getShortName(){ const c = Store.get('_appCustom'); return c && c.shortName ? c.shortName : '小彘'; },
+  cleanText(v, max){ return String(v ?? '').replace(/[<>"'`]/g, '').trim().slice(0, max); },
+  cleanIcon(v){
+    const s = String(v || '').trim();
+    if(!/^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+/=]+$/i.test(s)) return '';
+    return s.length <= 1800000 ? s : '';
+  },
+  cleanCustom(c){
+    c = c && typeof c === 'object' ? c : {};
+    return {name:this.cleanText(c.name, 24), shortName:this.cleanText(c.shortName, 8), icon:this.cleanIcon(c.icon)};
+  },
+  getName(){ const c = this.cleanCustom(Store.get('_appCustom')); return c.name || '小彘的工作台'; },
+  getShortName(){ const c = this.cleanCustom(Store.get('_appCustom')); return c.shortName || '小彘'; },
+  apply(){
+    const name=this.getName(), short=this.getShortName();
+    document.title=name;
+    const top=document.getElementById('appTopTitle'); if(top) top.textContent=name;
+    const lock=document.getElementById('lockTitle'); if(lock) lock.textContent=name;
+    const apple=document.querySelector('meta[name="apple-mobile-web-app-title"]'); if(apple) apple.setAttribute('content', short);
+    const install=document.getElementById('pwaInstallBtn'); if(install) install.title='把' + name + '安装到桌面，像原生App一样使用';
+  },
   openIDB(){
     return new Promise((res, rej) => {
       const q = indexedDB.open(this.DB, 1);
@@ -3942,7 +4065,7 @@ const AppCustom = {
     });
   },
   async save(name, shortName, iconDataUrl){
-    const custom = { name: (name || '').trim(), shortName: (shortName || '').trim(), icon: iconDataUrl || '' };
+    const custom = this.cleanCustom({name, shortName, icon: iconDataUrl});
     try {
       const db = await this.openIDB();
       await new Promise((res, rej) => {
@@ -3952,6 +4075,7 @@ const AppCustom = {
       });
     } catch(e){ console.error('保存自定义外观到 IDB 失败', e); }
     Store.set('_appCustom', custom);
+    this.apply();
     return custom;
   },
   /* 把文件缩放到 size×size 正方形，返回 PNG data URL（用于自定义图标） */
@@ -3975,7 +4099,7 @@ const AppCustom = {
   },
   /* 在设置页渲染当前值 + 预览 */
   render(){
-    const c = Store.get('_appCustom') || {};
+    const c = this.cleanCustom(Store.get('_appCustom'));
     const n = document.getElementById('appName'); if(n) n.value = c.name || '';
     const s = document.getElementById('appShortName'); if(s) s.value = c.shortName || '';
     const prev = document.getElementById('appIconPrev');
@@ -3984,7 +4108,7 @@ const AppCustom = {
   async applyFromSettings(){
     const name = document.getElementById('appName')?.value || '';
     const shortName = document.getElementById('appShortName')?.value || '';
-    let icon = (Store.get('_appCustom') || {}).icon || '';
+    let icon = this.cleanCustom(Store.get('_appCustom')).icon || '';
     const fileInput = document.getElementById('appIconFile');
     if(fileInput && fileInput.files && fileInput.files[0]){
       try { icon = await this.fileToSquareDataUrl(fileInput.files[0], 512); }
@@ -3992,10 +4116,11 @@ const AppCustom = {
     }
     await this.save(name, shortName, icon);
     this.render();
-    UI.toast('✅ 已保存。重新打开/刷新一次本页，再安装就能用新名称和图标');
+    this.apply();
+    UI.toast('✅ 名称已生效。桌面图标名需删除旧图标后重新安装');
   },
   async clearIcon(){
-    const c = Store.get('_appCustom') || {};
+    const c = this.cleanCustom(Store.get('_appCustom'));
     await this.save(c.name || '', c.shortName || '', '');
     const fi = document.getElementById('appIconFile'); if(fi) fi.value = '';
     this.render();
@@ -4038,8 +4163,29 @@ const Settings = {
     const sh = document.getElementById('storageHint');
     if(sh) sh.textContent = u.quota ? ('本机可用空间约 ' + Util.bytes(u.quota) + '，目前用了 ' + Util.bytes(u.usage)) : '已使用 ' + Util.bytes(u.bytes) + ' 大仓库空间。';
   },
-  saveAI(){ Store.setSecret('ai',key_ai.value.trim()); Store.set('aiBase',aiBase.value.trim()||'https://api.deepseek.com/v1/chat/completions'); Store.set('aiModel',aiModel.value.trim()||'deepseek-chat'); UI.toast('AI 设置已保存'); },
-  saveSync(){ Store.set('syncUrl',syncUrl.value.trim()); Store.setSecret('syncToken',syncToken.value.trim()); UI.toast('同步设置已保存'); this.render(); }
+  cleanHttps(v, fallback=''){
+    const s = String(v || '').trim();
+    if(!s) return fallback;
+    try { const u = new URL(s); return u.protocol === 'https:' ? u.href : fallback; }
+    catch { return fallback; }
+  },
+  saveAI(){
+    const base = this.cleanHttps(aiBase.value, 'https://api.deepseek.com/v1/chat/completions');
+    Store.setSecret('ai',key_ai.value.trim());
+    Store.set('aiBase',base);
+    Store.set('aiModel',aiModel.value.trim()||'deepseek-chat');
+    if(aiBase.value.trim() && base !== aiBase.value.trim()) UI.toast('AI 地址已改回安全 https 地址');
+    else UI.toast('AI 设置已保存');
+    this.render();
+  },
+  saveSync(){
+    const url = this.cleanHttps(syncUrl.value, '');
+    Store.set('syncUrl',url);
+    Store.setSecret('syncToken',syncToken.value.trim());
+    if(syncUrl.value.trim() && !url) UI.toast('同步地址必须是 https 链接，已留空');
+    else UI.toast('同步设置已保存');
+    this.render();
+  }
 };
 const Lock = {
   hash(s){ let h=0; for(let i=0;i<s.length;i++) h=((h<<5)-h+s.charCodeAt(i))|0; return String(h); },
@@ -4115,4 +4261,3 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 </script>
 </body>
 </html>
-
