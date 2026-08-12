@@ -1942,7 +1942,8 @@ const Home = {
   topTiles(){
     const a=Store.get('home_top_tiles');
     if(!a){ Store.set('home_top_tiles', this.topDefaults()); return this.topDefaults(); }
-    return a.filter(id=>this.tileInfo(id));
+    const hidden = App.hiddenRoutes ? App.hiddenRoutes() : [];
+    return a.filter(id=>this.tileInfo(id) && !hidden.includes(id));
   },
   tileInfo(id){
     const fixed={
@@ -2052,7 +2053,7 @@ const Home = {
     if(id==='life') return `<div id="homeLifeSummary"></div><button class="btn ghost" style="margin-top:10px;width:100%" onclick="App.go('lifeAnalysis')">查看完整分析</button>`;
     return '';
   },
-  entryIds(){ return this.allEntryIds().filter(id=>!Store.get('home_hidden_entries',[]).includes(id)); },
+  entryIds(){ const hiddenRoutes=App.hiddenRoutes ? App.hiddenRoutes() : []; return this.allEntryIds().filter(id=>!Store.get('home_hidden_entries',[]).includes(id) && !hiddenRoutes.includes(id)); },
   /* 更多 = 文件夹：按日记 / 知识 / 生活 分三个抽屉，可收起展开，里面的小栏目能钉到首页顶部 */
   folderDefs(){ return [{key:'diary',icon:'🌙',title:'日记与自我'},{key:'knowledge',icon:'📚',title:'知识与积累'},{key:'life',icon:'🍲',title:'生活与日常'},{key:'other',icon:'🧺',title:'其他'}]; },
   folderOf(id){
