@@ -2439,17 +2439,15 @@ const DiaryBook = {
      合法左页：周一/周三/周五/周日（间距 2 天），左页为周日时右页是本周汇总（也是可翻的一页） */
   render(){
     if(!this.cur){
-      /* 初始对开页：尽量让「今天」出现在左或右；周一特例（昨天=周日会被吃成本周汇总）则直接以今天为左 */
-      const today=Util.today();
-      this.cur = this._dow(today)===1 ? today : Util.dateAdd(today,-1);
+      /* 初始对开页：把「今天」吸附到合法的左页（周一/三/五/日），像实体书一样成对出现 */
+      this.cur = this._leftOf(Util.today());
     }
     this._flipDir=0; this.updateDatePick(); this.initSwipe(); this.renderSpread(this.cur);
   },
   go(date, flipDir){
     if(date > this._today()){ date=this._today(); UI.toast('最远只能到今天。'); }
-    /* 让 date 落在展开的对开页里：周一/周日必须当左页（周日左页的右页就是本周汇总），其它日期当右页 */
-    const dow=this._dow(date);
-    this.cur = (dow===1||dow===7) ? date : Util.dateAdd(date,-1);
+    /* 让 date 吸附到合法的左页（周一/三/五/日；周日左页的右页就是本周汇总），像实体书一样成对 */
+    this.cur = this._leftOf(date);
     this._flipDir=flipDir || 0;
     this.updateDatePick();
     this.renderSpread(this.cur);
