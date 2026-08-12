@@ -449,6 +449,7 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .db-cal-dot{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:50%;margin:0 auto;cursor:pointer;transition:background .15s,color .15s}
 .db-cal-dot.today{background:#6b984f;color:#fff;font-weight:700}
 .db-cal-dot.has-data{background:#eaf2e2;color:#5b8c3c;font-weight:600}
+.db-cal-dot.future{color:#cfd6c8;background:transparent;cursor:not-allowed}
 .db-cal-dot.sel{background:#6b984f;color:#fff;box-shadow:0 0 0 2px #a8d18d}
 .db-cal-dot.other-month{color:#ccc}
 .db-date{font-size:15px;font-weight:600;color:#6b7d63;margin-bottom:10px;border-bottom:1px dashed #ddd;padding-bottom:8px}
@@ -976,97 +977,70 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
       </div>
       <div class="grid" id="lifeSummaryGrid" style="margin-top:14px"></div>
     </section><!-- ==== 功能：生活智能分析 END ==== --><!-- ==== 功能：设置 START ==== --><section class="page" id="page-settings">
-      <div class="page-title">设置</div><div class="page-sub">备份、恢复、AI key、本地密码锁和隐私说明。</div>
+      <div class="page-title">设置</div>
       <div class="card">
-        <h2>备份与导出</h2><p class="hint">JSON 用于恢复；Markdown 是人能读的日记本；CSV 可用表格软件打开。AI key 不会出现在任何备份里。</p>
+        <h2>备份与导出</h2>
         <select id="exportKind">
-          <option value="full">JSON 完整备份 · 含图片视频（推荐）</option>
-          <option value="json">JSON 轻备份 · 只含文字，体积小</option>
-          <option value="md">Markdown · 人能读的日记本</option>
-          <option value="csv">CSV · 表格软件打开</option>
+          <option value="full">完整备份 JSON · 含图片视频</option>
+          <option value="json">轻备份 JSON · 只含文字</option>
+          <option value="md">Markdown · 人能读的日记</option>
+          <option value="csv">CSV · 表格软件</option>
         </select>
-        <div class="row" style="margin-top:10px">
+        <div class="row" style="margin-top:8px">
           <button class="btn" onclick="Backup.export()">导出</button>
-          <button class="btn ghost" onclick="document.getElementById('importFile').click()">恢复备份</button>
+          <button class="btn ghost" onclick="document.getElementById('importFile').click()">恢复</button>
+          <button class="btn ghost small" onclick="Backup.restoreRescue()">急救快照</button>
         </div>
         <input id="importFile" type="file" accept=".json" style="display:none" onchange="Backup.importFile(this)">
-        <div class="row" style="margin-top:10px"><button class="btn ghost small" onclick="Backup.restoreRescue()">从急救快照恢复</button><span class="hint" id="rescueInfo"></span></div>
-        <p class="hint" id="backupInfo"></p>
-        <p class="hint">恢复时不会删掉备份里没有的内容，并且会自动留一份恢复前的急救快照，误操作也能救回来。</p>
+        <p class="hint" id="backupInfo"></p><span class="hint" id="rescueInfo"></span>
       </div>
       <div class="card">
-        <h2>每月自动备份</h2>
-        <p class="hint">每月第一次打开工作台时自动备份一次，内容是你从第一天起的全部数据。电脑上的 Chrome / Edge 可以直接选中 360AI 云盘的同步文件夹，自动写进去：<b>固定一份「小彘的工作台-备份.json」</b>（恢复就读它），同时把<b>带日期的副本</b>自动放进同文件夹下的「小彘的工作台-备份历史」子文件夹，每天一份、<b>永不覆盖旧日期的备份</b>——这就是"备份的备份"，平时不用看。如果当前工作台还没有任何记录，会自动跳过，<b>不会用空数据覆盖云盘里的有效备份</b>。手机浏览器不允许网页写入指定文件夹，会改成一键导出到下载目录，把 360AI 的同步目录设成下载目录即可。</p>
-        <div class="row" style="margin-top:10px">
-          <button class="btn" onclick="AutoBackup.pickFolder()">选择同步文件夹</button>
-          <button class="btn ghost" onclick="AutoBackup.runNow()">立即备份一次</button>
+        <h2>自动备份</h2>
+        <p class="hint">电脑可指定同步文件夹，每次写一份「小彘的工作台-备份.json」+ 历史副本，永不覆盖旧日期。</p>
+        <div class="row" style="margin-top:8px">
+          <button class="btn" onclick="AutoBackup.pickFolder()">选同步文件夹</button>
+          <button class="btn ghost" onclick="AutoBackup.runNow()">立即备份</button>
         </div>
-        <label style="margin-top:12px"><input type="checkbox" id="autoBackupOn" style="width:auto;min-height:auto;margin-right:6px">开启每月自动备份</label>
-        <button class="btn ghost small" style="margin-top:8px" onclick="AutoBackup.saveToggle()">保存开关</button>
-        <label style="margin-top:12px;display:block"><input type="checkbox" id="autoBackupExit" style="width:auto;min-height:auto;margin-right:6px" onchange="AutoBackup.saveExitToggle()">手机端：退出工作台时自动下载备份到本机下载目录</label>
-        <p class="hint">手机系统不允许网页直接写进指定文件夹。最稳的做法：用上面的「立即备份一次」导出到下载目录，再把你的云盘 App 同步目录设成下载目录。开启上面这项后，退出页面会尽量自动下载一份（部分手机浏览器会拦截自动下载，那时用按钮更稳）。</p>
+        <label style="margin-top:10px"><input type="checkbox" id="autoBackupOn" style="width:auto;min-height:auto;margin-right:6px">每月自动备份</label>
+        <button class="btn ghost small" style="margin-left:6px" onclick="AutoBackup.saveToggle()">保存</button>
+        <label style="margin-top:10px;display:block"><input type="checkbox" id="autoBackupExit" style="width:auto;min-height:auto;margin-right:6px" onchange="AutoBackup.saveExitToggle()">手机端：退出时自动下载备份到下载目录</label>
         <p class="hint" id="autoBackupInfo"></p>
       </div>
       <div class="card">
         <h2>存储空间</h2>
-        <p class="hint">从 v27 起，文字记录和图片视频都存进同一个本机大仓库 IndexedDB，不再受旧版 localStorage 约 5 MB 的限制——正常写几年日记都用不完。系统仍可能清理长期不用的站点数据，所以重要数据请定期备份。</p>
-        <div style="margin-top:10px">
-          <div class="kv"><span>全部文字记录（IndexedDB 大仓库）</span><b id="lsUsage">-</b></div>
-          <div class="meter" id="lsMeter"><span></span></div>
-        </div>
-        <div style="margin-top:12px">
-          <div class="kv"><span>图片视频（IndexedDB 大仓库）</span><b id="idbUsage">-</b></div>
-          <div class="meter" id="idbMeter"><span></span></div>
-        </div>
-        <div class="kv" style="margin-top:10px"><span>大仓库文件数</span><b id="mediaCount">-</b></div>
-        <button class="btn ghost" style="margin-top:10px;width:100%" onclick="Media.migrateLegacy()">把旧图片搬进大仓库，释放空间</button>
-        <button class="btn ghost" style="margin-top:8px;width:100%" onclick="Media.cleanOrphans()">清理没人用的残留文件</button>
-        <p class="hint" id="storageHint"></p>
+        <div class="kv"><span>本机大仓库（IndexedDB）</span><b id="storeUsage">-</b></div>
+        <div class="meter" id="storeMeter"><span></span></div>
+        <p class="hint" style="margin-top:4px"><span id="storeDetail">-</span></p>
+        <button class="btn ghost" style="margin-top:8px;width:100%" onclick="Media.cleanOrphans()">清理残留</button>
+        <p class="hint">无 5 MB 限制，定期备份即可。</p>
       </div>
       <div class="card">
-        <h2>AI 自动分析</h2>
-        <label>API key</label>
-        <input type="password" id="key_ai" placeholder="粘贴你的 key">
-        <label>接口地址</label>
-        <input id="aiBase" placeholder="https://api.deepseek.com/v1/chat/completions">
-        <label>模型</label>
-        <input id="aiModel" placeholder="deepseek-chat">
-        <button class="btn" style="margin-top:10px;width:100%" onclick="Settings.saveAI()">保存 AI 设置</button>
-        <p class="hint">点击分析时，相关文本会发送给你配置的 AI 服务商；平时记录只存在本机。</p>
-      </div>
-      <div class="card">
-        <h2>云端同步</h2><p class="hint">离线时所有功能照常用；联网后可手动同步。这里需要你提供一个支持 GET/PUT 的私有 JSON 同步地址，或后续再接 Supabase / Cloudflare Worker。</p>
-        <label>同步地址</label>
-        <input id="syncUrl" placeholder="https://你的同步服务/sync.json">
-        <label>访问令牌，可选</label>
-        <input type="password" id="syncToken" placeholder="如果你的同步服务需要 token">
-        <div class="row" style="margin-top:10px">
-          <button class="btn" onclick="CloudSync.push()">上传本机数据</button>
-          <button class="btn ghost" onclick="CloudSync.pull()">拉取云端数据</button>
-        </div>
-        <button class="btn ghost" style="margin-top:8px;width:100%" onclick="Settings.saveSync()">保存同步设置</button>
-        <p class="hint" id="syncInfo"></p>
+        <h2>AI 分析</h2>
+        <input type="password" id="key_ai" placeholder="API key">
+        <input id="aiBase" placeholder="接口地址：https://api.deepseek.com/v1/chat/completions">
+        <input id="aiModel" placeholder="模型：deepseek-chat">
+        <button class="btn" style="margin-top:10px;width:100%" onclick="Settings.saveAI()">保存</button>
+        <p class="hint">点击分析时文本会发给你配置的 AI 服务商；平时只存在本机。</p>
       </div>
       <div class="card">
         <h2>本地密码锁</h2>
-        <input type="password" id="newPassword" placeholder="设置或修改本地密码">
-        <div class="row" style="margin-top:10px">
+        <input type="password" id="newPassword" placeholder="设置本地密码">
+        <div class="row" style="margin-top:8px">
           <button class="btn" onclick="Lock.setPassword()">启用/修改</button>
-          <button class="btn ghost" onclick="Lock.disable()">关闭密码锁</button>
+          <button class="btn ghost" onclick="Lock.disable()">关闭</button>
         </div>
-        <p class="hint">这是本地弱保护，主要防止别人随手打开看到内容。忘记密码只能清浏览器数据后重新开始。</p>
       </div>
       <div class="card">
-        <h2>App 外观（安装到桌面的名称）</h2>
-        <p class="hint">这里的名称会用在「安装到桌面」后的 App 上。改完点保存，刷新一次本页再安装即可生效。不填则用默认「小彘的工作台」。图标已改为固定一张，不再支持自定义。</p>
-        <label>App 名称（桌面显示的全名）</label>
-        <input id="appName" placeholder="小彘的工作台" maxlength="20">
-        <label>简称（手机桌面上图标下方的字，建议 4 字内）</label>
-        <input id="appShortName" placeholder="小彘" maxlength="6">
-        <button class="btn" style="margin-top:12px;width:100%" onclick="AppCustom.applyFromSettings()">保存外观设置</button>
+        <h2>App 名称（安装到桌面后显示）</h2>
+        <input id="appName" placeholder="默认：小彘的工作台" maxlength="20">
+        <input id="appShortName" placeholder="简称（4 字内），默认：小彘" maxlength="6" style="margin-top:8px">
+        <button class="btn" style="margin-top:10px;width:100%" onclick="AppCustom.applyFromSettings()">保存</button>
+        <p class="hint">改完得删掉旧桌面图标再重新安装，新名字才会生效。</p>
       </div>
       <div class="card">
-        <h2>隐私说明</h2><p class="hint">你的日记、追踪、份子钱、菜谱等数据默认只存在当前手机浏览器。添加到桌面后仍然是同一份本地数据。换手机前请先导出 JSON 备份。</p>
+        <h2>关于</h2>
+        <p class="hint">数据只存在当前手机浏览器。换手机前先导出 JSON 备份。</p>
+        <p class="hint" id="buildInfo"></p>
       </div>
     </section><!-- ==== 功能：设置 END ==== -->
   </main>
@@ -1101,7 +1075,7 @@ const Store = (() => {
       /* 图标自定义已下线，导入老备份时直接丢掉图标；名称与短名称照旧清洗 */
       return {name: cleanText(c.name, 24), shortName: cleanText(c.shortName, 8), icon: ''};
     }
-    if(key === 'aiBase' || key === 'syncUrl') return cleanHttpsUrl(value);
+    if(key === 'aiBase') return cleanHttpsUrl(value);
     return value;
   };
   const _lsGet = k => { try { const raw = localStorage.getItem(k); return raw == null ? null : JSON.parse(raw); } catch { return null; } };
@@ -1752,7 +1726,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-12-v28';
+const BUILD_VERSION = '2026-08-12-v29';
 const App = {
   current:'home',
   booting:true,
@@ -2470,17 +2444,37 @@ const DiaryBook = {
   cur:null,
   weekMode:false,
   _flipDir:0, /* -1=向后翻(上一页), +1=向前翻(下一页) */
-  render(){ if(!this.cur) this.cur=Util.today(); this.weekMode=false; this._flipDir=0; const b=document.getElementById('dbWeekBtn'); if(b) b.textContent='本周汇总'; const dp=document.getElementById('dbDatePick'); if(dp) dp.value=this.cur; this.renderSpread(this.cur); },
-  go(date){ this.cur=date; this.weekMode=false; this._flipDir=0; const b=document.getElementById('dbWeekBtn'); if(b) b.textContent='本周汇总'; const dp=document.getElementById('dbDatePick'); if(dp) dp.value=date; this.renderSpread(date); },
+  render(){ if(!this.cur) this.cur=Util.today(); this._flipDir=0; this.updateDatePick(); this.initSwipe(); this.renderSpread(this.cur); },
+  go(date, flipDir){ if(date > this._today()){ date=this._today(); UI.toast('最远只能到今天。'); } this.cur=date; this.weekMode=false; this._flipDir=flipDir || 0; this.updateDatePick(); this.renderSpread(date); },
   goDaily(date){ DailyLog._pendingDate=date; App.go('daily'); },
-  prev(){ this._flipDir=-1; if(this.weekMode){ this.cur=Util.dateAdd(this.cur,-7); this.renderWeek(this.cur); } else { this.go(Util.dateAdd(this.cur,-1)); } },
-  next(){ this._flipDir=1; if(this.weekMode){ this.cur=Util.dateAdd(this.cur,7); this.renderWeek(this.cur); } else { this.go(Util.dateAdd(this.cur,1)); } },
+  prev(){
+    this._flipDir=-1;
+    if(this.weekMode){ this.cur=Util.dateAdd(this.cur,-7); this.updateDatePick(); this.renderWeek(this.cur); }
+    else { this.cur=Util.dateAdd(this.cur,-1); this.updateDatePick(); this.renderSpread(this.cur); }
+  },
+  next(){
+    if(this.cur >= this._today()) return this._atEnd();
+    this._flipDir=1;
+    if(this.weekMode){ this.cur=Util.dateAdd(this.cur,7); this.updateDatePick(); this.renderWeek(this.cur); }
+    else { this.cur=Util.dateAdd(this.cur,1); this.updateDatePick(); this.renderSpread(this.cur); }
+  },
+  _today(){ return Util.today(); },
+  _atEnd(){ UI.toast('最远能写到今天，往后的日历还没翻开。'); },
+  updateDatePick(){ const b=document.getElementById('dbWeekBtn'); if(b) b.textContent=this.weekMode?'返回当日':'本周汇总'; const dp=document.getElementById('dbDatePick'); if(dp){ dp.value=this.cur; dp.max=this._today(); } },
   toggleWeek(){
     this.weekMode=!this.weekMode;
     this._flipDir=0;
-    const b=document.getElementById('dbWeekBtn');
-    if(this.weekMode){ if(b) b.textContent='返回当日'; this.renderWeek(this.cur); }
-    else { if(b) b.textContent='本周汇总'; this.renderSpread(this.cur); }
+    this.updateDatePick();
+    if(this.weekMode) this.renderWeek(this.cur);
+    else this.renderSpread(this.cur);
+  },
+  initSwipe(){
+    const sp=document.getElementById('bookSpread'); if(!sp || sp._swipeBound) return; sp._swipeBound=true;
+    let sx=0, sy=0, st=0, dx=0, dy=0, active=false, locked=false;
+    const TH=44, VMAX=900;
+    sp.addEventListener('touchstart', e=>{ const t=e.touches[0]; sx=t.clientX; sy=t.clientY; st=Date.now(); dx=0; dy=0; active=true; locked=false; }, {passive:true});
+    sp.addEventListener('touchmove', e=>{ if(!active) return; const t=e.touches[0]; dx=t.clientX-sx; dy=t.clientY-sy; if(!locked){ if(Math.abs(dx)>8 && Math.abs(dx)>Math.abs(dy)*1.5) locked='h'; else if(Math.abs(dy)>8 && Math.abs(dy)>Math.abs(dx)*1.5) locked='v'; } }, {passive:true});
+    sp.addEventListener('touchend', ()=>{ if(active && locked==='h'){ const dt=Date.now()-st; if(Math.abs(dx)>=TH && dt<VMAX){ if(dx<0) this.next(); else this.prev(); } } active=false; locked=false; });
   },
   mondayOf(date){ const d=new Date(date+'T00:00:00'); const dw=d.getDay()||7; return Util.dateAdd(date, 1-dw); },
   dayData(date){
@@ -2539,8 +2533,10 @@ const DiaryBook = {
       const dd=this.dayData(ds);
       const isToday=ds===today;
       const isSel=ds===selDate;
-      cls='db-cal-dot'+(isToday?' today':'')+(dd.has&&!isToday?' has-data':'')+(isSel?' sel':'');
-      html+=`<div class="${cls}" onclick="DiaryBook.go('${ds}')">${d}</div>`;
+      const isFuture=ds>today;
+      cls='db-cal-dot'+(isToday?' today':'')+(dd.has&&!isToday?' has-data':'')+(isSel?' sel':'')+(isFuture?' future':'');
+      const h=isFuture?'':`onclick="DiaryBook.go('${ds}')"`;
+      html+=`<div class="${cls}" ${h}>${d}</div>`;
     }
     const total=startDow+daysInMonth;
     const rem=total%7?(7-total%7):0;
@@ -4151,53 +4147,7 @@ const Backup = {
     setTimeout(() => location.reload(), 800);
   }
 };
-const CloudSync = {
-  headers(){
-    const h={'Content-Type':'application/json'};
-    const token=Store.getSecret('syncToken');
-    if(token) h.Authorization='Bearer '+token;
-    return h;
-  },
-  url(){ return Store.get('syncUrl','').trim(); },
-  validUrl(url){
-    try { return new URL(url).protocol === 'https:'; }
-    catch { return false; }
-  },
-  async push(){
-    const url=this.url();
-    if(!url) return UI.toast('先在设置里填写同步地址');
-    if(!this.validUrl(url)) return UI.toast('同步地址必须是 https 链接');
-    syncInfo.textContent='正在上传...';
-    try{
-      const r=await fetch(url,{method:'PUT',headers:this.headers(),body:JSON.stringify(Store.exportAll())});
-      if(!r.ok) throw new Error(r.status);
-      Store.set('_lastCloudSync',Date.now());
-      syncInfo.textContent='上传成功：'+new Date().toLocaleString('zh-CN');
-      UI.toast('云端同步完成');
-    }catch(e){
-      syncInfo.textContent='上传失败。这个地址可能不支持浏览器 PUT / CORS。离线数据仍然安全保存在本机。';
-    }
-  },
-  async pull(){
-    const url=this.url();
-    if(!url) return UI.toast('先在设置里填写同步地址');
-    if(!this.validUrl(url)) return UI.toast('同步地址必须是 https 链接');
-    if(!confirm('拉取云端数据会覆盖本机数据，确定吗？')) return;
-    syncInfo.textContent='正在拉取...';
-    try{
-      const r=await fetch(url,{headers:this.headers()});
-      if(!r.ok) throw new Error(r.status);
-      const data=await r.json();
-      Store.rescue();
-      Store.importAll(data);
-      UI.toast('拉取成功，正在刷新');
-      setTimeout(()=>location.reload(),800);
-    }catch(e){
-      syncInfo.textContent='拉取失败。请检查同步地址、令牌或跨域设置。';
-    }
-  }
-};
-/* ==== 功能：App 外观自定义（名称 + 图标） ==== *
+/* ==== 功能：App 外观自定义（名称） ==== *
  * 自定义内容存 IndexedDB（key=app_custom），由 Service Worker 在拦截 manifest.json 时读取，
  * 这样「安装到桌面」时用的就是用户自己的图标和名称。同时镜像到 localStorage 供 App 内显示。 */
 const AppCustom = {
@@ -4262,32 +4212,27 @@ const Settings = {
     key_ai.value=Store.getSecret('ai')||'';
     aiBase.value=Store.get('aiBase','https://api.deepseek.com/v1/chat/completions');
     aiModel.value=Store.get('aiModel','deepseek-chat');
-    syncUrl.value=Store.get('syncUrl','');
-    syncToken.value=Store.getSecret('syncToken')||'';
-    syncInfo.textContent = Store.get('_lastCloudSync') ? '上次云同步：'+new Date(Store.get('_lastCloudSync')).toLocaleString('zh-CN') : '还没有云同步。';
     AppCustom.render();
     this.renderStorage();
   },
-  /* 刷新“存储空间”卡片：小仓库（文字）与大仓库（图片视频）用量、文件数 */
+  /* 刷新「存储空间」卡片：把文字记录 + 图片视频的 IDB 用量合并显示，总量 = lsBytes + u.bytes */
   async renderStorage(){
     const lsBytes = Store.usedBytes();
-    const lsEl = document.getElementById('lsUsage');
-    if(lsEl) lsEl.textContent = Util.bytes(lsBytes) + '（IndexedDB 大仓库，无 5 MB 限制）';
-    const lsMeter = document.getElementById('lsMeter');
-    if(lsMeter && lsMeter.firstElementChild) lsMeter.firstElementChild.style.width = Math.min(100, lsBytes / (50*1024*1024) * 100).toFixed(1) + '%';
-    if(!Media.supported()){
-      const idbEl = document.getElementById('idbUsage'); if(idbEl) idbEl.textContent = '不支持';
-      const mc = document.getElementById('mediaCount'); if(mc) mc.textContent = '-';
-      const sh = document.getElementById('storageHint'); if(sh) sh.textContent = '当前浏览器不支持大仓库，图片会占用本机文字仓库，建议用 Chrome / Edge 打开。';
-      return;
+    let mediaBytes = 0, mediaCount = 0, quota = 0, usage = 0, supported = Media.supported();
+    if(supported){
+      const u = await Media.usage().catch(() => ({bytes:0, count:0, quota:0, usage:0}));
+      mediaBytes = u.bytes || 0; mediaCount = u.count || 0; quota = u.quota || 0; usage = u.usage || 0;
     }
-    const u = await Media.usage().catch(() => ({bytes:0, count:0, quota:0, usage:0}));
-    const idbEl = document.getElementById('idbUsage'); if(idbEl) idbEl.textContent = Util.bytes(u.bytes);
-    const idbMeter = document.getElementById('idbMeter');
-    if(idbMeter && idbMeter.firstElementChild && u.quota) idbMeter.firstElementChild.style.width = Math.min(100, u.usage / u.quota * 100).toFixed(1) + '%';
-    const mc = document.getElementById('mediaCount'); if(mc) mc.textContent = u.count + ' 个文件';
-    const sh = document.getElementById('storageHint');
-    if(sh) sh.textContent = u.quota ? ('本机可用空间约 ' + Util.bytes(u.quota) + '，目前用了 ' + Util.bytes(u.usage)) : '已使用 ' + Util.bytes(u.bytes) + ' 大仓库空间。';
+    const total = (lsBytes||0) + mediaBytes;
+    const el = document.getElementById('storeUsage');
+    if(el) el.textContent = (supported ? '' : '当前浏览器不支持大仓库 · ') + Util.bytes(total) + (mediaCount ? ' · ' + mediaCount + ' 个文件' : '');
+    const meter = document.getElementById('storeMeter');
+    const base = Math.max(50*1024*1024, quota);
+    if(meter && meter.firstElementChild) meter.firstElementChild.style.width = (quota ? Math.min(100, usage/base*100) : Math.min(100, total/(50*1024*1024)*100)).toFixed(1) + '%';
+    const det = document.getElementById('storeDetail');
+    if(det) det.textContent = supported ? '文字 ' + Util.bytes(lsBytes) + ' · 媒体 ' + Util.bytes(mediaBytes) + (quota ? ' · 浏览器可用 ' + Util.bytes(quota) : '') : '建议用 Chrome / Edge 打开';
+    const bi = document.getElementById('buildInfo');
+    if(bi) bi.textContent = '当前版本：' + BUILD_VERSION;
   },
   cleanHttps(v, fallback=''){
     const s = String(v || '').trim();
@@ -4302,14 +4247,6 @@ const Settings = {
     Store.set('aiModel',aiModel.value.trim()||'deepseek-chat');
     if(aiBase.value.trim() && base !== aiBase.value.trim()) UI.toast('AI 地址已改回安全 https 地址');
     else UI.toast('AI 设置已保存');
-    this.render();
-  },
-  saveSync(){
-    const url = this.cleanHttps(syncUrl.value, '');
-    Store.set('syncUrl',url);
-    Store.setSecret('syncToken',syncToken.value.trim());
-    if(syncUrl.value.trim() && !url) UI.toast('同步地址必须是 https 链接，已留空');
-    else UI.toast('同步设置已保存');
     this.render();
   }
 };
