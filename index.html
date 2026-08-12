@@ -206,7 +206,7 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .habit-grid{display:grid;grid-auto-rows:22px;gap:6px;align-items:center;width:max-content;min-width:100%}
 .habit-label{position:sticky;left:0;z-index:2;min-width:92px;max-width:112px;background:rgba(255,253,248,.94);font-size:12px;font-weight:800;color:var(--text);padding-right:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .habit-count{font-size:11px;color:var(--accent);font-weight:800;margin-left:4px}
-.habit-day{width:18px;height:18px;border-radius:5px;background:rgba(41,54,42,.08);display:grid;place-items:center;font-size:11px;color:rgba(41,54,42,.36)}
+.habit-day{min-width:18px;height:18px;border-radius:5px;background:rgba(41,54,42,.08);display:grid;place-items:center;font-size:11px;color:rgba(41,54,42,.36)}
 .habit-day.on{background:#779679;color:#fff}
 .habit-day.mood{background:rgba(200,83,70,.11);color:var(--accent-2);font-size:13px}
 .habit-date{font-size:10px;color:var(--text-dim);text-align:center;align-self:end}
@@ -527,7 +527,6 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
     <h1 id="welcomeTitle">嗨，小彘</h1>
     <p id="welcomeText" style="position:relative">
       你今天真棒，能打开这里就已经是在照顾自己了。
-      <button class="wp-btn" id="wpBtn" onclick="Welcome.setWallpaper()" title="换一张Bing每日壁纸">🔄</button>
       <button class="wp-btn" id="wpUploadBtn" onclick="Welcome.uploadWallpaper()" title="上传你自己的图片作为欢迎页背景">📷</button>
     </p>
     <div style="display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap">
@@ -762,7 +761,6 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
       <div id="dbCalendar" class="db-cal-wrap"></div>
       <div class="book-bar">
         <button class="btn ghost small" onclick="DiaryBook.go(Util.today())">回到今天</button>
-        <button class="btn ghost small" id="dbWeekBtn" onclick="DiaryBook.toggleWeek()">本周汇总</button>
       </div>
     </section><!-- ==== 功能：日记本 END ==== --><!-- ==== 功能：个人认知库 START ==== --><section class="page" id="page-self">
       <div class="page-title">个人认知库</div><div class="page-sub">优点、喜欢/不喜欢、关键词、边界，以及能控制和不能控制的事情。</div>
@@ -1002,7 +1000,7 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
       </div>
       <div class="card">
         <h2>自动备份</h2>
-        <p class="hint">电脑可指定同步文件夹，每次写一份「小彘的工作台-备份.json」+ 历史副本，永不覆盖旧日期。</p>
+        <p class="hint">电脑可指定同步文件夹，每次写一份「小彘的工作台-备份.json」+ 历史副本，并把原图按 日记/灵感/生活 分进「小彘图片」文件夹，永不覆盖旧日期。</p>
         <div class="row" style="margin-top:8px">
           <button class="btn" onclick="AutoBackup.pickFolder()">选同步文件夹</button>
           <button class="btn ghost" onclick="AutoBackup.runNow()">立即备份</button>
@@ -1017,6 +1015,7 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
         <div class="kv"><span>本机大仓库（IndexedDB）</span><b id="storeUsage">-</b></div>
         <div class="meter" id="storeMeter"><span></span></div>
         <p class="hint" style="margin-top:4px"><span id="storeDetail">-</span></p>
+        <div id="storeWarn" style="display:none;margin-top:8px;padding:10px 12px;border-radius:10px;font-size:13px;line-height:1.6"></div>
         <button class="btn ghost" style="margin-top:8px;width:100%" onclick="Media.cleanOrphans()">清理残留</button>
         <p class="hint">无 5 MB 限制，定期备份即可。</p>
       </div>
@@ -1268,6 +1267,8 @@ const Util = {
   byUse(scope, items){ const f=Store.get('freq_'+scope,{}); return [...items].sort((a,b)=>(f[b]||0)-(f[a]||0) || String(a).localeCompare(String(b),'zh-CN')); },
   options(scope, items, current=''){ return this.byUse(scope, items).map(x=>`<option value="${this.esc(x)}" ${x===current?'selected':''}>${this.esc(x)}</option>`).join(''); },
   sortSelect(id, scope){ const el=document.getElementById(id); if(!el) return; const val=el.value; const opts=[...el.options].map(o=>({value:o.value,text:o.textContent})); opts.sort((a,b)=>(Store.get('freq_'+scope,{})[b.value]||0)-(Store.get('freq_'+scope,{})[a.value]||0)); el.innerHTML=opts.map(o=>`<option value="${this.esc(o.value)}">${this.esc(o.text)}</option>`).join(''); el.value=val; },
+  /* 生成一张媒体缩略图标签（优先 data-media 引用大仓库原件，openFull 看原图） */
+  mediaImg(id, alt=''){ return id ? `<img class="thumb" data-media="${id}" alt="${alt}" onclick="Media.openFull('${id}')">` : ''; },
   compressImage(file, maxW = 900, quality = .72){
     return new Promise((resolve, reject) => {
       if (!file) return resolve('');
@@ -1410,14 +1411,18 @@ const Media = {
     });
   },
   /* 保存一个文件：原件 + 缩略图，返回 {id,name,type,size} */
-  async save(file){
+  async save(file, category){
     if(!file) return null;
     if(!this.supported()){ UI.toast('这个浏览器不支持大仓库，图片将不会保存'); return null; }
     const id = 'm_' + Util.uid();
-    await this.put(id, file, {name:file.name, type:file.type, size:file.size});
+    /* 原件整张存（原图），缩略图只用于列表显示；category 用于备份时分类到 日记/灵感/生活 文件夹 */
+    await this.put(id, file, {name:file.name, type:file.type, size:file.size, category:category||''});
     const thumb = file.type.startsWith('image/') ? await Util.thumbBlob(file) : await Util.videoThumb(file);
     if(thumb) await this.put(id + ':thumb', thumb, {type:'image/jpeg', of:id});
-    return {id, name:file.name, type:file.type, size:file.size};
+    return {id, name:file.name, type:file.type, size:file.size, category:category||''};
+  },
+  extOf(type){
+    return ({'image/jpeg':'.jpg','image/jpg':'.jpg','image/png':'.png','image/gif':'.gif','image/webp':'.webp','image/bmp':'.bmp','video/mp4':'.mp4','video/webm':'.webm','video/quicktime':'.mov'})[type] || '.bin';
   },
   async objectUrl(id){
     if(this._urls[id]) return this._urls[id];
@@ -1744,7 +1749,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-12-v30';
+const BUILD_VERSION = '2026-08-12-v31';
 const App = {
   current:'home',
   booting:true,
@@ -1873,14 +1878,9 @@ const Welcome = {
     const msg = cached ? cached : await this.build(day).catch(()=>this.fallback(day));
     welcomeTitle.textContent = '嗨，' + AppCustom.getShortName();
     welcomeText.textContent = msg.text;
-    /* 壁纸优先级：用户自定义 > 缓存 > 默认石榴树图 */
+    /* 壁纸优先级：用户自定义 > 默认石榴树图（联网每日壁纸已移除，改为纯本地、不依赖外部网络） */
     const custom = Store.get('welcome_custom_wallpaper');
-    if(custom){ this.applyWallpaper(custom); }
-    else{
-      const wp = Store.get('welcome_wallpaper');
-      if(wp && wp.url) this.applyWallpaper(wp.url);
-      else this.applyWallpaper(this.DEFAULT_WALLPAPER);
-    }
+    this.applyWallpaper(custom || this.DEFAULT_WALLPAPER);
     welcomeScreen.classList.add('on');
   },
   fallback(day){
@@ -1908,30 +1908,6 @@ const Welcome = {
     return {text:(a||text)+'\n'+(b||''), quote:a||text};
   },
   refresh(){ this.build(Util.today()).then(msg => { welcomeText.textContent = msg.text; }).catch(()=>{}); },
-  async setWallpaper(){
-    const btn = document.getElementById('wpBtn');
-    if(btn){ btn.classList.add('loading'); }
-    const day = Util.today();
-    /* 强制刷新：不读今日缓存，重新拉取 */
-    try{
-      const r = await fetch('https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=zh-CN');
-      if(!r.ok) throw new Error('HTTP '+r.status);
-      const d = await r.json();
-      const url = d.images?.[0]?.url;
-      if(url){
-        const full = 'https://www.bing.com' + url;
-        Store.set('welcome_wallpaper', {date:day, url:full});
-        this.applyWallpaper(full);
-        if(btn){ btn.classList.remove('loading'); }
-        return;
-      }
-      throw new Error('无图片数据');
-    }catch(e){
-      if(btn){ btn.classList.remove('loading'); }
-      /* 静默失败，保持当前背景不变 */
-      console.warn('壁纸获取失败:', e.message);
-    }
-  },
   applyWallpaper(url){
     if(welcomeScreen) welcomeScreen.style.background = `linear-gradient(rgba(20,40,22,.35),rgba(20,40,22,.55)), center/cover no-repeat url("${url}")`;
   },
@@ -2060,8 +2036,8 @@ const Home = {
       {id:'tasks',size:'wide',collapsed:false},
       {id:'tracker',size:'wide',collapsed:false},
       {id:'life',size:'wide',collapsed:false},
-      {id:'entries',size:'wide',collapsed:false},
-      {id:'wheel',size:'wide',collapsed:false}
+      {id:'wheel',size:'wide',collapsed:false},
+      {id:'entries',size:'wide',collapsed:false}
     ];
   },
   widgets(){
@@ -2330,15 +2306,12 @@ const Success = {
   },
   async uploadGratitude(){
     const f=document.getElementById('successImgFile')?.files?.[0]; if(!f) return UI.toast('先选一张图片');
-    const dataUrl=await Util.compressImage(f, 900).catch(()=>'');
-    if(!dataUrl) return UI.toast('图片读不了');
-    const blob=Util.dataUrlToBlob(dataUrl);
-    const rec=await Media.save(blob).catch(()=>null);
+    const rec=await Media.save(f, 'diary').catch(()=>null);
     if(!rec) return UI.toast('大仓库不可用，图片没存上');
     const s=Store.get(this.key(),{});
     Store.set(this.key(), {...s, images:[...(s.images||[]), rec.id]});
     document.getElementById('successImgFile').value='';
-    this.renderImages(); UI.toast('已添加一张感恩瞬间');
+    this.renderImages(); UI.toast('已存原图：一张感恩瞬间');
   },
   removeImage(id){
     Store.set(this.key(), {...Store.get(this.key(),{}), images:(Store.get(this.key(),{}).images||[]).filter(x=>x!==id)});
@@ -2462,30 +2435,56 @@ const DiaryBook = {
   cur:null,
   weekMode:false,
   _flipDir:0, /* -1=向后翻(上一页), +1=向前翻(下一页) */
-  render(){ if(!this.cur) this.cur=Util.today(); this._flipDir=0; this.updateDatePick(); this.initSwipe(); this.renderSpread(this.cur); },
-  go(date, flipDir){ if(date > this._today()){ date=this._today(); UI.toast('最远只能到今天。'); } this.cur=date; this.weekMode=false; this._flipDir=flipDir || 0; this.updateDatePick(); this.renderSpread(date); },
+  /* cur = 当前展开页的左页日期（实体书式：每翻一页 = 整张对开页换一对）
+     合法左页：周一/周三/周五/周日（间距 2 天），左页为周日时右页是本周汇总（也是可翻的一页） */
+  render(){
+    if(!this.cur){
+      /* 初始对开页：尽量让「今天」出现在左或右；周一特例（昨天=周日会被吃成本周汇总）则直接以今天为左 */
+      const today=Util.today();
+      this.cur = this._dow(today)===1 ? today : Util.dateAdd(today,-1);
+    }
+    this._flipDir=0; this.updateDatePick(); this.initSwipe(); this.renderSpread(this.cur);
+  },
+  go(date, flipDir){
+    if(date > this._today()){ date=this._today(); UI.toast('最远只能到今天。'); }
+    /* 让 date 落在展开的对开页里：周一/周日必须当左页（周日左页的右页就是本周汇总），其它日期当右页 */
+    const dow=this._dow(date);
+    this.cur = (dow===1||dow===7) ? date : Util.dateAdd(date,-1);
+    this._flipDir=flipDir || 0;
+    this.updateDatePick();
+    this.renderSpread(this.cur);
+  },
   goDaily(date){ DailyLog._pendingDate=date; App.go('daily'); },
+  /* 周几：返回 1..7（周一=1，周日=7） */
+  _dow(date){ const d=new Date(date+'T00:00:00'); const g=d.getDay(); return g===0?7:g; },
+  _isSunday(date){ return this._dow(date)===7; },
+  /* 把任意日期吸附到合法的"左页"：左页必须是周一/三/五/日；周二/四/六回退一天 */
+  _leftOf(date){
+    const dow=this._dow(date);
+    if(dow===2||dow===4||dow===6) return Util.dateAdd(date,-1);
+    return date;
+  },
   prev(){
     this._flipDir=-1;
-    if(this.weekMode){ this.cur=Util.dateAdd(this.cur,-7); this.updateDatePick(); this.renderWeek(this.cur); }
-    else { this.cur=Util.dateAdd(this.cur,-1); this.updateDatePick(); this.renderSpread(this.cur); }
+    /* 实体书 2 页翻：合法左页间距 +2（Mon↔Wed↔Fri↔Sun），唯独 Mon→Sun 是 -1（同一周末边界） */
+    const newLeft = this._dow(this.cur)===1 ? Util.dateAdd(this.cur,-1) : Util.dateAdd(this.cur,-2);
+    this.cur=newLeft;
+    this.updateDatePick();
+    this.renderSpread(this.cur);
   },
   next(){
-    if(this.cur >= this._today()) return this._atEnd();
+    /* 实体书 2 页翻：合法左页间距 +2，唯独 Sun→Mon 是 +1（周日对开页右页是汇总，下一对开页才是 Mon|Tue） */
+    const newLeft = this._isSunday(this.cur) ? Util.dateAdd(this.cur,1) : Util.dateAdd(this.cur,2);
+    if(this._isSunday(newLeft)){ if(newLeft > this._today()) return this._atEnd(); }
+    else { if(Util.dateAdd(newLeft,1) > this._today()) return this._atEnd(); }
     this._flipDir=1;
-    if(this.weekMode){ this.cur=Util.dateAdd(this.cur,7); this.updateDatePick(); this.renderWeek(this.cur); }
-    else { this.cur=Util.dateAdd(this.cur,1); this.updateDatePick(); this.renderSpread(this.cur); }
+    this.cur=newLeft;
+    this.updateDatePick();
+    this.renderSpread(this.cur);
   },
   _today(){ return Util.today(); },
   _atEnd(){ UI.toast('最远能写到今天，往后的日历还没翻开。'); },
-  updateDatePick(){ const b=document.getElementById('dbWeekBtn'); if(b) b.textContent=this.weekMode?'返回当日':'本周汇总'; const dp=document.getElementById('dbDatePick'); if(dp){ dp.value=this.cur; dp.max=this._today(); } },
-  toggleWeek(){
-    this.weekMode=!this.weekMode;
-    this._flipDir=0;
-    this.updateDatePick();
-    if(this.weekMode) this.renderWeek(this.cur);
-    else this.renderSpread(this.cur);
-  },
+  updateDatePick(){ const dp=document.getElementById('dbDatePick'); if(dp){ dp.value=this.cur; dp.max=this._today(); } },
   initSwipe(){
     const sp=document.getElementById('bookSpread'); if(!sp || sp._swipeBound) return; sp._swipeBound=true;
     let sx=0, sy=0, st=0, dx=0, dy=0, active=false, locked=false;
@@ -2569,29 +2568,47 @@ const DiaryBook = {
     if(recDays.length) html+=`<div style="margin-top:6px;font-size:11px;color:#999">📝 ${recDays.join('、')}</div>`;
     return html;
   },
-  renderSpread(date){
+  /* 「本周汇总」作为对开页的右页（当左页=周日时），可像普通页一样翻走 */
+  summaryPageHtml(sundayDate){
+    const monday=Util.dateAdd(sundayDate,-6);
+    const week=[]; for(let i=0;i<7;i++) week.push(Util.dateAdd(monday,i));
+    const data=week.map(d=>this.dayData(d));
+    const gratitudeDays=data.filter(d=>d.winLines.length).length;
+    const totalDone=data.reduce((s,d)=>s+d.doneTasks.length,0);
+    const habitDays=data.filter(d=>d.habitDoneN>0).length;
+    const moodDays=data.reduce((s,d)=>s+d.moodDiary.length,0);
+    const whisperDays=data.filter(d=>d.whispers.length).length;
+    const questN=data.reduce((s,d)=>s+d.questEvents.length,0);
+    const rows=[['写了感恩日记',gratitudeDays+' 天'],['完成今日必做',totalDone+' 件'],['有习惯打卡',habitDays+' 天'],['写了情绪日记',moodDays+' 篇'],['发了碎碎念',whisperDays+' 天'],['主线任务打卡',questN+' 次']];
+    const wd=['日','一','二','三','四','五','六'];
+    const dayList=week.map((dt,i)=>{ const d=data[i]; const wdn=wd[new Date(dt+'T00:00:00').getDay()]; return `<div class="db-day ${d.has?'on':''}" onclick="DiaryBook.go('${dt}')"><b>${dt.slice(5)}</b><small>周${wdn}</small>${d.has?'<span>✓</span>':''}</div>`; }).join('');
+    return `<div class="db-date">本周汇总（${monday} ~ ${sundayDate}）</div><div class="db-sec"><h3>本周一眼</h3><ul class="db-list">${rows.map(r=>`<li>${r[0]}：<b>${r[1]}</b></li>`).join('')}</ul></div><div class="db-weekdays">${dayList}</div>`;
+  },
+  renderSpread(curLeft){
     const left=document.getElementById('dbLeft'), right=document.getElementById('dbRight'), cal=document.getElementById('dbCalendar'), pick=document.getElementById('dbDatePick'), spread=document.getElementById('bookSpread');
     if(!left||!right) return;
-    const prev=Util.dateAdd(date,-1);
+    const isSunday=this._isSunday(curLeft);
+    const rightDate=isSunday?null:Util.dateAdd(curLeft,1);
     const wd=['日','一','二','三','四','五','六'];
-    const wdN=new Date(date+'T00:00:00').getDay();
-    const pwN=new Date(prev+'T00:00:00').getDay();
-    const prevHtml=`<div class="db-date">${prev} · 周${wd[pwN]}</div>`+this.pageHtml(this.dayData(prev),prev);
-    const curHtml=`<div class="db-date">${date} · 周${wd[wdN]}</div>`+this.pageHtml(this.dayData(date),date);
+    const leftDow=new Date(curLeft+'T00:00:00').getDay();
+    const leftHtml=`<div class="db-date">${curLeft} · 周${wd[leftDow]}</div>`+this.pageHtml(this.dayData(curLeft),curLeft);
+    const rightHtml=isSunday
+      ? this.summaryPageHtml(curLeft)
+      : `<div class="db-date">${rightDate} · 周${wd[new Date(rightDate+'T00:00:00').getDay()]}</div>`+this.pageHtml(this.dayData(rightDate),rightDate);
     const dir=this._flipDir; this._flipDir=0;
     if(dir && spread){
-      /* 真实翻书：一页纸绕书脊(中缝)旋转翻走。next=旧右页(=前一天)翻到左边；prev=旧左页(=当天)翻到右边 */
+      /* 实体书翻页：旧右页（next）或旧左页（prev）作为叶子翻走，下方先放好新对开页 */
+      const oldLeftHtml=left.innerHTML, oldRightHtml=right.innerHTML;
+      const leafHtml=dir>0?oldRightHtml:oldLeftHtml;
       const leaf=document.createElement('div');
       leaf.className='book-leaf '+(dir>0?'next':'prev');
       const f=document.createElement('div'); f.className='book-leaf-front';
       const b=document.createElement('div'); b.className='book-leaf-back';
-      const leafHtml = dir>0 ? prevHtml : curHtml;
       f.innerHTML=leafHtml; b.innerHTML=leafHtml;
       leaf.appendChild(f); leaf.appendChild(b);
       spread.appendChild(leaf);
       Media.paint(f); Media.paint(b);
-      /* 底下先摆好新的一摊，叶子盖在上面翻走 */
-      left.innerHTML=prevHtml; right.innerHTML=curHtml;
+      left.innerHTML=leftHtml; right.innerHTML=rightHtml;
       Media.paint(left); Media.paint(right);
       void leaf.offsetWidth;
       requestAnimationFrame(()=>leaf.classList.add('turn'));
@@ -2599,11 +2616,11 @@ const DiaryBook = {
       leaf.addEventListener('transitionend', done, {once:true});
       setTimeout(done, 750);
     } else {
-      left.innerHTML=prevHtml; right.innerHTML=curHtml;
+      left.innerHTML=leftHtml; right.innerHTML=rightHtml;
       Media.paint(left); Media.paint(right);
     }
-    if(pick) pick.value=date;
-    if(cal) cal.innerHTML=this.calHtml(date);
+    if(pick) pick.value=curLeft;
+    if(cal) cal.innerHTML=this.calHtml(curLeft);
   },
   renderWeek(date){
     const left=document.getElementById('dbLeft'), right=document.getElementById('dbRight'), cal=document.getElementById('dbCalendar'), pick=document.getElementById('dbDatePick');
@@ -2674,13 +2691,14 @@ const Tracker = {
     /* 本周一 ~ 周日 共 7 天；未来日期无记录，格子留空 */
     const days=[]; for(let i=0;i<7;i++) days.push(Util.dateAdd(monday,i));
     const wd=['一','二','三','四','五','六','日'];
-    const head=days.map(dt=>{ const w=new Date(dt+'T00:00:00').getDay()||7; return `<th class="wk-h">${wd[w-1]}<br><span>${dt.slice(5)}</span></th>`; }).join('');
+    /* 与习惯明细同款：日期标 + 习惯 ✓ + 情绪；列宽随卡片自适应（minmax 让格子填满） */
+    const dateRow=`<div></div>${days.map((dt,i)=>{ const w=wd[(new Date(dt+'T00:00:00').getDay()||7)-1]; const isToday=dt===today; return `<div class="habit-date tick" style="font-size:10px${isToday?';color:var(--accent);font-weight:800':''}">${dt.slice(8)}<br><span style="font-size:8px;color:var(--text-dim);font-weight:500">${w}</span></div>`; }).join('')}`;
     const habitRows=items.map(it=>{
-      const cells=days.map(dt=>{ const rec=Store.get(this.dayKey(dt),{habits:{}}); const on=rec.habits?.[it.id]; return `<td class="${on?'wk-on':''}">${on?'✓':''}</td>`; }).join('');
-      return `<tr><td class="wk-name">${Util.esc(it.name)}</td>${cells}</tr>`;
+      const cells=days.map(dt=>{ const rec=Store.get(this.dayKey(dt),{habits:{}}); const on=rec.habits?.[it.id]; return `<div class="habit-day ${on?'on':''}" title="${dt} ${Util.esc(it.name)}"></div>`; }).join('');
+      return `<div class="habit-label" title="${Util.esc(it.name)}">${Util.esc(it.name)}<span class="habit-count"></span></div>${cells}`;
     }).join('');
-    const moodCells=days.map(dt=>{ const rec=Store.get(this.dayKey(dt),{habits:{},mood:''}); return `<td class="wk-mood">${rec.mood||''}</td>`; }).join('');
-    return `<div class="wk-wrap"><table class="wk-grid"><thead><tr><th></th>${head}</tr></thead><tbody>${habitRows}<tr><td class="wk-name">情绪</td>${moodCells}</tr></tbody></table></div>
+    const moodCells=days.map(dt=>{ const rec=Store.get(this.dayKey(dt),{habits:{},mood:''}); return `<div class="habit-day mood" title="${dt}">${Util.esc(rec.mood||'')}</div>`; }).join('');
+    return `<div class="habit-board" style="border:none;padding:4px 0 0;background:transparent"><div class="habit-grid" style="grid-template-columns:96px repeat(7,minmax(22px,1fr))">${dateRow}${habitRows}<div class="habit-label">情绪</div>${moodCells}</div></div>
       <div style="margin-top:8px"><a href="javascript:App.go('daily')" style="color:var(--accent);font-size:12px;text-decoration:none">去每日记录填写 →</a></div>`;
   },
   saveHome(){
@@ -2713,13 +2731,18 @@ const Tracker = {
   detailBoard(n){
     const days=Util.rangeDays(n), items=this.items();
     const cols=Math.max(1, days.length);
-    const dateRow = `<div></div>${days.map((d,i)=>`<div class="habit-date ${i%5===0||i===days.length-1?'tick':''}">${i%5===0||i===days.length-1?d.slice(8):''}</div>`).join('')}`;
+    /* 短区间（≤10 列）用 flex 填满卡片；长区间保持 18px 列宽左右滑动 */
+    const fill = cols<=10;
+    /* 日期标签：≤7 天每天都标，≤14 每 2 天，≤31 每 5 天，更长每 7 天；末尾再补一个 */
+    const step = cols<=7?1:cols<=14?2:cols<=31?5:7;
+    const dateRow = `<div></div>${days.map((d,i)=>`<div class="habit-date ${(i%step===0||i===cols-1)?'tick':''}">${(i%step===0||i===cols-1)?d.slice(8):''}</div>`).join('')}`;
     const rows = items.map(it=>{
       const done=days.filter(d=>Store.get(this.dayKey(d),{habits:{}}).habits?.[it.id]).length;
       return `<div class="habit-label" title="${Util.esc(it.name)}">${Util.esc(it.name)}<span class="habit-count">${done}天</span></div>${days.map(d=>`<div class="habit-day ${Store.get(this.dayKey(d),{habits:{}}).habits?.[it.id]?'on':''}" title="${d} ${Util.esc(it.name)}"></div>`).join('')}`;
     }).join('');
     const moodRow = `<div class="habit-label">情绪</div>${days.map(d=>{ const m=Store.get(this.dayKey(d),{mood:''}).mood||''; return `<div class="habit-day mood" title="${d} ${Util.esc(moodLabel(m)||m)}">${Util.esc(m||'')}</div>`; }).join('')}`;
-    return `<h2 style="font-size:15px;margin-bottom:8px">习惯明细</h2><p class="hint" style="margin-bottom:8px">左右滑动查看全部日期。</p><div class="habit-board"><div class="habit-grid" style="grid-template-columns:112px repeat(${cols},18px)">${dateRow}${rows}${moodRow}</div></div>`;
+    const tpl = fill ? `112px repeat(${cols},minmax(22px,1fr))` : `112px repeat(${cols},18px)`;
+    return `<h2 style="font-size:15px;margin-bottom:8px">习惯明细</h2><p class="hint" style="margin-bottom:8px">${fill?'一周一目了然。':'左右滑动查看全部日期。'}</p><div class="habit-board"><div class="habit-grid" style="grid-template-columns:${tpl}">${dateRow}${rows}${moodRow}</div></div>`;
   },
   async aiAnalyze(){ trackerAi.textContent='分析中...'; try{ trackerAi.textContent=await AI.ask('请分析我的习惯和情绪趋势，给出简短统计、触发模式和三个优化建议：\n'+JSON.stringify(Util.rangeDays(31).map(d=>({date:d,track:Store.get(this.dayKey(d),{})})))); }catch(e){ trackerAi.textContent=e.message; } }
 };
@@ -3049,8 +3072,9 @@ const AutoBackup = {
           const hf = await sub.getFileHandle(this.historyName(), {create:true});
           const hw = await hf.createWritable(); await hw.write(text); await hw.close();
         }catch(e){ /* 历史副本写失败不影响主备份 */ }
+        try{ await this.exportMediaFolders(dir); }catch(e){}
         this.save({lastMonth:month});
-        if(!silent) UI.toast('已写入 ' + (this.cfg().dirName || '所选文件夹') + '（固定一份 + 备份历史）');
+        if(!silent) UI.toast('已写入 ' + (this.cfg().dirName || '所选文件夹') + '（固定一份 + 备份历史 + 分类图片）');
         this.render();
         return true;
       }catch(e){ if(!silent) UI.toast('写入失败：' + e.message); }
@@ -3064,6 +3088,22 @@ const AutoBackup = {
   },
   async fileExists(dir, name){ try { await dir.getFileHandle(name); return true; } catch(e){ return false; } },
   async readFile(dir, name){ const f = await (await dir.getFileHandle(name)).getFile(); return f.text(); },
+  /* 把大仓库里的原图按 category 导出到「小彘图片/日记·灵感·生活」三个子文件夹，方便在同步盘里直接看 */
+  async exportMediaFolders(dir){
+    try{
+      const cats={diary:null,inspiration:null,life:null};
+      for(const c in cats){ try{ cats[c]=await dir.getDirectoryHandle('小彘图片/'+c,{create:true}); }catch(e){ cats[c]=null; } }
+      const keys=await Media.keys();
+      for(const k of keys){
+        const s=String(k); if(s.startsWith('__')||s.endsWith(':thumb')) continue;
+        const rec=await Media.get(k); if(!rec||!rec.blob) continue;
+        const cat=rec.meta?.category; if(!cat||!cats[cat]) continue;
+        const ext=Media.extOf(rec.meta?.type||'image/jpeg');
+        const fh=await cats[cat].getFileHandle('m_'+s.slice(2)+ext,{create:true});
+        const w=await fh.createWritable(); await w.write(rec.blob); await w.close();
+      }
+    }catch(e){ console.warn('分类图片导出跳过：', e.message); }
+  },
   async check(){
     const c = this.cfg();
     if(!c.on) return;
@@ -3702,7 +3742,7 @@ const Visual = {
     const media = [];
     for(const file of files){
       if(file.type.startsWith('video/') && file.size > 1800000){ UI.toast('视频「'+(file.name||'')+'」太大了，建议先压到 2MB 以内'); continue; }
-      const saved = await Media.save(file).catch(() => null);
+      const saved = await Media.save(file, 'inspiration').catch(() => null);
       if(saved) media.push(saved);
     }
     if(!note && !media.length) return UI.toast('没有可保存的内容');
@@ -3831,7 +3871,7 @@ const Outfit = {
     sel.value = value && (list.includes(value) || [...sel.options].some(o=>o.value===value)) ? value : list[0];
   },
   clothes(){ return Store.get('clothes',[]); },
-  async addCloth(){ const name=clothName.value.trim(); if(!name)return; const photo=await Util.compressImage(clothPhoto.files[0],700).catch(()=>''); ['clothType','clothStyle','clothWarmth','clothMaterial','clothColor'].forEach(id=>Util.bump(id,document.getElementById(id).value)); Store.set('cloth_last_type',clothType.value); Store.set('cloth_last_style',clothStyle.value); Store.set('cloth_last_warmth',clothWarmth.value); Store.set('cloth_last_material',clothMaterial.value); Store.set('cloth_last_color',clothColor.value); Store.set('clothes',[{id:Util.uid(),name,type:clothType.value,style:clothStyle.value,warmth:clothWarmth.value,material:clothMaterial.value,color:clothColor.value,photo},...this.clothes()]); clothName.value=''; clothPhoto.value=''; this.render(); },
+  async addCloth(){ const name=clothName.value.trim(); if(!name)return; const file=clothPhoto.files[0]; const saved=file?await Media.save(file,'life').catch(()=>null):null; ['clothType','clothStyle','clothWarmth','clothMaterial','clothColor'].forEach(id=>Util.bump(id,document.getElementById(id).value)); Store.set('cloth_last_type',clothType.value); Store.set('cloth_last_style',clothStyle.value); Store.set('cloth_last_warmth',clothWarmth.value); Store.set('cloth_last_material',clothMaterial.value); Store.set('cloth_last_color',clothColor.value); Store.set('clothes',[{id:Util.uid(),name,type:clothType.value,style:clothStyle.value,warmth:clothWarmth.value,material:clothMaterial.value,color:clothColor.value,photoId:saved?.id||'',photo:''},...this.clothes()]); clothName.value=''; clothPhoto.value=''; this.render(); },
   render(){
     const savedCity = Store.get('weather_city','');
     if(weatherCity){ weatherCity.value = savedCity; if(!savedCity) this.detectCity(); }
@@ -3841,7 +3881,7 @@ const Outfit = {
     this.fillSelect(clothMaterial, this.defaults().material, Store.get('cloth_last_material','棉'));
     this.fillSelect(clothColor, this.defaults().color, Store.get('cloth_last_color','白色'));
     const list=this.clothes().slice().sort((a,b)=>(a.type||'').localeCompare(b.type||'','zh-CN'));
-    clothList.innerHTML=list.length?Object.entries(list.reduce((g,x)=>(g[x.type||'未分类']||(g[x.type||'未分类']=[]),g[x.type||'未分类'].push(x),g),{})).map(([type,items])=>`<section style="margin-bottom:12px"><h2>${Util.esc(type||'未分类')}</h2><div class="list">${items.map(x=>{ const i=this.clothes().findIndex(y=>y.id===x.id); return `<div class="item" draggable="true" data-sort-id="${x.id}">${x.photo?`<img class="thumb" src="${x.photo}" alt="">`:''}<div class="grow"><div class="title">${Util.esc(x.name)}</div><div class="desc">${Util.esc([x.color,x.style,x.warmth,x.material].filter(Boolean).join(' · '))}</div></div><button class="del" onclick="Outfit.move(${i},-1)">↑</button><button class="del" onclick="Outfit.move(${i},1)">↓</button><button class="del" onclick="Outfit.del('${x.id}')">✕</button></div>`; }).join('')}</div></section>`).join(''):'<div class="empty">还没有添加衣物</div>';
+    clothList.innerHTML=list.length?Object.entries(list.reduce((g,x)=>(g[x.type||'未分类']||(g[x.type||'未分类']=[]),g[x.type||'未分类'].push(x),g),{})).map(([type,items])=>`<section style="margin-bottom:12px"><h2>${Util.esc(type||'未分类')}</h2><div class="list">${items.map(x=>{ const i=this.clothes().findIndex(y=>y.id===x.id); return `<div class="item" draggable="true" data-sort-id="${x.id}">${x.photoId?Util.mediaImg(x.photoId):(x.photo?`<img class="thumb" src="${Util.esc(x.photo)}" alt="">`:'')}<div class="grow"><div class="title">${Util.esc(x.name)}</div><div class="desc">${Util.esc([x.color,x.style,x.warmth,x.material].filter(Boolean).join(' · '))}</div></div><button class="del" onclick="Outfit.move(${i},-1)">↑</button><button class="del" onclick="Outfit.move(${i},1)">↓</button><button class="del" onclick="Outfit.del('${x.id}')">✕</button></div>`; }).join('')}</div></section>`).join(''):'<div class="empty">还没有添加衣物</div>';
     DragSort.bind('#clothList [data-sort-id]','clothes',()=>Outfit.render());
   },
   move(i,d){ const a=this.clothes(); const j=i+d; if(j<0||j>=a.length)return; [a[i],a[j]]=[a[j],a[i]]; Store.set('clothes',a); this.render(); },
@@ -3903,8 +3943,9 @@ const Cooking = {
   async add(){
     const name=dishName.value.trim();
     if(!name)return;
-    const photo = await Util.compressImage(dishPhoto.files[0], 700).catch(()=>'');
-    this.splitTag(dishTags.value).forEach(t=>Util.bump('dish_tags',t)); Store.set('dishes',[{id:Util.uid(),name,tags:dishTags.value.trim(),steps:dishSteps.value.trim(),photo},...this.list()]);
+    const file=dishPhoto.files[0];
+    const saved = file ? await Media.save(file, 'life').catch(()=>null) : null;
+    this.splitTag(dishTags.value).forEach(t=>Util.bump('dish_tags',t)); Store.set('dishes',[{id:Util.uid(),name,tags:dishTags.value.trim(),steps:dishSteps.value.trim(),photoId:saved?.id||'',photo:''},...this.list()]);
     Store.set('wheel_dishes',[...new Set(this.wheel().concat(name))]);
     dishName.value=dishTags.value=dishSteps.value='';
     dishPhoto.value='';
@@ -3914,7 +3955,7 @@ const Cooking = {
   render(){
     dishTagOptions.innerHTML=this.tags().map(t=>`<option value="${Util.esc(t)}"></option>`).join('');
     const groups=this.list().reduce((g,x)=>{ const k=(this.splitTag(x.tags)[0]||'未分类'); (g[k]||(g[k]=[])).push(x); return g; },{});
-    dishList.innerHTML=Object.entries(groups).length?Object.entries(groups).map(([tag,rows])=>`<section style="margin-bottom:12px"><h2>${Util.esc(tag)}</h2><div class="list">${rows.map((x)=>{ const i=this.list().findIndex(y=>y.id===x.id); return `<div class="item" draggable="true" data-sort-id="${x.id}">${x.photo?`<img class="thumb" src="${x.photo}" alt="">`:''}<div class="grow"><div class="title">${Util.esc(x.name)}</div><div class="desc">${Util.esc((x.tags?x.tags+'\n':'')+(x.steps||''))}</div></div><button class="del" onclick="Cooking.move(${i},-1)">↑</button><button class="del" onclick="Cooking.move(${i},1)">↓</button><button class="del" onclick="Cooking.del('${x.id}')">✕</button></div>`; }).join('')}</div></section>`).join(''):'<div class="empty">先添加几道菜，转盘就能用了</div>';
+    dishList.innerHTML=Object.entries(groups).length?Object.entries(groups).map(([tag,rows])=>`<section style="margin-bottom:12px"><h2>${Util.esc(tag)}</h2><div class="list">${rows.map((x)=>{ const i=this.list().findIndex(y=>y.id===x.id); return `<div class="item" draggable="true" data-sort-id="${x.id}">${x.photoId?Util.mediaImg(x.photoId):(x.photo?`<img class="thumb" src="${Util.esc(x.photo)}" alt="">`:'')}<div class="grow"><div class="title">${Util.esc(x.name)}</div><div class="desc">${Util.esc((x.tags?x.tags+'\n':'')+(x.steps||''))}</div></div><button class="del" onclick="Cooking.move(${i},-1)">↑</button><button class="del" onclick="Cooking.move(${i},1)">↓</button><button class="del" onclick="Cooking.del('${x.id}')">✕</button></div>`; }).join('')}</div></section>`).join(''):'<div class="empty">先添加几道菜，转盘就能用了</div>';
     DragSort.bind('#dishList [data-sort-id]','dishes',()=>Cooking.render());
     this.paintWheelList();
   },
@@ -4236,6 +4277,19 @@ const Settings = {
     if(meter && meter.firstElementChild) meter.firstElementChild.style.width = (quota ? Math.min(100, usage/base*100) : Math.min(100, total/(50*1024*1024)*100)).toFixed(1) + '%';
     const det = document.getElementById('storeDetail');
     if(det) det.textContent = supported ? '文字 ' + Util.bytes(lsBytes) + ' · 媒体 ' + Util.bytes(mediaBytes) + (quota ? ' · 浏览器可用 ' + Util.bytes(quota) : '') : '建议用 Chrome / Edge 打开';
+    const warn = document.getElementById('storeWarn');
+    if(warn){
+      const measured = (quota && usage) ? usage : total;
+      const cap = (quota && quota > 1024*1024) ? quota : 2*1024*1024*1024; /* 拿不到真实配额时用 2GB 作为软上限 */
+      const pct = measured / cap;
+      if(pct >= 0.95){
+        warn.style.display=''; warn.style.background='#fdecec'; warn.style.color='#b00020'; warn.style.border='1px solid #f3b4b4';
+        warn.innerHTML='⚠️ 存储快满了（已用 ' + (pct*100).toFixed(0) + '%）。数据只存在这台设备，不会自动上传云端。建议：① 先点「立即备份」存一份到同步文件夹；② 再点「清理残留」删掉没用到的旧图片。照片都是原图，占空间大，定期备份后清理即可。';
+      } else if(pct >= 0.8){
+        warn.style.display=''; warn.style.background='#fff7e6'; warn.style.color='#9a6b00'; warn.style.border='1px solid #ffe1a6';
+        warn.innerHTML='🟡 已用 ' + (pct*100).toFixed(0) + '%，还够用。记得定期点「立即备份」，存满前先备份再清理，照片都是原图占空间较大。';
+      } else { warn.style.display='none'; }
+    }
     const bi = document.getElementById('buildInfo');
     if(bi) bi.textContent = '当前版本：' + BUILD_VERSION;
   },
