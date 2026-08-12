@@ -259,6 +259,13 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
     linear-gradient(135deg,#a7c99a,#eff7e9);
 }
 .welcome.on{display:flex}
+.wk-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.wk-grid{border-collapse:collapse;width:100%;font-size:11px}
+.wk-grid th,.wk-grid td{border:1px solid #e3ecdd;padding:4px 3px;text-align:center;min-width:30px}
+.wk-grid .wk-h span{font-size:9px;color:var(--text-dim)}
+.wk-grid .wk-name{text-align:left;white-space:nowrap;color:var(--text-dim);min-width:56px}
+.wk-grid .wk-on{background:#e8f3e0;color:var(--accent);font-weight:800;border-radius:4px}
+.wk-grid .wk-mood{font-size:15px}
 .welcome-card{
   width:min(390px,100%);min-height:560px;border-radius:32px;padding:32px 24px;
   color:#fff;text-align:center;
@@ -559,13 +566,12 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
         </div>
       </section>
       <section class="grid" id="homeTopGrid"></section>
-      <div class="sort-tip" id="homeTopTip">长按格子可拖动排序，也可把「更多」里的栏目钉到这里。</div>
       <section class="home-board" id="homeBoard"></section>
     </section><!-- ==== 功能：首页 END ==== --><!-- ==== 功能：分类 START ==== --><section class="page" id="page-hub">
       <div class="page-title" id="hubTitle">分类</div><div class="page-sub" id="hubSub">把相关功能放在一起。</div>
       <div class="grid" id="hubGrid"></div>
     </section><!-- ==== 功能：分类 END ==== --><!-- ==== 功能：每日记录 START ==== --><section class="page" id="page-daily">
-      <div class="page-title">每日记录</div><div class="page-sub">感恩、习惯、情绪、作息、必做，一次填完。</div>
+      <div class="page-title">每日记录</div><div class="page-sub">感恩、习惯、情绪、作息、必做。</div>
       <div class="card">
         <h2>① 睡眠情况</h2>
         <div class="row"><input id="dlSleep" type="time" value="23:00" style="flex:1"><input id="dlWake" type="time" value="08:00" style="flex:1"></div>
@@ -885,13 +891,13 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
       </div>
       <div class="grid">
         <div class="tile"><h3>运动天数</h3><div class="big" id="sportDays">0</div></div>
-        <div class="tile"><h3>总时长</h3><div class="big" id="sportMinutes">0<small>min</small></div></div>
-        <div class="tile"><h3>日均</h3><div class="big" id="sportAvg">0<small>min</small></div></div>
+        <div class="tile"><h3>总时长</h3><div class="big" id="sportMinutes">0<small>h</small></div></div>
+        <div class="tile"><h3>日均</h3><div class="big" id="sportAvg">0<small>h</small></div></div>
         <div class="tile"><h3>类型数</h3><div class="big" id="sportTypeCount">0</div></div>
       </div>
       <div class="card">
         <h2>今天运动了</h2>
-        <div class="row"><select id="sportType" style="flex:1"></select><div style="flex:1;display:flex;align-items:center;gap:4px"><select id="sportDuration" style="flex:1;min-width:0"><option value="">时长</option><option value="30">0.5</option><option value="60">1</option><option value="90">1.5</option><option value="120">2</option><option value="150">2.5</option><option value="180">3</option><option value="_custom">自定</option></select><span id="sportDurUnit" style="font-size:13px;color:#888;white-space:nowrap">h</span><input id="sportCustomDur" type="number" step="0.5" min="0.5" max="24" placeholder="h" style="display:none;width:56px;flex:none"></div><button class="btn" onclick="Sport.addLog()">打卡</button></div>
+        <div class="row"><select id="sportType" style="flex:1"></select><div style="flex:1;display:flex;align-items:center;gap:4px"><select id="sportDuration" style="flex:1;min-width:0"><option value="">时长</option><option value="0.5">0.5</option><option value="1">1</option><option value="1.5">1.5</option><option value="2">2</option><option value="2.5">2.5</option><option value="3">3</option><option value="_custom">自定</option></select><span id="sportDurUnit" style="font-size:13px;color:#888;white-space:nowrap">h</span><input id="sportCustomDur" type="number" step="0.5" min="0.5" max="24" placeholder="h" style="display:none;width:56px;flex:none"></div><button class="btn" onclick="Sport.addLog()">打卡</button></div>
       </div>
       <div class="card"><h2>月度日历</h2><div class="calendar-grid" id="sportCalendar"></div></div>
       <div class="card"><h2>最近记录</h2><div id="sportList"></div></div>
@@ -1569,6 +1575,18 @@ const Migrate = {
   },
   /* 本机数据启动时也走一遍迁移 */
   local(){
+    /* 运动时长单位由「分钟」改为「小时」：老数据除以 60，只跑一次 */
+    if(!Store.get('_sportHoursMigrated')){
+      const logs = Store.get('sport_logs', []);
+      if(Array.isArray(logs) && logs.length) Store.set('sport_logs', logs.map(l => ({...l, duration: Math.round((l.duration||0)/60*10)/10})));
+      Store.set('_sportHoursMigrated', 1);
+    }
+    /* v30：首页桌面重组（移除「经验与人情」、生活万花筒置顶、更多置于其下），重置为新的默认布局，只跑一次 */
+    if(!Store.get('_homeV30Layout')){
+      Store.set('home_widgets', Home.defaults());
+      Store.set('home_entries', ['daily','chat','success','tracker','mood','mainquest','diarybook','review','self','notes','quick','english','visual','wish','cooking','gift','wishshop','sport','outfit','lifeAnalysis']);
+      Store.set('_homeV30Layout', 1);
+    }
     const cur = Number(Store.get('_schemaVersion', 1));
     if(cur >= SCHEMA_VERSION) { this.ensureSeeds(); return; }
     const snapshot = {};
@@ -1726,7 +1744,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-12-v29';
+const BUILD_VERSION = '2026-08-12-v30';
 const App = {
   current:'home',
   booting:true,
@@ -1750,7 +1768,7 @@ const App = {
     {id:'cooking',icon:'🍲',name:'做菜栏',onShow:()=>Cooking.render()},
     {id:'sport',icon:'💪',name:'运动打卡',onShow:()=>Sport.render()},
     {id:'outfit',icon:'👗',name:'穿搭助手',onShow:()=>Outfit.render()},
-    {id:'lifeAnalysis',icon:'📈',name:'生活分析',onShow:()=>LifeAnalysis.render()},
+    {id:'lifeAnalysis',icon:'📈',name:'生活万花筒',onShow:()=>LifeAnalysis.render()},
     {id:'gift',icon:'🧧',name:'份子钱',onShow:()=>Gift.render()},
     {id:'wishshop',icon:'🛍️',name:'兑换铺',onShow:()=>WishShop.render()},
     {id:'settings',icon:'⚙️',name:'设置',onShow:()=>Settings.render()}
@@ -1815,7 +1833,10 @@ const App = {
   },
   visibleRoutes(){
     const hidden=this.hiddenRoutes();
-    return this.routes.filter(r => ['home','hub','settings'].includes(r.id) || !hidden.includes(r.id));
+    const inSidebar = this.routes.filter(r => !['home','hub'].includes(r.id) && (r.id==='settings' || !hidden.includes(r.id)));
+    const settings = inSidebar.filter(r=>r.id==='settings');
+    const rest = inSidebar.filter(r=>r.id!=='settings');
+    return [...settings, ...rest];
   },
   refreshNav(){
     const nav=document.getElementById('nav'); if(!nav) return;
@@ -1847,7 +1868,6 @@ const Welcome = {
   ],
   async maybeShow(){
     const day = Util.today();
-    if(Store.get('welcomeSeen')===day) return;
     const last = Store.get('welcomeLast', {});
     const cached = last.date===day ? last : null;
     const msg = cached ? cached : await this.build(day).catch(()=>this.fallback(day));
@@ -1992,7 +2012,7 @@ const Hub = {
   },
   preview(id){
     return {
-      daily:'感恩日记 + 追踪 + 情绪，一次填完',
+      daily:'感恩日记 + 追踪 + 情绪',
       chat:'随时陪你闲话，也能问自己的经验库',
       success:'晚上写成就感和明日三件事',
       tracker:'习惯打卡 + 情绪记录 + 周月年统计',
@@ -2039,10 +2059,9 @@ const Home = {
     return [
       {id:'tasks',size:'wide',collapsed:false},
       {id:'tracker',size:'wide',collapsed:false},
-      {id:'notesGift',size:'wide',collapsed:false},
+      {id:'life',size:'wide',collapsed:false},
       {id:'entries',size:'wide',collapsed:false},
-      {id:'wheel',size:'wide',collapsed:false},
-      {id:'life',size:'wide',collapsed:false}
+      {id:'wheel',size:'wide',collapsed:false}
     ];
   },
   widgets(){
@@ -2063,7 +2082,7 @@ const Home = {
   },
   tileInfo(id){
     const fixed={
-      daily:{icon:'🌙',name:'每日记录',go:'daily',value:()=>Success.todayWinCount(),unit:'条',desc:'日记 + 追踪 + 情绪，一次填完'},
+      daily:{icon:'🌙',name:'每日记录',go:'daily',value:()=>Success.todayWinCount(),unit:'条',desc:'日记 · 追踪 · 情绪'},
       english:{icon:'📖',name:'英语积累',go:'english',value:()=>English.doneCount(),unit:'/4',desc:'今天的学习进度'},
       streak:{icon:'🔥',name:'连续打卡',go:null,value:()=>Daily.streak(),unit:'天',desc:'打开并记录就算'},
       chat:{icon:'🫧',name:'零时闲话铺',go:'chat',value:()=>Companion.log().length,unit:'条',desc:'随时陪你闲话'},
@@ -2149,9 +2168,9 @@ const Home = {
     this.bindDrag();
     Cooking.paintWheelList();
   },
-  titles:{todo:'今天要处理',tasks:'今日必做',tracker:'本周追踪',notesGift:'经验与人情',entries:'更多',wheel:'今天吃什么',life:'生活智能分析',manage:'桌面管理'},
+  titles:{todo:'今天要处理',tasks:'今日必做',tracker:'本周追踪',entries:'更多',wheel:'今天吃什么',life:'生活万花筒',manage:'桌面管理'},
   widgetCatalog(){ return this.widgets().filter(w=>w.id!=='manage').map(w=>({id:w.id,label:this.titles[w.id]})); },
-  allEntryIds(){ return Store.get('home_entries',['self','wish','cooking','english','visual','sport','outfit','notes','lifeAnalysis','chat','quick','gift','review','mainquest','diarybook']); },
+  allEntryIds(){ return Store.get('home_entries',['daily','chat','success','tracker','mood','mainquest','diarybook','review','self','notes','quick','english','visual','wish','cooking','gift','wishshop','sport','outfit','lifeAnalysis']); },
   entryCatalog(){ return this.allEntryIds().map(id=>({id,label:(App.routes.find(x=>x.id===id)||{}).name||id})); },
   widget(w,i){
     const body = w.collapsed ? '' : `<div class="widget-body">${this.widgetBody(w.id)}</div>`;
@@ -2164,8 +2183,7 @@ const Home = {
   widgetBody(id){
     if(id==='tasks') return '<div class="list" id="todayTasks"></div>';
     if(id==='tracker') return '<div id="homeTracker"></div>';
-    if(id==='notesGift') return `<section class="grid"><button class="tile" onclick="App.go('notes')"><h3>经验摘录</h3><p class="muted">好写好查，沉淀生活经验。</p></button><button class="tile" onclick="App.go('gift')"><h3>份子钱</h3><p class="muted">人情汇总 + 记录明细。</p></button></section>`;
-    if(id==='entries') return `<div id="homeEntries"></div><p class="hint" style="margin-top:8px">点标题可收起或展开文件夹；点 📌 把栏目钉到首页桌面；点 🚫 让它从首页不显示。</p>`;
+    if(id==='entries') return `<div id="homeEntries"></div><p class="hint" style="margin-top:8px">点 📌 钉到首页，点 🚫 隐藏。</p>`;
     if(id==='wheel') return `<div class="wheel-wrap"><div class="wheel" id="homeWheel"></div><div><p class="muted">转盘菜名可在做菜栏直接输入。</p><button class="btn small" onclick="Cooking.spin('home')">转一下</button><div class="hint" id="homeSpinResult">等待选择</div></div></div>`;
     if(id==='life') return `<div id="homeLifeSummary"></div><button class="btn ghost" style="margin-top:10px;width:100%" onclick="App.go('lifeAnalysis')">查看完整分析</button>`;
     return '';
@@ -2240,7 +2258,7 @@ const Home = {
       quick:()=>first(Quick.list()) ? `最新：${first(Quick.list()).text.slice(0,28)}` : Hub.preview(id),
       visual:()=>first(Visual.list()) ? `最新收藏：${first(Visual.list()).tag||'灵感'} · ${(first(Visual.list()).note||first(Visual.list()).fileName||'').slice(0,18)}` : Hub.preview(id),
       cooking:()=>first(Cooking.list()) ? `最近菜谱：${first(Cooking.list()).name}` : Hub.preview(id),
-      sport:()=>first(Sport.logs()) ? `最近运动：${first(Sport.logs()).type.name} ${first(Sport.logs()).duration} 分钟` : Hub.preview(id),
+      sport:()=>first(Sport.logs()) ? `最近运动：${first(Sport.logs()).type.name} ${first(Sport.logs()).duration} 小时` : Hub.preview(id),
       outfit:()=>first(Outfit.clothes()) ? `最近衣物：${first(Outfit.clothes()).name}` : Hub.preview(id),
       wish:()=>first(Wish.list().filter(x=>!x.done)) ? `待完成：${first(Wish.list().filter(x=>!x.done)).text}` : Hub.preview(id),
       self:()=>Self.categories().map(c=>Store.get('self_'+c.key,[])[0]).filter(Boolean)[0] ? `最新认知：${Self.categories().map(c=>Store.get('self_'+c.key,[])[0]).filter(Boolean)[0]}` : Hub.preview(id),
@@ -2649,33 +2667,21 @@ const Tracker = {
   },
   homeStats(){
     const items=this.items();
-    /* 计算本周一至今的日期范围 */
-    const today = Util.today();
-    const d = new Date(today + 'T00:00:00');
-    const dayOfWeek = d.getDay() || 7; /* 周日=7 */
-    const mondayOffset = dayOfWeek - 1;
-    const monday = Util.dateAdd(today, -mondayOffset);
-    /* 收集本周每天的记录 */
-    const days = [];
-    for(let i=0;i<=mondayOffset;i++) days.push(Util.dateAdd(monday, i));
-    let totalDone=0, totalPossible=0, lastMood='😊', lastLine='';
-    days.forEach(dt => {
-      const rec = Store.get(this.dayKey(dt), {habits:{},mood:'😊',line:''});
-      totalDone += items.filter(it=>rec.habits?.[it.id]).length;
-      totalPossible += items.length;
-      if(rec.mood && rec.mood!=='😊') lastMood = rec.mood;
-      if(rec.line) lastLine = rec.line;
-    });
-    const rate = totalPossible ? Math.round(totalDone/totalPossible*100) : 0;
-    const activeDays = days.filter(dt => {
-      const r = Store.get(this.dayKey(dt), {habits:{}});
-      return Object.keys(r.habits||{}).some(k => r.habits[k]);
-    }).length;
-    return `<div style="display:flex;gap:12px;flex-wrap:wrap">
-      <div style="flex:1;min-width:100px"><div style="font-size:11px;color:var(--text-dim)">本周习惯</div><div style="font-size:24px;font-weight:800;color:var(--accent)">${rate}<small style="font-size:12px;font-weight:400;color:var(--text-dim)">%</small></div><div style="font-size:11px;color:var(--text-dim)">${totalDone}/${totalPossible} · ${activeDays}/${days.length}天</div></div>
-      <div style="flex:1;min-width:100px"><div style="font-size:11px;color:var(--text-dim)">最近情绪</div><div style="font-size:28px;line-height:1.2">${lastMood}</div>${lastLine?`<div style="font-size:11px;color:var(--text-dim)">${Util.esc(lastLine)}</div>`:''}</div>
-    </div>
-    <div style="margin-top:10px"><a href="javascript:App.go('daily')" style="color:var(--accent);font-size:12px;text-decoration:none">去每日记录填写 →</a></div>`;
+    const today=Util.today();
+    const d=new Date(today+'T00:00:00');
+    const dow=d.getDay()||7; /* 周日=7 */
+    const monday=Util.dateAdd(today,1-dow);
+    /* 本周一 ~ 周日 共 7 天；未来日期无记录，格子留空 */
+    const days=[]; for(let i=0;i<7;i++) days.push(Util.dateAdd(monday,i));
+    const wd=['一','二','三','四','五','六','日'];
+    const head=days.map(dt=>{ const w=new Date(dt+'T00:00:00').getDay()||7; return `<th class="wk-h">${wd[w-1]}<br><span>${dt.slice(5)}</span></th>`; }).join('');
+    const habitRows=items.map(it=>{
+      const cells=days.map(dt=>{ const rec=Store.get(this.dayKey(dt),{habits:{}}); const on=rec.habits?.[it.id]; return `<td class="${on?'wk-on':''}">${on?'✓':''}</td>`; }).join('');
+      return `<tr><td class="wk-name">${Util.esc(it.name)}</td>${cells}</tr>`;
+    }).join('');
+    const moodCells=days.map(dt=>{ const rec=Store.get(this.dayKey(dt),{habits:{},mood:''}); return `<td class="wk-mood">${rec.mood||''}</td>`; }).join('');
+    return `<div class="wk-wrap"><table class="wk-grid"><thead><tr><th></th>${head}</tr></thead><tbody>${habitRows}<tr><td class="wk-name">情绪</td>${moodCells}</tr></tbody></table></div>
+      <div style="margin-top:8px"><a href="javascript:App.go('daily')" style="color:var(--accent);font-size:12px;text-decoration:none">去每日记录填写 →</a></div>`;
   },
   saveHome(){
     const current = Store.get(this.dayKey(), {habits:{}, mood:'😊', line:''});
@@ -3730,7 +3736,7 @@ const Sport = {
     };
     const month=Util.today().slice(0,7), logs=this.logs().filter(x=>x.date.startsWith(month));
     const days=[...new Set(logs.map(x=>x.date))].length, total=logs.reduce((s,x)=>s+x.duration,0);
-    sportDays.textContent=days; sportMinutes.innerHTML=total+'<small>min</small>'; sportAvg.innerHTML=(days?Math.round(total/days):0)+'<small>min</small>';
+    sportDays.textContent=days; sportMinutes.innerHTML=total+'<small>h</small>'; sportAvg.innerHTML=(days?Math.round(total/days*10)/10:0)+'<small>h</small>';
     this.calendar(logs); this.renderList();
   },
   addType(){ const name=sportName.value.trim(); if(!name)return; Store.set('sport_types',[...this.types(),{id:Util.uid(),icon:sportIcon.value.trim()||'💪',name}]); sportName.value=sportIcon.value=''; this.render(); },
@@ -3741,7 +3747,6 @@ const Sport = {
     if(durEl.value==='_custom'){
       duration=Number(customEl.value)||0;
       if(!duration) return UI.toast('先填自定义时长');
-      duration=duration*60; /* h → 分钟 */
     } else {
       duration=Number(durEl.value);
       if(!duration) return UI.toast('先选运动时长');
@@ -3753,8 +3758,8 @@ const Sport = {
     durEl.value=''; if(customEl){ customEl.value=''; customEl.style.display='none'; }
     Coin.checkSport(); this.render();
   },
-  calendar(logs){ const now=new Date(), y=now.getFullYear(), m=now.getMonth(); const last=new Date(y,m+1,0).getDate(); const by={}; logs.forEach(x=>by[Number(x.date.slice(8))]=(by[Number(x.date.slice(8))]||0)+x.duration); sportCalendar.innerHTML=Array.from({length:last},(_,i)=>`<div class="day-cell ${by[i+1]?'active':''}">${i+1}${by[i+1]?'<br>'+by[i+1]+'m':''}</div>`).join(''); },
-  renderList(){ sportList.innerHTML=this.logs().length?this.logs().slice(0,20).map(x=>UI.item(`${x.type.icon} ${x.type.name} · ${x.duration} 分钟`,`${x.date} ${x.time}`,`<button class="del" onclick="Sport.del('${x.id}')">✕</button>`,`draggable="true" data-sort-id="${x.id}"`)).join(''):'<div class="empty">还没有运动记录</div>'; DragSort.bind('#sportList [data-sort-id]','sport_logs',()=>Sport.render()); },
+  calendar(logs){ const now=new Date(), y=now.getFullYear(), m=now.getMonth(); const last=new Date(y,m+1,0).getDate(); const by={}; logs.forEach(x=>by[Number(x.date.slice(8))]=(by[Number(x.date.slice(8))]||0)+x.duration); sportCalendar.innerHTML=Array.from({length:last},(_,i)=>`<div class="day-cell ${by[i+1]?'active':''}">${i+1}${by[i+1]?'<br>'+by[i+1]+'h':''}</div>`).join(''); },
+  renderList(){ sportList.innerHTML=this.logs().length?this.logs().slice(0,20).map(x=>UI.item(`${x.type.icon} ${x.type.name} · ${x.duration} 小时`,`${x.date} ${x.time}`,`<button class="del" onclick="Sport.del('${x.id}')">✕</button>`,`draggable="true" data-sort-id="${x.id}"`)).join(''):'<div class="empty">还没有运动记录</div>'; DragSort.bind('#sportList [data-sort-id]','sport_logs',()=>Sport.render()); },
   del(id){ Store.set('sport_logs',this.logs().filter(x=>x.id!==id)); this.render(); },
   renderProfile(){
     const p=this.profile();
@@ -4029,7 +4034,7 @@ const LifeAnalysis = {
       moodDiary:   {title:'情绪日记',    value:d.moodDiary+' 篇'},
       englishDays: {title:'英语打卡',    value:`${d.englishDays} 天`},
       englishStreak:{title:'英语连续',   value:`${d.englishStreak} 天`},
-      sportDays:   {title:'运动打卡',    value:`${d.sportDays} 天 · ${d.sportMinutes} 分钟`},
+      sportDays:   {title:'运动打卡',    value:`${d.sportDays} 天 · ${d.sportMinutes} 小时`},
       wishDone:    {title:'心愿行动',    value:`${d.wishDone}/${d.wishTotal}`},
       wishStale:   {title:'放太久的心愿',value:d.wishStale+' 条'},
       dishes:      {title:'会做的菜',    value:d.dishes+' 道'},
@@ -4096,7 +4101,7 @@ const LifeAnalysis = {
 今日必做完成 ${d.taskDone}/${d.taskTotal}，习惯完成率 ${d.habitRate}%，坚持得最好的是 ${d.topHabit}，最容易漏的是 ${d.weakHabit}。
 写日记 ${d.successDays} 天，共记下 ${d.winCount} 条成就；情绪日记 ${d.moodDiary} 篇。
 英语打卡 ${d.englishDays} 天，当前连续 ${d.englishStreak} 天。
-运动 ${d.sportDays} 天，共 ${d.sportMinutes} 分钟。
+运动 ${d.sportDays} 天，共 ${d.sportMinutes} 小时。
 心愿行动完成 ${d.wishDone}/${d.wishTotal}，其中 ${d.wishStale} 条已经放了两周以上。
 份子钱净额 ¥${d.giftIn-d.giftOut}；会做 ${d.dishes} 道菜；经验摘录 ${d.notes} 条。
 🪙 金币库累计 ${d.coinTotal} 枚，今天赚了 ${d.coinToday} 枚。每一枚都代表你认真对待了自己的一天。
