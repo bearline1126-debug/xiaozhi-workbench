@@ -413,13 +413,18 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .book-edge-btn.left-edge{left:-8px}
 .book-edge-btn.right-edge{right:-8px}
 .book-spine{width:3px;background:linear-gradient(180deg,#d4c5a9,#e8dcc8,#d4c5a9);flex-shrink:0;border-radius:1px;box-shadow:0 0 8px rgba(0,0,0,.08),inset 0 0 3px rgba(0,0,0,.06);z-index:2}
-.book-left,.book-right{flex:1;background:#fffdf8;overflow-y:auto;padding:14px 16px;min-height:62vh;box-shadow:0 2px 12px rgba(0,0,0,.06)}
-.book-left{border-radius:12px 0 0 12px;border:1px solid #ece6d8;border-right:none;transform-origin:right center;transition:transform .4s ease}
-.book-right{border-radius:0 12px 12px 0;border:1px solid #ece6d8;border-left:none;transform-origin:left center;transition:transform .4s ease}
-.book-left.flip-anim{animation:pageTurnLeft .45s ease}
-.book-right.flip-anim{animation:pageTurnRight .45s ease}
-@keyframes pageTurnLeft{0%{transform:rotateY(-15deg);opacity:.5}100%{transform:rotateY(0);opacity:1}}
-@keyframes pageTurnRight{0%{transform:rotateY(15deg);opacity:.5}100%{transform:rotateY(0);opacity:1}}
+.book-left,.book-right{flex:1;background:#fffdf8;overflow-y:auto;padding:14px 16px;min-height:62vh;box-shadow:0 2px 12px rgba(0,0,0,.06);position:relative}
+.book-left{border-radius:12px 0 0 12px;border:1px solid #ece6d8;border-right:none}
+.book-right{border-radius:0 12px 12px 0;border:1px solid #ece6d8;border-left:none}
+/* 翻页动画：模拟书本翻页 —— 右页向左翻走变成左页，新页从右边滑入 */
+.book-left.flip-out{animation:flipLeftOut .35s ease forwards}
+.book-left.flip-in{animation:flipLeftIn .35s ease forwards}
+.book-right.flip-out{animation:flipRightOut .35s ease forwards}
+.book-right.flip-in{animation:flipRightIn .35s ease forwards}
+@keyframes flipLeftOut{0%{transform:translateX(0);opacity:1}100%{transform:translateX(-30%);opacity:.3}}
+@keyframes flipLeftIn{0%{transform:translateX(30%);opacity:.3}100%{transform:translateX(0);opacity:1}}
+@keyframes flipRightOut{0%{transform:translateX(0);opacity:1}100%{transform:translateX(-60%);opacity:0}}
+@keyframes flipRightIn{0%{transform:translateX(60%);opacity:0}100%{transform:translateX(0);opacity:1}}
 .db-cal{margin-bottom:10px}
 .db-cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .db-cal-head b{font-size:15px;color:#5a6e52}
@@ -444,6 +449,8 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .db-day.on{background:#eaf2e2;color:#5b8c3c}
 .db-day b{display:block;font-size:12px}
 .db-day span{color:#5b8c3c}
+.db-day.sun-bd{border-left:2px solid #e8c89a}
+.db-day.mon-bd{border-left:2px solid #6b984f}
 .book-bar{display:flex;gap:8px;margin-top:10px}
 .db-top-bar{display:flex;align-items:center;gap:10px;margin-top:8px}
 .db-flip{width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:24px;color:#b3a98f;background:#f3f1ea;border-radius:50%;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;border:1px solid #e6e0d0;flex-shrink:0}
@@ -469,6 +476,12 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .star-card{background:linear-gradient(135deg,#fff9e6,#ffe8a0);border-radius:12px;padding:10px 8px;text-align:center;box-shadow:0 1px 4px rgba(180,140,40,.12);animation:starIn .4s ease both}
 .star-card-name{font-size:13px;font-weight:600;color:#5a4e2a;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .star-card-date{font-size:11px;color:#998548;margin-top:4px}
+/* 折叠区域 */
+.collapse-details{background:#faf8f3;border:1px solid #ece6d8;border-radius:12px;margin-top:12px;overflow:hidden}
+.collapse-summary{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;font-size:14px;font-weight:600;color:#8a7a5c;user-select:none;-webkit-tap-highlight-color:transparent}
+.collapse-summary::-webkit-details-marker{display:none}
+.collapse-count{background:#eaf2e2;color:#5b8c3c;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:700}
+.collapse-body{padding:0 14px 12px;border-top:1px solid #f0ead6}
 .img-grid{display:flex;flex-wrap:wrap;gap:6px}
 .img-grid>img,.img-cell>img{width:72px;height:72px;object-fit:cover;border-radius:10px;border:1px solid #eee}
 .img-cell{position:relative;display:inline-block;margin:0 6px 6px 0}
@@ -859,7 +872,7 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
       </div>
       <div class="card">
         <h2>今天运动了</h2>
-        <div class="row"><select id="sportType" style="flex:1"></select><select id="sportDuration" style="flex:0.8"><option value="">时长</option><option value="30">0.5 小时</option><option value="60">1 小时</option><option value="90">1.5 小时</option><option value="120">2 小时</option><option value="150">2.5 小时</option><option value="180">3 小时</option></select><button class="btn" onclick="Sport.addLog()">打卡</button></div>
+        <div class="row"><select id="sportType" style="flex:1"></select><div style="flex:1;display:flex;align-items:center;gap:4px"><select id="sportDuration" style="flex:1;min-width:0"><option value="">时长</option><option value="30">0.5</option><option value="60">1</option><option value="90">1.5</option><option value="120">2</option><option value="150">2.5</option><option value="180">3</option><option value="_custom">自定</option></select><span id="sportDurUnit" style="font-size:13px;color:#888;white-space:nowrap">h</span><input id="sportCustomDur" type="number" step="0.5" min="0.5" max="24" placeholder="h" style="display:none;width:56px;flex:none"></div><button class="btn" onclick="Sport.addLog()">打卡</button></div>
       </div>
       <div class="card"><h2>月度日历</h2><div class="calendar-grid" id="sportCalendar"></div></div>
       <div class="card"><h2>最近记录</h2><div id="sportList"></div></div>
@@ -1576,7 +1589,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-12-v23';
+const BUILD_VERSION = '2026-08-12-v24';
 const App = {
   current:'home',
   booting:true,
@@ -2238,13 +2251,15 @@ const MainQuest = {
 const DiaryBook = {
   cur:null,
   weekMode:false,
-  render(){ if(!this.cur) this.cur=Util.today(); this.weekMode=false; const b=document.getElementById('dbWeekBtn'); if(b) b.textContent='本周汇总'; const dp=document.getElementById('dbDatePick'); if(dp) dp.value=this.cur; this.renderSpread(this.cur); },
-  go(date){ this.cur=date; this.weekMode=false; const b=document.getElementById('dbWeekBtn'); if(b) b.textContent='本周汇总'; const dp=document.getElementById('dbDatePick'); if(dp) dp.value=date; this.renderSpread(date); },
+  _flipDir:0, /* -1=向后翻(上一页), +1=向前翻(下一页) */
+  render(){ if(!this.cur) this.cur=Util.today(); this.weekMode=false; this._flipDir=0; const b=document.getElementById('dbWeekBtn'); if(b) b.textContent='本周汇总'; const dp=document.getElementById('dbDatePick'); if(dp) dp.value=this.cur; this.renderSpread(this.cur); },
+  go(date){ this.cur=date; this.weekMode=false; this._flipDir=0; const b=document.getElementById('dbWeekBtn'); if(b) b.textContent='本周汇总'; const dp=document.getElementById('dbDatePick'); if(dp) dp.value=date; this.renderSpread(date); },
   goDaily(date){ DailyLog._pendingDate=date; App.go('daily'); },
-  prev(){ if(this.weekMode){ this.cur=Util.dateAdd(this.cur,-7); this.renderWeek(this.cur); } else { this.go(Util.dateAdd(this.cur,-1)); } },
-  next(){ if(this.weekMode){ this.cur=Util.dateAdd(this.cur,7); this.renderWeek(this.cur); } else { this.go(Util.dateAdd(this.cur,1)); } },
+  prev(){ this._flipDir=-1; if(this.weekMode){ this.cur=Util.dateAdd(this.cur,-7); this.renderWeek(this.cur); } else { this.go(Util.dateAdd(this.cur,-1)); } },
+  next(){ this._flipDir=1; if(this.weekMode){ this.cur=Util.dateAdd(this.cur,7); this.renderWeek(this.cur); } else { this.go(Util.dateAdd(this.cur,1)); } },
   toggleWeek(){
     this.weekMode=!this.weekMode;
+    this._flipDir=0;
     const b=document.getElementById('dbWeekBtn');
     if(this.weekMode){ if(b) b.textContent='返回当日'; this.renderWeek(this.cur); }
     else { if(b) b.textContent='本周汇总'; this.renderSpread(this.cur); }
@@ -2325,10 +2340,17 @@ const DiaryBook = {
   renderSpread(date){
     const left=document.getElementById('dbLeft'), right=document.getElementById('dbRight'), cal=document.getElementById('dbCalendar'), pick=document.getElementById('dbDatePick');
     if(!left||!right) return;
-    left.classList.remove('flip-anim'); right.classList.remove('flip-anim');
+    /* 清除旧动画类 */
+    left.className='book-left'; right.className='book-right';
     void left.offsetWidth;
-    left.classList.add('flip-anim'); right.classList.add('flip-anim');
-    /* 右页 = 当天，左页 = 前一天（方便连续阅读） */
+    /* 根据翻页方向施加动画：向前翻(下一页)→右页滑出左、新右页滑入；向后翻(上一页)→左页滑出新左页滑入 */
+    if(this._flipDir>0){
+      right.classList.add('flip-out'); left.classList.add('flip-in');
+    } else if(this._flipDir<0){
+      left.classList.add('flip-out'); right.classList.add('flip-in');
+    }
+    this._flipDir=0;
+    /* 右页 = 当天，左页 = 前一天（像真实书本：翻到下一页时，今天的右页变成明天的左页） */
     const prev=Util.dateAdd(date,-1);
     const wd=['日','一','二','三','四','五','六'];
     const wdN=new Date(date+'T00:00:00').getDay();
@@ -2342,9 +2364,11 @@ const DiaryBook = {
   renderWeek(date){
     const left=document.getElementById('dbLeft'), right=document.getElementById('dbRight'), cal=document.getElementById('dbCalendar'), pick=document.getElementById('dbDatePick');
     if(!left||!right) return;
-    left.classList.remove('flip-anim'); right.classList.remove('flip-anim');
+    left.className='book-left'; right.className='book-right';
     void left.offsetWidth;
-    left.classList.add('flip-anim'); right.classList.add('flip-anim');
+    if(this._flipDir>0){ right.classList.add('flip-out'); left.classList.add('flip-in'); }
+    else if(this._flipDir<0){ left.classList.add('flip-out'); right.classList.add('flip-in'); }
+    this._flipDir=0;
     const monday=this.mondayOf(date);
     const week=[]; for(let i=0;i<7;i++) week.push(Util.dateAdd(monday,i));
     const data=week.map(d=>this.dayData(d));
@@ -2355,7 +2379,10 @@ const DiaryBook = {
     const whisperDays=data.filter(d=>d.whispers.length).length;
     const questN=data.reduce((s,d)=>s+d.questEvents.length,0);
     const rows=[['写了感恩日记',gratitudeDays+' 天'],['完成今日必做',totalDone+' 件'],['有习惯打卡',habitDays+' 天'],['写了情绪日记',moodDays+' 篇'],['发了碎碎念',whisperDays+' 天'],['主线任务打卡',questN+' 次']];
-    const dayList=week.map((dt,i)=>{ const d=data[i]; const wdn=['日','一','二','三','四','五','六'][new Date(dt+'T00:00:00').getDay()]; return `<div class="db-day ${d.has?'on':''}" onclick="DiaryBook.go('${dt}')"><b>${dt.slice(5)}</b><small>周${wdn}</small>${d.has?'<span>✓</span>':''}</div>`; }).join('');
+    /* 周日到周六排序，让周日周一边界清晰可见 */
+    const sortedDays=week.map((dt,i)=>({idx:i,dt,d:data[i],wdn:['日','一','二','三','四','五','六'][new Date(dt+'T00:00:00').getDay()]}));
+    sortedDays.sort((a,b)=>a.wdn-b.wdn);
+    const dayList=sortedDays.map(({dt,d,wdn})=>`<div class="db-day ${d.has?'on':''}${wdn===0?' sun-bd':''}${wdn===1?' mon-bd':''}" onclick="DiaryBook.go('${dt}')"><b>${dt.slice(5)}</b><small>周${wdn}</small>${d.has?'<span>✓</span>':''}</div>`).join('');
     left.innerHTML=`<div class="db-date">本周汇总（${monday} ~ ${week[6]}）</div><div class="db-sec"><h3>本周一眼</h3><ul class="db-list">${rows.map(r=>`<li>${r[0]}：<b>${r[1]}</b></li>`).join('')}</ul></div><div class="db-weekdays">${dayList}</div>`;
     /* 右页显示今天的内容 */
     const today=Util.today();
@@ -3162,22 +3189,27 @@ const WishShop = {
 
     area.innerHTML=html;
 
-    /* ====== 心愿星星记录：渲染到底部区域 ====== */
+    /* ====== 心愿星星记录：渲染到底部区域（默认折叠） ====== */
     const doneArea=document.getElementById('wishDoneCardsArea');
     if(doneArea){
       let doneHtml='';
+      const hasAnyContent=curYearDone.length||pastYears.some(y=>(years[y]||[]).length>0);
+      /* 折叠容器 */
+      doneHtml=`<details class="collapse-details"><summary class="collapse-summary"><span>📋 心愿完成记录</span><span class="collapse-count">${curYearDone.length+pastYears.reduce((s,y)=>s+(years[y]||[]).length,0)} 条</span></summary><div class="collapse-body">`;
       /* 当年心愿星星 */
       if(curYearDone.length){
-        doneHtml+=`<div class="card" style="margin-top:12px"><div style="font-size:14px;font-weight:700;color:#8a7a5c;margin-bottom:10px;display:flex;align-items:center;gap:6px"><span style="background:#6b984f;color:#fff;padding:3px 12px;border-radius:8px;font-size:13px">✨ 心愿星星</span>${curYear}年</div>`;
-        doneHtml+=`<div class="star-cards">${curYearDone.map(x=>`<div class="star-card"><div class="star-card-name">⭐ ${Util.esc(x.name)}</div><div class="star-card-date">${x.redeemedAt||''}</div></div>`).join('')}</div></div>`;
+        doneHtml+=`<div style="margin-bottom:10px"><div style="font-size:13px;font-weight:700;color:#8a7a5c;margin-bottom:6px;display:flex;align-items:center;gap:6px"><span style="background:#6b984f;color:#fff;padding:2px 10px;border-radius:6px;font-size:12px">✨ ${curYear}年</span></div>`;
+        doneHtml+=`<div class="star-cards">${curYearDone.map(x=>`<div class="star-card"><div class="star-card-name">⭐ ${Util.esc(x.name)}</div><div class="star-card-date">${x.redeemedAt||''}</div></div>`).join('')}</div>`;
       }
       /* 往年汇总 */
       pastYears.forEach(y=>{
         const items=years[y]||[];
         if(!items.length) return;
-        doneHtml+=`<div class="card" style="margin-top:10px"><div style="font-size:14px;font-weight:700;color:#8a7a5c;margin-bottom:8px">🫙 ${y}年 · ${items.length} 颗星</div>`;
-        doneHtml+=`<div class="star-cards">${items.map(x=>`<div class="star-card"><div class="star-card-name">⭐ ${Util.esc(x.name)}</div><div class="star-card-date">${x.cost} 枚 · ${x.redeemedAt||''}</div></div>`).join('')}</div></div>`;
+        doneHtml+=`<div style="margin-bottom:10px"><div style="font-size:13px;font-weight:700;color:#8a7a5c;margin-bottom:6px">🫙 ${y}年 · ${items.length} 颗星</div>`;
+        doneHtml+=`<div class="star-cards">${items.map(x=>`<div class="star-card"><div class="star-card-name">⭐ ${Util.esc(x.name)}</div><div class="star-card-date">${x.cost} 枚 · ${x.redeemedAt||''}</div></div>`).join('')}</div>`;
       });
+      if(!hasAnyContent) doneHtml+=`<div style="text-align:center;color:#aaa;padding:16px 0;font-size:13px">还没有完成的心愿星，继续加油～</div>`;
+      doneHtml+=`</div></details>`;
       doneArea.innerHTML=doneHtml;
     }
   },
@@ -3327,7 +3359,7 @@ const Coin = {
   },
   DAILY_CAP: 10,
   history(){ return Store.get('coin_history',[]); },
-  total(){ return this.history().reduce((s,x)=>s+x.amount,0); },
+  total(){ return this.history().filter(x=>typeof x.amount==='number').reduce((s,x)=>s+x.amount,0); },
   todayTotal(){ const t=Util.today(); return this.history().filter(x=>x.date===t).reduce((s,x)=>s+x.amount,0); },
   /* 今天「赚到」的金币（只算正数入账，不含兑换花掉的），用于每日上限判断 */
   todayEarned(){ const t=Util.today(); return this.history().filter(x=>x.date===t && x.amount>0).reduce((s,x)=>s+x.amount,0); },
@@ -3338,7 +3370,7 @@ const Coin = {
     /* 防重复：同一天同一来源只奖励一次 */
     const t=Util.today();
     const dup=this.history().find(x=>x.date===t && x.source===sourceKey);
-    if(dup) return;
+    if(dup){ UI.toast('今天这个已经领过金币啦 ✅'); return; }
     const coin={id:Util.uid(),date:t,time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),source:sourceKey,name:this.sources[sourceKey].name,icon:this.sources[sourceKey].icon,amount:1,note:note||''};
     Store.set('coin_history',[coin,...this.history()]);
     UI.toast(`🪙 +1 金币：${this.sources[sourceKey].name}`);
@@ -3430,13 +3462,39 @@ const Sport = {
     const all=this.types(), types=Util.byUse('sport_type',all.map(t=>t.id)).map(id=>all.find(t=>t.id===id)).filter(Boolean);
     sportType.innerHTML=types.map(t=>`<option value="${t.id}">${t.icon} ${Util.esc(t.name)}</option>`).join('');
     sportTypeCount.textContent=types.length;
+    /* 时长选择联动：自定义时显示输入框 */
+    const durSel=document.getElementById('sportDuration');
+    const customInput=document.getElementById('sportCustomDur');
+    const unitSpan=document.getElementById('sportDurUnit');
+    if(durSel) durSel.onchange=function(){
+      if(customInput){ customInput.style.display=this.value==='_custom'?'inline-block':'none'; }
+      if(unitSpan) unitSpan.style.display=this.value==='_custom'?'none':'inline';
+    };
     const month=Util.today().slice(0,7), logs=this.logs().filter(x=>x.date.startsWith(month));
     const days=[...new Set(logs.map(x=>x.date))].length, total=logs.reduce((s,x)=>s+x.duration,0);
     sportDays.textContent=days; sportMinutes.innerHTML=total+'<small>min</small>'; sportAvg.innerHTML=(days?Math.round(total/days):0)+'<small>min</small>';
     this.calendar(logs); this.renderList();
   },
   addType(){ const name=sportName.value.trim(); if(!name)return; Store.set('sport_types',[...this.types(),{id:Util.uid(),icon:sportIcon.value.trim()||'💪',name}]); sportName.value=sportIcon.value=''; this.render(); },
-  addLog(){ const duration=Number(sportDuration.value); const t=this.types().find(x=>x.id===sportType.value); if(!t)return UI.toast('先选运动类型'); if(!duration)return UI.toast('先选运动时长'); Util.bump('sport_type',sportType.value); Store.set('sport_logs',[{id:Util.uid(),date:Util.today(),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),type:t,duration},...this.logs()]); sportDuration.value=''; Coin.checkSport(); this.render(); },
+  addLog(){
+    const durEl=document.getElementById('sportDuration');
+    const customEl=document.getElementById('sportCustomDur');
+    let duration=0;
+    if(durEl.value==='_custom'){
+      duration=Number(customEl.value)||0;
+      if(!duration) return UI.toast('先填自定义时长');
+      duration=duration*60; /* h → 分钟 */
+    } else {
+      duration=Number(durEl.value);
+      if(!duration) return UI.toast('先选运动时长');
+    }
+    const t=this.types().find(x=>x.id===sportType.value);
+    if(!t)return UI.toast('先选运动类型');
+    Util.bump('sport_type',sportType.value);
+    Store.set('sport_logs',[{id:Util.uid(),date:Util.today(),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),type:t,duration},...this.logs()]);
+    durEl.value=''; if(customEl){ customEl.value=''; customEl.style.display='none'; }
+    Coin.checkSport(); this.render();
+  },
   calendar(logs){ const now=new Date(), y=now.getFullYear(), m=now.getMonth(); const last=new Date(y,m+1,0).getDate(); const by={}; logs.forEach(x=>by[Number(x.date.slice(8))]=(by[Number(x.date.slice(8))]||0)+x.duration); sportCalendar.innerHTML=Array.from({length:last},(_,i)=>`<div class="day-cell ${by[i+1]?'active':''}">${i+1}${by[i+1]?'<br>'+by[i+1]+'m':''}</div>`).join(''); },
   renderList(){ sportList.innerHTML=this.logs().length?this.logs().slice(0,20).map(x=>UI.item(`${x.type.icon} ${x.type.name} · ${x.duration} 分钟`,`${x.date} ${x.time}`,`<button class="del" onclick="Sport.del('${x.id}')">✕</button>`,`draggable="true" data-sort-id="${x.id}"`)).join(''):'<div class="empty">还没有运动记录</div>'; DragSort.bind('#sportList [data-sort-id]','sport_logs',()=>Sport.render()); },
   del(id){ Store.set('sport_logs',this.logs().filter(x=>x.id!==id)); this.render(); },
