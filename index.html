@@ -406,27 +406,40 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .quest-fill{height:100%;background:linear-gradient(90deg,#6b984f,#8fbf6b);transition:width .3s ease}
 .quest-meta{display:flex;justify-content:space-between;font-size:13px}
 /* 日记本 */
-.book{display:flex;align-items:stretch;margin-top:10px}
-.book-edge{flex:0 0 38px;display:flex;align-items:center;justify-content:center;font-size:30px;color:#b3a98f;background:#f3f1ea;border-radius:14px 0 0 14px;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
-.book-edge.book-right{border-radius:0 14px 14px 0}
-.book-edge:active{background:#e7e4db}
-.book-page{flex:1;min-height:62vh;background:#fffdf8;border:1px solid #ece6d8;padding:16px;overflow:auto;box-shadow:inset 0 0 30px rgba(0,0,0,.03);transform-origin:left center}
-.book-page.flip{animation:dbFlip .5s ease}
-@keyframes dbFlip{0%{transform:rotateY(16deg);opacity:.25}100%{transform:rotateY(0);opacity:1}}
+/* 日记本 - 双页翻书 */
+.book-spread{display:flex;align-items:stretch;margin-top:10px;perspective:1200px;position:relative;min-height:62vh}
+.book-spine{width:3px;background:linear-gradient(180deg,#d4c5a9,#e8dcc8,#d4c5a9);flex-shrink:0;border-radius:1px;box-shadow:0 0 8px rgba(0,0,0,.08),inset 0 0 3px rgba(0,0,0,.06);z-index:2}
+.book-left,.book-right{flex:1;background:#fffdf8;overflow-y:auto;padding:14px 16px;min-height:62vh;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.book-left{border-radius:12px 0 0 12px;border:1px solid #ece6d8;border-right:none;transform-origin:right center;transition:transform .4s ease}
+.book-right{border-radius:0 12px 12px 0;border:1px solid #ece6d8;border-left:none;transform-origin:left center;transition:transform .4s ease}
+.book-left.flip-anim{animation:pageTurnLeft .45s ease}
+.book-right.flip-anim{animation:pageTurnRight .45s ease}
+@keyframes pageTurnLeft{0%{transform:rotateY(-15deg);opacity:.5}100%{transform:rotateY(0);opacity:1}}
+@keyframes pageTurnRight{0%{transform:rotateY(15deg);opacity:.5}100%{transform:rotateY(0);opacity:1}}
+.db-cal{margin-bottom:10px}
+.db-cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.db-cal-head b{font-size:15px;color:#5a6e52}
+.db-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:12px}
+.db-cal-dot{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:50%;margin:0 auto;cursor:pointer;transition:background .15s,color .15s}
+.db-cal-dot.today{background:#6b984f;color:#fff;font-weight:700}
+.db-cal-dot.has-data{background:#eaf2e2;color:#5b8c3c;font-weight:600}
+.db-cal-dot.sel{background:#6b984f;color:#fff;box-shadow:0 0 0 2px #a8d18d}
+.db-cal-dot.other-month{color:#ccc}
 .db-date{font-size:15px;font-weight:600;color:#6b7d63;margin-bottom:10px;border-bottom:1px dashed #ddd;padding-bottom:8px}
-.db-sec{margin:12px 0}
-.db-sec h3{font-size:14px;color:#8a7a5c;margin:0 0 6px}
-.db-list{margin:0;padding-left:18px}
-.db-list li{margin:3px 0;font-size:14px;line-height:1.5}
+.db-sec{margin:10px 0}
+.db-sec h3{font-size:13px;color:#8a7a5c;margin:0 0 5px}
+.db-list{margin:0;padding-left:16px}
+.db-list li{margin:2px 0;font-size:13px;line-height:1.5}
 .db-empty{font-size:13px;color:#aaa}
-.db-empty.big{text-align:center;color:#bbb;padding:40px 10px;line-height:1.8}
-.db-nav{display:flex;justify-content:space-between;font-size:12px;color:#aaa;margin-top:14px;border-top:1px dashed #eee;padding-top:8px}
-.db-weekdays{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.db-day{flex:1 0 40px;text-align:center;background:#f6f4ee;border-radius:10px;padding:6px 2px;font-size:12px;color:#888}
+.db-empty.big{text-align:center;color:#bbb;padding:30px 10px;line-height:1.8}
+.db-nav{display:flex;justify-content:space-between;font-size:11px;color:#aaa;margin-top:12px;border-top:1px dashed #eee;padding-top:6px}
+.db-weekdays{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.db-day{flex:1 0 36px;text-align:center;background:#f6f4ee;border-radius:8px;padding:5px 2px;font-size:11px;color:#888}
 .db-day.on{background:#eaf2e2;color:#5b8c3c}
-.db-day b{display:block;font-size:13px}
+.db-day b{display:block;font-size:12px}
 .db-day span{color:#5b8c3c}
-.book-bar{display:flex;gap:10px;margin-top:12px}
+.book-bar{display:flex;gap:8px;margin-top:10px}
+@keyframes starIn{from{opacity:0;transform:translateY(-20px) scale(.5)}to{opacity:1;transform:translateY(0) scale(1)}}
 .img-grid{display:flex;flex-wrap:wrap;gap:6px}
 .img-grid>img,.img-cell>img{width:72px;height:72px;object-fit:cover;border-radius:10px;border:1px solid #eee}
 .img-cell{position:relative;display:inline-block;margin:0 6px 6px 0}
@@ -486,17 +499,20 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
         </div>
       </section>
       <section class="grid" id="homeTopGrid"></section>
-      <div class="sort-tip" id="homeTopTip">长按格子可拖动排序，也可把大入口里的栏目钉出来放这里。</div>
+      <div class="sort-tip" id="homeTopTip">长按格子可拖动排序，也可把「更多」里的栏目钉到这里。</div>
       <section class="home-board" id="homeBoard"></section>
     </section><!-- ==== 功能：首页 END ==== --><!-- ==== 功能：分类 START ==== --><section class="page" id="page-hub">
       <div class="page-title" id="hubTitle">分类</div><div class="page-sub" id="hubSub">把相关功能放在一起。</div>
       <div class="grid" id="hubGrid"></div>
     </section><!-- ==== 功能：分类 END ==== --><!-- ==== 功能：每日记录 START ==== --><section class="page" id="page-daily">
-      <div class="page-title">每日记录</div><div class="page-sub">每天一次填完：感恩、习惯与情绪、明日必做、昨晚作息。没想写的留空也行。</div>
+      <div class="page-title">每日记录</div><div class="page-sub">感恩、习惯、情绪、作息、必做，一次填完。</div>
       <div class="card">
-        <h2>① 感恩日记</h2>
-        <label>今天所有值得感恩的事情</label>
-        <textarea id="dlWins" placeholder="一行一件，比如：读完一篇文献；认真散步了；拒绝了一件消耗我的事；学到了新东西；被人帮助了"></textarea>
+        <h2>① 睡眠情况</h2>
+        <div class="row"><input id="dlSleep" type="time" value="23:00" style="flex:1"><input id="dlWake" type="time" value="08:00" style="flex:1"></div>
+      </div>
+      <div class="card">
+        <h2>② 感恩日记</h2>
+        <textarea id="dlWins" placeholder="今天值得感恩的事，一行一件"></textarea>
         <label>明天必做事项，最多 3 件</label>
         <div id="dlMustBox" class="must-editor"></div>
         <label style="margin-top:10px">今天做的事，服务哪些年度计划？</label>
@@ -511,15 +527,7 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
           <option value="😊">😊 开心</option><option value="🥰">🥰 温暖</option><option value="😌">😌 平静</option><option value="😐">😐 平淡</option><option value="🤔">🤔 思考</option><option value="😟">😟 焦虑</option><option value="😣">😣 紧绷</option><option value="😴">😴 疲惫</option><option value="😡">😡 烦躁</option><option value="😢">😢 难过</option><option value="🤩">🤩 兴奋</option><option value="💪">💪 高能</option>
         </select>
         <label>一句话总结情绪</label>
-        <input id="dlMoodLine" placeholder="比如：今天整体平稳，下午被打断后有点焦虑">
-      </div>
-      <div class="card">
-        <h2>④ 昨晚睡眠</h2>
-        <div class="row">
-          <div style="flex:1"><label>昨日入睡时间</label><input id="dlSleep" type="time" value="23:00"></div>
-          <div style="flex:1"><label>今日起床时间</label><input id="dlWake" type="time" value="08:00"></div>
-        </div>
-        <p class="hint">入睡默认 23:00、起床默认 08:00；智能分析里会画出你的作息曲线。</p>
+        <input id="dlMoodLine" placeholder="一句话总结今天">
       </div>
       <div class="card">
         <div class="collapsible-head" onclick="DailyLog.toggleMood()">
@@ -528,7 +536,7 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
         </div>
         <div id="dlMoodBox">
           <p class="hint">今天如果有具体事件想倒出来，写在这里。留空就不会生成情绪日记。</p>
-          <textarea id="dlMoodText" placeholder="什么时候、什么地方、和谁在一起、发生了什么、我的感受。可以写很长。"></textarea>
+          <textarea id="dlMoodText" placeholder="发生了什么、感受如何，随便写"></textarea>
           <button class="btn ghost" style="margin-top:10px;width:100%" onclick="DailyLog.aiAnalyze()">AI 立刻复盘这一段</button>
           <div class="ai-box" id="dlAi"></div>
         </div>
@@ -542,7 +550,7 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
       <div class="page-title">感恩日记</div><div class="page-sub">每天晚上写一写：今天值得感恩的事（成就、学到、做对都行），明天最重要的 3 件事，还能上传一张感恩瞬间。</div>
       <div class="card">
         <h2>今天所有值得感恩的事情</h2>
-        <textarea id="successWins" placeholder="一行一件，比如：读完一篇文献；认真散步了；拒绝了一件消耗我的事；学到了一个新方法；被人帮助了"></textarea>
+        <textarea id="successWins" placeholder="今天值得感恩的事，一行一件"></textarea>
         <label>明天必做事项，最多 3 件</label>
         <div id="successMustBox" class="must-editor"></div>
         <label style="margin-top:10px">感恩瞬间（可上传图片）</label>
@@ -564,7 +572,7 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
           <option value="😊">😊 开心</option><option value="🥰">🥰 温暖</option><option value="😌">😌 平静</option><option value="😐">😐 平淡</option><option value="🤔">🤔 思考</option><option value="😟">😟 焦虑</option><option value="😣">😣 紧绷</option><option value="😴">😴 疲惫</option><option value="😡">😡 烦躁</option><option value="😢">😢 难过</option><option value="🤩">🤩 兴奋</option><option value="💪">💪 高能</option>
         </select>
         <label>一句话总结情绪</label>
-        <input id="trackerMoodLine" placeholder="比如：今天整体平稳，但下午被消息打断后有点焦虑">
+        <input id="trackerMoodLine" placeholder="一句话总结">
         <button class="btn" style="margin-top:10px;width:100%" onclick="Tracker.saveToday()">保存本周追踪</button>
       </div>
       <div class="card">
@@ -671,13 +679,18 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
         <div id="reviewNotes"></div>
       </div>
     </section><!-- ==== 功能：复盘中心 END ==== --><!-- ==== 功能：日记本 START ==== --><section class="page" id="page-diarybook">
-      <div class="page-title">日记本</div><div class="page-sub">一页一天，把当天的事汇总成一本翻得到的日记。点左边往前翻、点右边往后翻；周末会多出一页本周汇总。</div>
-      <div class="book">
-        <div class="book-edge book-left" onclick="DiaryBook.prev()"><span>‹</span></div>
-        <div class="book-page" id="dbPage"></div>
-        <div class="book-edge book-right" onclick="DiaryBook.next()"><span>›</span></div>
+      <div class="page-title">日记本</div><div class="page-sub">双页翻书，左页日历右页内容，可翻到任意日期补记。</div>
+      <div class="book-spread" id="bookSpread">
+        <div class="book-spine"></div>
+        <div class="book-left" id="dbLeft"></div>
+        <div class="book-right" id="dbRight"></div>
       </div>
       <div class="book-bar">
+        <button class="btn ghost small" onclick="DiaryBook.prev()">‹ 上一页</button>
+        <input type="date" id="dbDatePick" style="flex:1;font-size:14px;padding:4px 8px;border:1px solid var(--line,#ddd);border-radius:8px" onchange="DiaryBook.go(this.value)">
+        <button class="btn ghost small" onclick="DiaryBook.next()">下一页 ›</button>
+      </div>
+      <div class="book-bar" style="margin-top:6px">
         <button class="btn ghost small" onclick="DiaryBook.go(Util.today())">回到今天</button>
         <button class="btn ghost small" id="dbWeekBtn" onclick="DiaryBook.toggleWeek()">本周汇总</button>
       </div>
@@ -757,16 +770,14 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
       </div>
       <div class="card"><h2>未整理灵感</h2><div id="quickList"></div></div>
     </section><!-- ==== 功能：灵感速记 END ==== --><!-- ==== 功能：心愿行动 START ==== --><section class="page" id="page-wish">
-      <div class="page-title">心愿 / 行动清单</div><div class="page-sub">把“想做的事”和“下一步行动”分开，避免心愿堆成压力。</div>
+      <div class="page-title">心愿 / 行动清单</div><div class="page-sub">心愿是大方向，行动是具体步骤；每个心愿下面可以挂行动。</div>
       <div class="card">
-        <select id="wishType"><option value="wish">想做的事</option><option value="action">下一步行动</option></select>
+        <select id="wishType"><option value="wish">✨ 心愿</option><option value="action">📌 行动（先选归属心愿）</option></select>
+        <div id="wishParentBox" style="display:none;margin-top:6px"><select id="wishParent" style="width:100%;font-size:14px;padding:6px;border:1px solid #ddd;border-radius:8px"><option value="">— 不关联心愿 —</option></select></div>
         <div class="row" style="margin-top:8px"><input id="wishInput" placeholder="写一条"><button class="btn" onclick="Wish.add()">添加</button></div>
       </div>
-      <div class="grid">
-        <div class="card"><h2>心愿</h2><div id="wishList"></div></div>
-        <div class="card"><h2>行动</h2><div id="actionList"></div></div>
-      </div>
-      <div class="card"><h2>已完成心愿 / 行动</h2><div id="doneWishList"></div></div>
+      <div id="wishArea"></div>
+      <div class="card"><h2>已完成</h2><div id="doneWishList"></div></div>
     </section><!-- ==== 功能：心愿行动 END ==== --><!-- ==== 功能：做菜栏 START ==== --><section class="page" id="page-cooking">
       <div class="page-title">做菜栏</div><div class="page-sub">记录会做的菜，也可以直接转“今天吃什么”。</div>
       <div class="card">
@@ -792,23 +803,21 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
       </div>
       <div class="card"><h2>我的菜</h2><div id="dishList"></div></div>
     </section><!-- ==== 功能：做菜栏 END ==== --><!-- ==== 功能：运动打卡 START ==== -->    <section class="page" id="page-sport">
-      <div class="page-title">运动打卡</div><div class="page-sub">先填身体档案，再看运动记录；不运动的日子就不记。</div>
+      <div class="page-title">运动打卡</div><div class="page-sub">填好身体档案，记录每次运动。</div>
       <div class="card">
         <h2>个人身体档案</h2>
         <div class="row">
-          <select id="bodyGender"><option value="">性别</option><option value="女">女</option><option value="男">男</option></select>
-          <input id="bodyAge" type="number" placeholder="年龄">
+          <select id="bodyGender" style="flex:1"><option value="">性别</option><option value="女">女</option><option value="男">男</option></select>
+          <input id="bodyAge" type="number" placeholder="年龄" style="flex:1">
+          <input id="bodyHeight" type="number" placeholder="身高cm" style="flex:1">
         </div>
         <div class="row" style="margin-top:8px">
-          <input id="bodyHeight" type="number" placeholder="身高 cm">
-          <input id="bodyWeight" type="number" placeholder="当前体重 kg">
-        </div>
-        <div class="row" style="margin-top:8px">
-          <input id="bodyIdeal" type="number" placeholder="理想体重 kg（可选）">
+          <input id="bodyWeight" type="number" placeholder="当前体重kg" style="flex:1">
+          <input id="bodyIdeal" type="number" placeholder="理想体重kg" style="flex:1">
           <button class="btn" onclick="Sport.saveProfile()">保存</button>
         </div>
-        <div id="bmiBox" style="margin-top:10px"></div>
-        <button class="btn ghost" style="margin-top:8px;width:100%" onclick="Sport.recordWeight()">记录今日体重（更新曲线）</button>
+        <div id="bmiBox" style="margin-top:8px"></div>
+        <button class="btn ghost" style="width:100%" onclick="Sport.recordWeight()">记体重</button>
       </div>
       <div class="grid">
         <div class="tile"><h3>运动天数</h3><div class="big" id="sportDays">0</div></div>
@@ -818,8 +827,7 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
       </div>
       <div class="card">
         <h2>今天运动了</h2>
-        <div class="row"><select id="sportType"></select><input id="sportDuration" type="number" placeholder="分钟"></div>
-        <div class="row" style="margin-top:8px"><input id="sportTime" type="time"><button class="btn" onclick="Sport.addLog()">打卡</button></div>
+        <div class="row"><select id="sportType" style="flex:1"></select><button class="btn" onclick="Sport.addLog()">打卡</button></div>
       </div>
       <div class="card"><h2>月度日历</h2><div class="calendar-grid" id="sportCalendar"></div></div>
       <div class="card"><h2>最近记录</h2><div id="sportList"></div></div>
@@ -882,10 +890,15 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
       </div>
       <div class="card"><h2>我的心愿清单</h2><div id="wishShopList"></div></div>
       <div class="card">
-        <h2>怎么赚金币</h2>
-        <p class="hint">每天最多攒 10 枚金币，认真生活就能慢慢攒起来：</p>
-        <div id="wishShopWays"></div>
+        <h2>✨ 星愿瓶</h2>
+        <div id="wishBottle" style="text-align:center;padding:20px 0;position:relative">
+          <div style="font-size:64px;line-height:1">🫙</div>
+          <div id="bottleStars" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none"></div>
+          <p class="hint" id="bottleHint">兑换的心愿会变成星星飞进来</p>
+        </div>
+        <div id="doneWishShopList"></div>
       </div>
+      <p style="margin-top:8px;font-size:12px;color:#999;text-align:center">💰 每日最多 10 枚金币 · 打卡/复盘/运动/情绪日记/连续签到都能赚</p>
     </section><!-- ==== 功能：心仪好物兑换铺 END ==== --><!-- ==== 功能：生活智能分析 START ==== --><section class="page" id="page-lifeAnalysis">
       <div class="page-title">生活智能分析</div><div class="page-sub">把今日必做、心愿行动、运动、份子钱、做菜、英语和连续打卡放在一起看。</div>
       <div class="card" id="lifeCompact"></div>
@@ -1535,7 +1548,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-12-v20';
+const BUILD_VERSION = '2026-08-12-v21';
 const App = {
   current:'home',
   booting:true,
@@ -1773,7 +1786,7 @@ const Hub = {
       mood:'长文事件复盘，AI 立刻总结',
       mainquest:'主线任务打卡，进度条看得见',
       diarybook:'一页一天，翻看每天的汇总',
-      review:'周总结 / 月总结 / 年总结 / 使用说明书',
+      review:'周总结 / 月总结 / 年总结',
       self:'优点、边界、可控 / 不可控',
       notes:'灵感、经验、句子、搜索',
       quick:'先记一笔，之后再整理',
@@ -1925,7 +1938,7 @@ const Home = {
     return '';
   },
   entryIds(){ return this.allEntryIds().filter(id=>!Store.get('home_hidden_entries',[]).includes(id)); },
-  /* 大入口 = 文件夹：按日记 / 知识 / 生活 分三个抽屉，可收起展开，里面的小栏目能钉到首页顶部 */
+  /* 更多 = 文件夹：按日记 / 知识 / 生活 分三个抽屉，可收起展开，里面的小栏目能钉到首页顶部 */
   folderDefs(){ return [{key:'diary',icon:'🌙',title:'日记与自我'},{key:'knowledge',icon:'📚',title:'知识与积累'},{key:'life',icon:'🍲',title:'生活与日常'},{key:'other',icon:'🧺',title:'其他'}]; },
   folderOf(id){
     for(const k of Object.keys(Hub.groups)) if(Hub.groups[k].pages.includes(id)) return k;
@@ -1953,7 +1966,7 @@ const Home = {
         </div>
         <div class="folder-body ${closed?'closed':''}">${g.ids.map(id=>this.miniEntryHtml(id)).join('')}</div>
       </section>`;
-    }).join('') : '<div class="empty">大入口都被隐藏了，到下面的「显示设置」勾选回来。</div>';
+    }).join('') : '<div class="empty">更多栏目都被隐藏了，到下面的「显示设置」勾选回来。</div>';
     const hiddenWidgets = Store.get('home_hidden_widgets',[]);
     const hiddenEntries = Store.get('home_hidden_entries',[]);
     const allWidgets = this.widgetCatalog();
@@ -1965,7 +1978,7 @@ const Home = {
       <h2 style="margin-bottom:8px">已隐藏的模块</h2>
       <p class="hint">点 ＋ 可以恢复显示。</p>
       ${hw.length ? `<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">桌面块</div><div class="hidden-list">${hw.map(w=>`<button class="pill" onclick="Home.showWidget('${w.id}')">＋ ${Util.esc(w.label)}</button>`).join('')}</div></div>` : ''}
-      ${he.length ? `<div><div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">大入口栏目</div><div class="hidden-list">${he.map(w=>`<button class="pill" onclick="Home.showEntry('${w.id}')">＋ ${Util.esc(w.label)}</button>`).join('')}</div></div>` : ''}
+      ${he.length ? `<div><div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">更多栏目</div><div class="hidden-list">${he.map(w=>`<button class="pill" onclick="Home.showEntry('${w.id}')">＋ ${Util.esc(w.label)}</button>`).join('')}</div></div>` : ''}
     </div>` : '';
     return foldersHtml + settingsHtml;
   },
@@ -2197,19 +2210,17 @@ const MainQuest = {
 const DiaryBook = {
   cur:null,
   weekMode:false,
-  render(){ if(!this.cur) this.cur=Util.today(); this.weekMode=false; const b=document.getElementById('dbWeekBtn'); if(b) b.textContent='本周汇总'; this.renderDay(this.cur); },
-  go(date){ this.cur=date; this.weekMode=false; const b=document.getElementById('dbWeekBtn'); if(b) b.textContent='本周汇总'; this.renderDay(date); },
+  render(){ if(!this.cur) this.cur=Util.today(); this.weekMode=false; const b=document.getElementById('dbWeekBtn'); if(b) b.textContent='本周汇总'; const dp=document.getElementById('dbDatePick'); if(dp) dp.value=this.cur; this.renderSpread(this.cur); },
+  go(date){ this.cur=date; this.weekMode=false; const b=document.getElementById('dbWeekBtn'); if(b) b.textContent='本周汇总'; const dp=document.getElementById('dbDatePick'); if(dp) dp.value=date; this.renderSpread(date); },
   prev(){ if(this.weekMode){ this.cur=Util.dateAdd(this.cur,-7); this.renderWeek(this.cur); } else { this.go(Util.dateAdd(this.cur,-1)); } },
   next(){ if(this.weekMode){ this.cur=Util.dateAdd(this.cur,7); this.renderWeek(this.cur); } else { this.go(Util.dateAdd(this.cur,1)); } },
   toggleWeek(){
     this.weekMode=!this.weekMode;
     const b=document.getElementById('dbWeekBtn');
     if(this.weekMode){ if(b) b.textContent='返回当日'; this.renderWeek(this.cur); }
-    else { if(b) b.textContent='本周汇总'; this.renderDay(this.cur); }
+    else { if(b) b.textContent='本周汇总'; this.renderSpread(this.cur); }
   },
-  flip(frame){ frame.classList.remove('flip'); void frame.offsetWidth; frame.classList.add('flip'); },
   mondayOf(date){ const d=new Date(date+'T00:00:00'); const dw=d.getDay()||7; return Util.dateAdd(date, 1-dw); },
-  navHtml(date){ const wd=['日','一','二','三','四','五','六'][new Date(date+'T00:00:00').getDay()]; return `<div class="db-nav"><span>‹ ${Util.dateAdd(date,-1)}</span><span>${date} 周${wd}</span><span>${Util.dateAdd(date,1)} ›</span></div>`; },
   dayData(date){
     const s=Store.get('success:'+date,null)||{};
     const t=Store.get('tracker:'+date,null)||{};
@@ -2234,17 +2245,13 @@ const DiaryBook = {
   pageHtml(d, date){
     if(!d.has) return `<div class="db-empty big">这一天还没有记录。<br>去「每日记录」写点今天的吧。</div>`;
     const out=[];
-    /* 优先：日记记录 */
     if(d.winLines.length) out.push(this.section('感恩日记', d.winLines.map(x=>Util.esc(x))));
     if(d.images.length) out.push(`<div class="db-sec"><h3>感恩瞬间</h3><div class="img-grid">${d.images.map(id=>`<img data-media="${id}" alt="" onclick="Media.openFull('${id}')">`).join('')}</div></div>`);
     if(d.moodDiary.length) out.push(this.section('情绪日记', d.moodDiary.map(x=>`${Util.esc(x.symbol||'')} ${Util.esc(x.text)}`)));
     if(d.whispers.length) out.push(this.section('碎碎念', d.whispers.map(x=>Util.esc(x))));
-    /* 其次：今日完成事项 */
     if(d.doneTasks.length) out.push(this.section('今日必做完成', d.doneTasks.map(x=>Util.esc(x.text))));
-    /* 习惯与情绪 */
     if(d.habitsDone.length) out.push(this.section('习惯打卡', d.habitsDone.map(it=>`${Util.esc(it.name)} ✓`)));
     if(d.mood) out.push(`<div class="db-sec"><h3>今日情绪</h3><p>${Util.esc(d.mood)}${d.moodLine?(' · '+Util.esc(d.moodLine)):''}</p></div>`);
-    /* 主线任务打卡 */
     if(d.questEvents.length){
       const byQ={}; d.questEvents.forEach(e=>{ byQ[e.questId]=(byQ[e.questId]||0)+1; });
       const list=MainQuest.list();
@@ -2253,17 +2260,58 @@ const DiaryBook = {
     if(d.s.sleepTime||d.s.wakeTime) out.push(`<div class="db-sec"><h3>作息</h3><p>入睡 ${Util.esc(d.s.sleepTime||'—')} · 起床 ${Util.esc(d.s.wakeTime||'—')}</p></div>`);
     return out.join('');
   },
-  renderDay(date){
-    const frame=document.getElementById('dbPage'); if(!frame) return;
-    this.flip(frame);
+  /* 左页：迷你日历 */
+  calHtml(selDate){
+    const y=Number(selDate.slice(0,4)), m=Number(selDate.slice(5,7))-1;
+    const first=new Date(y,m,1);
+    const startDow=(first.getDay()||7)-1;
+    const daysInMonth=new Date(y,m+1,0).getDate();
+    const today=Util.today();
+    const prev = new Date(y,m,0).getDate();
+    let html='<div class="db-cal-head"><b>'+y+'年'+(m+1)+'月</b></div>';
+    html+='<div class="db-cal-grid">';
+    ['一','二','三','四','五','六','日'].forEach(d=>html+='<div style="font-size:11px;color:#aaa;padding:4px 0">'+d+'</div>');
+    for(let i=0;i<startDow;i++){ const pd=prev-startDow+i+1; html+=`<div class="db-cal-dot other-month">${pd}</div>`; }
+    for(let d=1;d<=daysInMonth;d++){
+      const ds=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+      const dd=this.dayData(ds);
+      const isToday=ds===today;
+      const isSel=ds===selDate;
+      cls='db-cal-dot'+(isToday?' today':'')+(dd.has&&!isToday?' has-data':'')+(isSel?' sel':'');
+      html+=`<div class="${cls}" onclick="DiaryBook.go('${ds}')">${d}</div>`;
+    }
+    const total=startDow+daysInMonth;
+    const rem=total%7?(7-total%7):0;
+    for(let i=1;i<=rem;i++) html+=`<div class="db-cal-dot other-month">${i}</div>`;
+    html+='</div>';
+    /* 小月历下方：本月有记录的日期 */
+    const recDays=[];
+    for(let d=1;d<=daysInMonth;d++){
+      const ds=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+      if(this.dayData(ds).has) recDays.push(ds.slice(5));
+    }
+    if(recDays.length) html+=`<div style="margin-top:6px;font-size:11px;color:#999">📝 ${recDays.join('、')}</div>`;
+    return html;
+  },
+  renderSpread(date){
+    const left=document.getElementById('dbLeft'), right=document.getElementById('dbRight');
+    if(!left||!right) return;
+    left.classList.remove('flip-anim'); right.classList.remove('flip-anim');
+    void left.offsetWidth;
+    left.classList.add('flip-anim'); right.classList.add('flip-anim');
+    left.innerHTML=this.calHtml(date);
     const wd=['日','一','二','三','四','五','六'][new Date(date+'T00:00:00').getDay()];
-    frame.innerHTML=`<div class="db-date">${date} · 周${wd}</div>`+this.pageHtml(this.dayData(date),date)+this.navHtml(date);
-    Media.paint(frame);
+    right.innerHTML=`<div class="db-date">${date} · 周${wd}</div>`+this.pageHtml(this.dayData(date),date);
+    Media.paint(right);
   },
   renderWeek(date){
-    const frame=document.getElementById('dbPage'); if(!frame) return;
-    this.flip(frame);
+    const left=document.getElementById('dbLeft'), right=document.getElementById('dbRight');
+    if(!left||!right) return;
+    left.classList.remove('flip-anim'); right.classList.remove('flip-anim');
+    void left.offsetWidth;
+    left.classList.add('flip-anim'); right.classList.add('flip-anim');
     const monday=this.mondayOf(date);
+    left.innerHTML=this.calHtml(monday);
     const week=[]; for(let i=0;i<7;i++) week.push(Util.dateAdd(monday,i));
     const data=week.map(d=>this.dayData(d));
     const gratitudeDays=data.filter(d=>d.winLines.length).length;
@@ -2273,9 +2321,8 @@ const DiaryBook = {
     const whisperDays=data.filter(d=>d.whispers.length).length;
     const questN=data.reduce((s,d)=>s+d.questEvents.length,0);
     const rows=[['写了感恩日记',gratitudeDays+' 天'],['完成今日必做',totalDone+' 件'],['有习惯打卡',habitDays+' 天'],['写了情绪日记',moodDays+' 篇'],['发了碎碎念',whisperDays+' 天'],['主线任务打卡',questN+' 次']];
-    const dayList=week.map((dt,i)=>{ const d=data[i]; const wd=['日','一','二','三','四','五','六'][new Date(dt+'T00:00:00').getDay()]; return `<div class="db-day ${d.has?'on':''}"><b>${dt.slice(5)}</b><small>周${wd}</small>${d.has?'<span>✓</span>':''}</div>`; }).join('');
-    frame.innerHTML=`<div class="db-date">本周汇总（${monday} ~ ${week[6]}）</div><div class="db-sec"><h3>本周一眼</h3><ul class="db-list">${rows.map(r=>`<li>${r[0]}：<b>${r[1]}</b></li>`).join('')}</ul></div><div class="db-weekdays">${dayList}</div>`+this.navHtml(monday);
-    Media.paint(frame);
+    const dayList=week.map((dt,i)=>{ const d=data[i]; const wd=['日','一','二','三','四','五','六'][new Date(dt+'T00:00:00').getDay()]; return `<div class="db-day ${d.has?'on':''}" onclick="DiaryBook.go('${dt}')"><b>${dt.slice(5)}</b><small>周${wd}</small>${d.has?'<span>✓</span>':''}</div>`; }).join('');
+    right.innerHTML=`<div class="db-date">本周汇总（${monday} ~ ${week[6]}）</div><div class="db-sec"><h3>本周一眼</h3><ul class="db-list">${rows.map(r=>`<li>${r[0]}：<b>${r[1]}</b></li>`).join('')}</ul></div><div class="db-weekdays">${dayList}</div>`;
   }
 };
 /* ==== 功能：日记本 END ==== */
@@ -2872,9 +2919,76 @@ const Quick = {
 /* ==== 功能：心愿行动 START ==== */
 const Wish = {
   list(){ return Store.get('wishes',[]); },
-  add(){ const text=wishInput.value.trim(); if(!text)return; Util.bump('wishType',wishType.value); Store.set('wishes',[{id:Util.uid(),date:Util.today(),type:wishType.value,text,done:false},...this.list()]); wishInput.value=''; this.render(); },
-  render(){ Util.sortSelect('wishType','wishType'); const list=this.list(); wishList.innerHTML=this.renderList(list.filter(x=>x.type==='wish'&&!x.done),'wish'); actionList.innerHTML=this.renderList(list.filter(x=>x.type==='action'&&!x.done),'action'); doneWishList.innerHTML=this.renderList(list.filter(x=>x.done),'done'); DragSort.bind('[data-wish-sort]','wishes',()=>Wish.render()); },
-  renderList(list,group){ return list.length?list.map(x=>`<div class="item ${x.done?'done':''}" draggable="true" data-sort-id="${x.id}" data-wish-sort="1"><span class="check" onclick="Wish.toggle('${x.id}')">${x.done?'✓':''}</span><div class="grow"><div class="title">${Util.esc(x.text)}</div><div class="desc">${x.date}</div></div>${group!=='done'?`<button class="del" onclick="Wish.del('${x.id}')">✕</button>`:''}</div>`).join(''):'<div class="empty">暂无</div>'; },
+  wishes(){ return this.list().filter(x=>x.type==='wish'&&!x.done); },
+  actions(){ return this.list().filter(x=>x.type==='action'&&!x.done); },
+  add(){
+    const text=wishInput.value.trim(); if(!text)return;
+    const type=wishType.value;
+    let parentId='';
+    if(type==='action'){
+      const pb=document.getElementById('wishParent');
+      parentId=pb?pb.value:'';
+    }
+    Util.bump('wishType',type);
+    Store.set('wishes',[{id:Util.uid(),date:Util.today(),type,text,done:false,wishId:parentId},...this.list()]);
+    wishInput.value=''; this.render();
+  },
+  render(){
+    Util.sortSelect('wishType','wishType');
+    const typeEl=document.getElementById('wishType');
+    const parentBox=document.getElementById('wishParentBox');
+    if(typeEl&&parentBox){
+      typeEl.onchange=()=>{
+        parentBox.style.display=typeEl.value==='action'?'block':'none';
+        this.fillParentSelect();
+      };
+      if(typeEl.value==='action'){ parentBox.style.display='block'; this.fillParentSelect(); }
+    }
+    /* 渲染心愿 + 嵌套行动 */
+    const area=document.getElementById('wishArea');
+    if(area){
+      const ws=this.wishes();
+      area.innerHTML = ws.length ? ws.map(w=>{
+        const kids=this.actions().filter(a=>a.wishId===w.id);
+        return `<div class="card" style="margin-bottom:10px;padding:10px">
+          <div class="item" draggable="true" data-sort-id="${w.id}" data-wish-sort="1">
+            <span class="check" onclick="Wish.toggle('${w.id}')">✓</span>
+            <div class="grow"><div class="title">✨ ${Util.esc(w.text)}</div><div class="desc">${kids.length} 个行动</div></div>
+            <button class="del" onclick="Wish.del('${w.id}')">✕</button>
+          </div>
+          ${kids.length?`<div style="margin-left:20px;margin-top:6px;border-left:2px solid #e8e4d8;padding-left:10px">${kids.map(a=>`<div class="item" draggable="true" data-sort-id="${a.id}" data-wish-sort="1">
+            <span class="check" onclick="Wish.toggle('${a.id}')">${a.done?'✓':''}</span>
+            <div class="grow"><div class="title">📌 ${Util.esc(a.text)}</div></div>
+            <button class="del" onclick="Wish.del('${a.id}')">✕</button>
+          </div>`).join('')}</div>`:''}
+          <button class="btn ghost small" style="margin-top:6px" onclick="Wish.quickAction('${w.id}')">＋ 加一个行动</button>
+        </div>`;
+      }).join('') : '<div class="empty">还没有心愿，写一个大方向吧</div>';
+      /* 独立行动（没关联心愿的） */
+      const orphanActions=this.actions().filter(a=>!a.wishId||!ws.find(w=>w.id===a.wishId));
+      if(orphanActions.length){
+        area.innerHTML += `<div class="card" style="margin-bottom:10px;padding:10px"><h3 style="font-size:13px;margin:0 0 8px;color:#999">📌 其他行动</h3>${orphanActions.map(a=>`<div class="item" draggable="true" data-sort-id="${a.id}" data-wish-sort="1">
+            <span class="check" onclick="Wish.toggle('${a.id}')">✓</span>
+            <div class="grow"><div class="title">${Util.esc(a.text)}</div></div>
+            <button class="del" onclick="Wish.del('${a.id}')">✕</button>
+          </div>`).join('')}</div>`;
+      }
+    }
+    doneWishList.innerHTML = this.renderList(this.list().filter(x=>x.done),'done');
+    DragSort.bind('[data-wish-sort]','wishes',()=>Wish.render());
+  },
+  fillParentSelect(){
+    const sel=document.getElementById('wishParent'); if(!sel) return;
+    const cur=sel.value;
+    sel.innerHTML='<option value="">— 不关联心愿 —</option>'+this.wishes().map(w=>`<option value="${w.id}">${Util.esc(w.text)}</option>`).join('');
+    if(cur&&this.wishes().find(w=>w.id===cur)) sel.value=cur;
+  },
+  quickAction(wishId){
+    const text=prompt('写一个具体行动步骤：'); if(!text) return;
+    Store.set('wishes',[{id:Util.uid(),date:Util.today(),type:'action',text,done:false,wishId},...this.list()]);
+    this.render();
+  },
+  renderList(list,group){ return list.length?list.map(x=>`<div class="item ${x.done?'done':''}"><span style="font-size:14px;margin-right:6px">${x.type==='wish'?'✨':'📌'}</span><div class="grow"><div class="title">${Util.esc(x.text)}</div><div class="desc">${x.date}${x.wishId?' · 归属心愿':''}</div></div></div>`).join(''):'<div class="empty">暂无</div>'; },
   toggle(id){ const item=this.list().find(x=>x.id===id); if(item && !item.done) Coin.checkWishDone(); Store.set('wishes',this.list().map(x=>x.id===id?{...x,done:!x.done}:x)); this.render(); },
   del(id){ Store.set('wishes',this.list().filter(x=>x.id!==id)); this.render(); }
 };
@@ -2905,20 +3019,27 @@ const WishShop = {
     const list = this.list();
     const red = document.getElementById('wishRedeemed'); if(red) red.textContent = list.filter(x => x.done).length;
     if(wishShopList){
-      wishShopList.innerHTML = list.length ? list.map(x => {
+      wishShopList.innerHTML = list.filter(x=>!x.done).length ? list.filter(x=>!x.done).map(x => {
         const have = Math.min(total, x.cost);
         const pct = Math.round(have / x.cost * 100);
         const can = total >= x.cost;
-        return `<div class="item ${x.done ? 'done' : ''}">
+        return `<div class="item">
           <div class="grow"><div class="title">${Util.esc(x.name)}</div>
-          <div class="desc">需要 ${x.cost} 枚金币 · 已攒 ${have}/${x.cost}</div>
-          <div style="height:8px;background:rgba(41,54,42,.08);border-radius:6px;overflow:hidden;margin-top:6px"><div style="height:100%;width:${pct}%;background:var(--accent);border-radius:6px;transition:width .3s"></div></div></div>
-          ${x.done ? '<span class="tag-chip">已兑换</span>' : (can ? `<button class="btn small" onclick="WishShop.redeem('${x.id}')">兑换</button>` : `<button class="btn small ghost" disabled style="opacity:.6">还差 ${x.cost - total} 枚</button>`)}
+          <div style="height:8px;background:rgba(41,54,42,.08);border-radius:6px;overflow:hidden;margin-top:6px"><div style="height:100%;width:${pct}%;background:var(--accent);border-radius:6px;transition:width .3s"></div></div>
+          <div class="desc" style="margin-top:4px">${have}/${x.cost} 枚${can?' · 可兑换':' · 还差'+(x.cost-total)+'枚'}</div></div>
+          ${can ? `<button class="btn small" onclick="WishShop.redeem('${x.id}')">兑换</button>` : ''}
           <button class="del" onclick="WishShop.del('${x.id}')">✕</button>
         </div>`;
-      }).join('') : '<div class="empty">还没有心仪好物，先加一件想要的吧</div>';
+      }).join('') : '<div class="empty">还没有心愿，先加一件想要的吧</div>';
     }
-    if(wishShopWays) wishShopWays.innerHTML = Object.values(Coin.sources).map(s => `<div class="item"><span style="font-size:18px">${s.icon}</span><div class="grow"><div class="title">${s.name}</div><div class="desc">${s.desc}</div></div></div>`).join('');
+    /* 星愿瓶 + 已完成列表 */
+    const doneList = list.filter(x => x.done);
+    const hintEl = document.getElementById('bottleHint');
+    if(hintEl) hintEl.textContent = doneList.length ? `已装进 ${doneList.length} 颗星` : '兑换的心愿会变成星星飞进来';
+    const doneEl = document.getElementById('doneWishShopList');
+    if(doneEl){
+      doneEl.innerHTML = doneList.length ? doneList.map(x => `<div class="item done" style="animation:starIn .4s ease both"><span style="font-size:16px;margin-right:6px">⭐</span><div class="grow"><div class="title">${Util.esc(x.name)}</div><div class="desc">${x.cost} 枚 · ${x.redeemedAt||''}</div></div></div>`).join('') : '';
+    }
   }
 };
 /* ==== 功能：心仪好物兑换铺 END ==== */
@@ -3163,7 +3284,7 @@ const Sport = {
     this.calendar(logs); this.renderList();
   },
   addType(){ const name=sportName.value.trim(); if(!name)return; Store.set('sport_types',[...this.types(),{id:Util.uid(),icon:sportIcon.value.trim()||'💪',name}]); sportName.value=sportIcon.value=''; this.render(); },
-  addLog(){ const duration=Number(sportDuration.value); if(!duration)return UI.toast('先填运动时长'); const t=this.types().find(x=>x.id===sportType.value); Util.bump('sport_type',sportType.value); Store.set('sport_logs',[{id:Util.uid(),date:Util.today(),time:sportTime.value||new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),type:t,duration},...this.logs()]); sportDuration.value=''; Coin.checkSport(); this.render(); },
+  addLog(){ const t=this.types().find(x=>x.id===sportType.value); if(!t)return UI.toast('先选运动类型'); Util.bump('sport_type',sportType.value); Store.set('sport_logs',[{id:Util.uid(),date:Util.today(),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),type:t,duration:0},...this.logs()]); Coin.checkSport(); this.render(); },
   calendar(logs){ const now=new Date(), y=now.getFullYear(), m=now.getMonth(); const last=new Date(y,m+1,0).getDate(); const by={}; logs.forEach(x=>by[Number(x.date.slice(8))]=(by[Number(x.date.slice(8))]||0)+x.duration); sportCalendar.innerHTML=Array.from({length:last},(_,i)=>`<div class="day-cell ${by[i+1]?'active':''}">${i+1}${by[i+1]?'<br>'+by[i+1]+'m':''}</div>`).join(''); },
   renderList(){ sportList.innerHTML=this.logs().length?this.logs().slice(0,20).map(x=>UI.item(`${x.type.icon} ${x.type.name} · ${x.duration} 分钟`,`${x.date} ${x.time}`,`<button class="del" onclick="Sport.del('${x.id}')">✕</button>`,`draggable="true" data-sort-id="${x.id}"`)).join(''):'<div class="empty">还没有运动记录</div>'; DragSort.bind('#sportList [data-sort-id]','sport_logs',()=>Sport.render()); },
   del(id){ Store.set('sport_logs',this.logs().filter(x=>x.id!==id)); this.render(); },
