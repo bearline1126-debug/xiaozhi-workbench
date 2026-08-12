@@ -872,6 +872,24 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
         <p class="hint">这是本地弱保护，主要防止别人随手打开看到内容。忘记密码只能清浏览器数据后重新开始。</p>
       </div>
       <div class="card">
+        <h2>App 外观（安装到桌面的名称与图标）</h2>
+        <p class="hint">这里的名称和图标会用在「安装到桌面」后的 App 上。改完点保存，刷新一次本页再安装即可生效。不填则用默认「小彘的工作台」。</p>
+        <label>App 名称（桌面显示的全名）</label>
+        <input id="appName" placeholder="小彘的工作台" maxlength="20">
+        <label>简称（手机桌面上图标下方的字，建议 4 字内）</label>
+        <input id="appShortName" placeholder="小彘" maxlength="6">
+        <label>自定义图标（方形图片，会自动裁成 512×512）</label>
+        <div class="row" style="margin-top:8px;align-items:center">
+          <div id="appIconPrev" style="width:56px;height:56px;border-radius:14px;background:#dfead6 center/cover no-repeat;display:flex;align-items:center;justify-content:center;font-size:12px;color:#6b7d63;border:1px solid #cfe0c4">默认</div>
+          <div style="flex:1">
+            <button class="btn ghost small" onclick="document.getElementById('appIconFile').click()">选择图片</button>
+            <button class="btn ghost small" onclick="AppCustom.clearIcon()">恢复默认</button>
+          </div>
+          <input id="appIconFile" type="file" accept="image/*" style="display:none" onchange="AppCustom.render()">
+        </div>
+        <button class="btn" style="margin-top:12px;width:100%" onclick="AppCustom.applyFromSettings()">保存外观设置</button>
+      </div>
+      <div class="card">
         <h2>隐私说明</h2><p class="hint">你的日记、追踪、份子钱、菜谱等数据默认只存在当前手机浏览器。添加到桌面后仍然是同一份本地数据。换手机前请先导出 JSON 备份。</p>
       </div>
     </section><!-- ==== 功能：设置 END ==== -->
@@ -1406,7 +1424,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-11-v17';
+const BUILD_VERSION = '2026-08-12-v18';
 const App = {
   current:'home',
   booting:true,
@@ -1503,7 +1521,7 @@ const Welcome = {
     const last = Store.get('welcomeLast', {});
     const cached = last.date===day ? last : null;
     const msg = cached ? cached : await this.build(day).catch(()=>this.fallback(day));
-    welcomeTitle.textContent = '嗨，小彘';
+    welcomeTitle.textContent = '嗨，' + AppCustom.getShortName();
     welcomeText.textContent = msg.text;
     /* 壁纸优先级：用户自定义 > 缓存 > 默认石榴树图 */
     const custom = Store.get('welcome_custom_wallpaper');
@@ -3091,6 +3109,83 @@ const CloudSync = {
     }
   }
 };
+/* ==== 功能：App 外观自定义（名称 + 图标） ==== *
+ * 自定义内容存 IndexedDB（key=app_custom），由 Service Worker 在拦截 manifest.json 时读取，
+ * 这样「安装到桌面」时用的就是用户自己的图标和名称。同时镜像到 localStorage 供 App 内显示。 */
+const AppCustom = {
+  DB: 'bysdash-media', STORE: 'files', KEY: 'app_custom',
+  getName(){ const c = Store.get('_appCustom'); return c && c.name ? c.name : '小彘的工作台'; },
+  getShortName(){ const c = Store.get('_appCustom'); return c && c.shortName ? c.shortName : '小彘'; },
+  openIDB(){
+    return new Promise((res, rej) => {
+      const q = indexedDB.open(this.DB, 1);
+      q.onupgradeneeded = () => { const db = q.result; if(!db.objectStoreNames.contains(this.STORE)) db.createObjectStore(this.STORE); };
+      q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error);
+    });
+  },
+  async save(name, shortName, iconDataUrl){
+    const custom = { name: (name || '').trim(), shortName: (shortName || '').trim(), icon: iconDataUrl || '' };
+    try {
+      const db = await this.openIDB();
+      await new Promise((res, rej) => {
+        const tx = db.transaction(this.STORE, 'readwrite');
+        tx.objectStore(this.STORE).put({data: custom, savedAt: Date.now()}, this.KEY);
+        tx.oncomplete = res; tx.onerror = () => rej(tx.error);
+      });
+    } catch(e){ console.error('保存自定义外观到 IDB 失败', e); }
+    Store.set('_appCustom', custom);
+    return custom;
+  },
+  /* 把文件缩放到 size×size 正方形，返回 PNG data URL（用于自定义图标） */
+  fileToSquareDataUrl(file, size){
+    return new Promise((res, rej) => {
+      const img = new Image();
+      const obj = URL.createObjectURL(file);
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = size; canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        const s = Math.min(img.width, img.height);
+        const sx = (img.width - s) / 2, sy = (img.height - s) / 2;
+        ctx.drawImage(img, sx, sy, s, s, 0, 0, size, size);
+        res(canvas.toDataURL('image/png'));
+        URL.revokeObjectURL(obj);
+      };
+      img.onerror = () => { URL.revokeObjectURL(obj); rej(new Error('图片读取失败')); };
+      img.src = obj;
+    });
+  },
+  /* 在设置页渲染当前值 + 预览 */
+  render(){
+    const c = Store.get('_appCustom') || {};
+    const n = document.getElementById('appName'); if(n) n.value = c.name || '';
+    const s = document.getElementById('appShortName'); if(s) s.value = c.shortName || '';
+    const prev = document.getElementById('appIconPrev');
+    if(prev){ if(c.icon){ prev.style.backgroundImage = `url("${c.icon}")`; prev.textContent=''; prev.classList.add('has'); } else { prev.style.backgroundImage=''; prev.textContent='默认'; prev.classList.remove('has'); } }
+  },
+  async applyFromSettings(){
+    const name = document.getElementById('appName')?.value || '';
+    const shortName = document.getElementById('appShortName')?.value || '';
+    let icon = (Store.get('_appCustom') || {}).icon || '';
+    const fileInput = document.getElementById('appIconFile');
+    if(fileInput && fileInput.files && fileInput.files[0]){
+      try { icon = await this.fileToSquareDataUrl(fileInput.files[0], 512); }
+      catch(e){ UI.toast('图标处理失败：' + e.message); }
+    }
+    await this.save(name, shortName, icon);
+    this.render();
+    UI.toast('✅ 已保存。重新打开/刷新一次本页，再安装就能用新名称和图标');
+  },
+  async clearIcon(){
+    const c = Store.get('_appCustom') || {};
+    await this.save(c.name || '', c.shortName || '', '');
+    const fi = document.getElementById('appIconFile'); if(fi) fi.value = '';
+    this.render();
+    UI.toast('已恢复默认图标');
+  }
+};
+/* ==== 功能：App 外观自定义 END ==== */
+
 const Settings = {
   render(){
     backupInfo.textContent = Store.get('_lastBackup') ? '上次备份：'+new Date(Store.get('_lastBackup')).toLocaleString('zh-CN') : '还没备份过';
@@ -3101,6 +3196,7 @@ const Settings = {
     syncUrl.value=Store.get('syncUrl','');
     syncToken.value=Store.getSecret('syncToken')||'';
     syncInfo.textContent = Store.get('_lastCloudSync') ? '上次云同步：'+new Date(Store.get('_lastCloudSync')).toLocaleString('zh-CN') : '还没有云同步。';
+    AppCustom.render();
     this.renderStorage();
   },
   /* 刷新“存储空间”卡片：小仓库（文字）与大仓库（图片视频）用量、文件数 */
@@ -3182,7 +3278,7 @@ const PWAInstall = {
     if(this.deferredPrompt && !document.getElementById('pwaBanner')){
       const div = document.createElement('div');
       div.id = 'pwaBanner';
-      div.innerHTML = '<div class="pwa-banner-inner"><span>📱 把「小彘的工作台」安装到桌面，像原生App一样使用</span><div><button class="btn" onclick="PWAInstall.prompt();PWAInstall.hideBanner();" style="padding:8px 18px;font-size:13px">立即安装</button><button class="btn ghost" onclick="PWAInstall.dismiss()" style="padding:8px 12px;font-size:13px">暂不</button></div></div>';
+      div.innerHTML = '<div class="pwa-banner-inner"><span>📱 把「' + AppCustom.getName() + '」安装到桌面，像原生App一样使用</span><div><button class="btn" onclick="PWAInstall.prompt();PWAInstall.hideBanner();" style="padding:8px 18px;font-size:13px">立即安装</button><button class="btn ghost" onclick="PWAInstall.dismiss()" style="padding:8px 12px;font-size:13px">暂不</button></div></div>';
       document.body.appendChild(div);
       requestAnimationFrame(()=>div.classList.add('show'));
     }
