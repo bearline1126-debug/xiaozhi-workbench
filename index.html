@@ -208,6 +208,8 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .habit-count{font-size:11px;color:var(--accent);font-weight:800;margin-left:4px}
 .habit-day{min-width:18px;height:18px;border-radius:5px;background:rgba(41,54,42,.08);display:grid;place-items:center;font-size:11px;color:rgba(41,54,42,.36)}
 .habit-day.on{background:#779679;color:#fff}
+.habit-day .dd{font-size:9px;line-height:1;color:rgba(41,54,42,.45)}
+.habit-day.on .dd{color:rgba(255,255,255,.85)}
 .habit-day.mood{background:rgba(200,83,70,.11);color:var(--accent-2);font-size:13px}
 .habit-date{font-size:10px;color:var(--text-dim);text-align:center;align-self:end}
 .habit-date.tick{font-weight:700;color:#9a7c66}
@@ -236,6 +238,15 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
   border-radius:999px;font-size:12px;transition:.22s ease;z-index:50;
 }
 .toast.on{opacity:1;transform:translate(-50%,0)}
+.modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:80;display:flex;align-items:center;justify-content:center;padding:18px;opacity:0;transition:opacity .2s ease}
+.modal-mask.on{opacity:1}
+.modal-box{background:var(--card,#fff);border-radius:16px;max-width:520px;width:100%;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3);transform:translateY(8px);transition:transform .2s ease}
+.modal-mask.on .modal-box{transform:translateY(0)}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line,#eee);font-weight:600;font-size:15px}
+.modal-x{background:none;border:none;font-size:22px;line-height:1;color:var(--sub,#888);cursor:pointer;padding:0 4px}
+.modal-body{padding:16px;overflow:auto;font-size:14px;line-height:1.6}
+.db-day-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.db-day-grid .pill{cursor:pointer}
 .bottom-nav{
   position:fixed;left:0;right:0;bottom:0;z-index:38;
   display:grid;grid-template-columns:repeat(4,1fr);
@@ -312,6 +323,29 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
   flex:0 0 26px;width:26px;min-height:26px;border:0;background:transparent;color:var(--text-dim);
   font-size:15px;line-height:1;padding:0;touch-action:none;cursor:grab;align-self:center;
 }
+.wheel-mini{display:flex;align-items:center;gap:10px}
+.wheel-mini-disk{width:64px;height:64px;border-radius:50%;flex:none;background:conic-gradient(#6b984f 0 8.33%,#c85346 0 16.66%,#e0a23c 0 25%,#5b8ca8 0 33.33%,#9a7bb0 0 41.66%,#7d9c8c 0 50%,#b0855b 0 58.33%,#a3b872 0 66.66%,#d4a017 0 75%,#7c9eb5 0 83.33%,#bc9a6a 0 91.66%,#8aab7c 0 100%);box-shadow:inset 0 0 0 6px rgba(255,255,255,.78),0 2px 6px rgba(38,54,40,.18);position:relative;transition:transform 1.2s cubic-bezier(.18,.7,.25,1)}
+.wheel-mini-disk::after{content:'';position:absolute;top:-4px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:9px solid #b00020}
+.wheel-mini-side{flex:1;display:flex;flex-direction:column;gap:4px}
+.wheel-mini-side .btn{font-size:12px;padding:8px 10px}
+.wheel-mini-side .hint{font-size:12px;margin-top:2px}
+/* 紧凑型 pill 行：用于每日记录里的习惯勾选，占空间更少 */
+.pill-row-compact{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.pill-row-compact .pill{padding:5px 9px;font-size:12px;border-radius:12px;margin:0}
+.pill-row-compact .pill .pill-text{font-size:12px}
+.pill-row-compact .pill input[type=checkbox]{margin-right:4px;transform:scale(.85)}
+/* ==== 视觉灵感全屏查看器 ==== */
+.visual-viewer{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:200;display:none;flex-direction:column;align-items:center;justify-content:center}
+.visual-viewer[style*="flex"]{display:flex}
+.visual-viewer .vv-close{position:absolute;top:14px;right:18px;background:rgba(255,255,255,.18);border:0;color:#fff;font-size:24px;width:38px;height:38px;border-radius:50%;cursor:pointer}
+.visual-viewer .vv-prev,.visual-viewer .vv-next{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.18);border:0;color:#fff;font-size:36px;width:54px;height:54px;border-radius:50%;cursor:pointer}
+.visual-viewer .vv-prev{left:14px}.visual-viewer .vv-next{right:14px}
+.visual-viewer .vv-prev:active,.visual-viewer .vv-next:active,.visual-viewer .vv-close:active{background:rgba(255,255,255,.32)}
+.visual-viewer .vv-stage{flex:1;display:flex;align-items:center;justify-content:center;width:100%;overflow:hidden}
+.visual-viewer .vv-stage img,.visual-viewer .vv-stage video{max-width:96%;max-height:80vh;object-fit:contain;border-radius:6px}
+.visual-viewer .vv-bar{display:flex;gap:14px;align-items:center;justify-content:center;width:100%;padding:14px;color:#fff;font-size:13px}
+.visual-viewer .vv-dl{color:#fff;background:rgba(255,255,255,.16);padding:8px 14px;border-radius:18px;text-decoration:none;font-size:13px}
+.visual-viewer .vv-info{opacity:.7}
 .sortable{touch-action:pan-y}
 .sort-tip{font-size:11px;color:var(--text-dim);margin:2px 2px 0}
 /* ==== 首页文件夹式更多 ==== */
@@ -589,6 +623,11 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
         <h2>① 睡眠情况</h2>
         <div class="row"><input id="dlSleep" type="time" value="23:00" style="flex:1"><input id="dlWake" type="time" value="08:00" style="flex:1"></div>
       </div>
+      <div class="card" id="dlSportCard">
+        <h2>② 今日运动</h2>
+        <div class="row"><select id="dlSportType" style="flex:1"></select><select id="dlSportDur" style="flex:1;min-width:0"><option value="">时长</option><option value="0.5">0.5h</option><option value="1">1h</option><option value="1.5">1.5h</option><option value="2">2h</option><option value="2.5">2.5h</option><option value="3">3h</option></select><button class="btn" onclick="DailyLog.addSport()">打卡</button></div>
+        <div id="dlSportList" class="hint" style="margin-top:8px"></div>
+      </div>
       <div class="card">
         <h2>② 感恩日记</h2>
         <textarea id="dlWins" placeholder="今天值得感恩的事，一行一件"></textarea>
@@ -599,14 +638,14 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
         <p class="hint">不强制每天都有，勾了才算关联一天。</p>
       </div>
       <div class="card">
-        <h2>② 今天的习惯与情绪</h2>
-        <div class="pill-row" id="dlHabits"></div>
+        <h2>③ 今天的习惯与情绪</h2>
+        <div class="pill-row pill-row-compact" id="dlHabits"></div>
         <label>今日情绪符号</label>
         <select id="dlMood">
           <option value="😊">😊 开心</option><option value="🥰">🥰 温暖</option><option value="😌">😌 平静</option><option value="😐">😐 平淡</option><option value="🤔">🤔 思考</option><option value="😟">😟 焦虑</option><option value="😣">😣 紧绷</option><option value="😴">😴 疲惫</option><option value="😡">😡 烦躁</option><option value="😢">😢 难过</option><option value="🤩">🤩 兴奋</option><option value="💪">💪 高能</option>
         </select>
-        <label>一句话总结情绪</label>
-        <input id="dlMoodLine" placeholder="一句话总结今天">
+        <button class="btn ghost small" style="margin-top:8px;width:100%" onclick="DailyLog.aiSummarizeMood()">用 AI 一句话总结今日情绪</button>
+        <input id="dlMoodLine" placeholder="（AI 总结会填到这里，可手动改）" style="margin-top:8px">
       </div>
       <div class="card">
         <div class="collapsible-head" onclick="DailyLog.toggleMood()">
@@ -776,6 +815,14 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
         <button class="btn ghost small" onclick="DiaryBook.prev()" aria-label="上一页">←</button>
         <button class="btn ghost small" onclick="DiaryBook.go(Util.today())">回到今天</button>
         <button class="btn ghost small" onclick="DiaryBook.next()" aria-label="下一页">→</button>
+        <button class="btn ghost small" onclick="DiaryBook.toggleArchive()">📅 日记存放处</button>
+      </div>
+      <div id="dbArchiveBox" style="display:none;margin-top:8px"></div>
+      <div class="card" id="dbKeywordsCard" style="margin-top:14px;padding:12px">
+        <h2 style="margin:0 0 4px;font-size:15px">🔖 最近 30 天做了些啥</h2>
+        <p class="hint" style="margin:0 0 8px">AI 提炼的关键词，字越大=做的天数越多。点词看涉及哪几天。</p>
+        <div id="dbKeywordsBody"></div>
+        <button class="btn ghost small" style="margin-top:8px;width:100%" onclick="DiaryBook.refreshKeywords()">↻ 重新提炼（用 AI）</button>
       </div>
     </section><!-- ==== 功能：日记本 END ==== --><!-- ==== 功能：个人认知库 START ==== --><section class="page" id="page-self">
       <div class="page-title">个人认知库</div><div class="page-sub">优点、喜欢/不喜欢、关键词、边界，以及能控制和不能控制的事情。</div>
@@ -830,26 +877,21 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
         <div class="ai-box" id="englishResult"></div>
       </div>
     </section><!-- ==== 功能：英语积累 END ==== --><!-- ==== 功能：视觉灵感 START ==== --><section class="page" id="page-visual">
-      <div class="page-title">视觉灵感</div><div class="page-sub">配色、构图、素材、展览、影视和 UI 灵感。可以直接上传原图和短视频，原件存在设备的大仓库里，不占日记的存储。</div>
-      <div class="row" style="justify-content:flex-end;margin-bottom:8px">
-        <button class="icon-btn" onclick="Visual.shuffleDaily()" title="换一换">↻</button>
-      </div>
-      <div class="grid" id="visualDaily"></div>
+      <div class="page-title">视觉灵感</div><div class="page-sub">上传图片和短视频作为视觉素材，给个分类即可。点缩略图进大图，可左右翻页。</div>
       <div class="card">
-        <select id="visualTag">
-          <option>配色</option><option>构图</option><option>素材</option><option>UI</option><option>穿搭</option><option>展览</option><option>影视</option>
-        </select>
-        <textarea id="visualNote" placeholder="上传照片/视频后，写一句为什么喜欢它、哪里可复用"></textarea>
-        <label>上传照片或短视频，可多选，保留原图</label>
+        <label>分类</label>
+        <div class="row"><select id="visualTag" style="flex:1"></select><button class="btn ghost small" onclick="Visual.editCategories()">管理分类</button></div>
+        <input id="visualNote" placeholder="一句话简介（可选）" style="margin-top:6px" maxlength="60">
+        <label style="margin-top:6px">上传照片或短视频，可多选，原图原件保存</label>
         <input id="visualFile" type="file" accept="image/*,video/*" multiple>
         <button class="btn" style="margin-top:10px;width:100%" onclick="Visual.add()">保存灵感</button>
-        <p class="hint" id="visualHint" style="margin-top:8px">原件按原始画质保存，列表里显示的是缩略图，点开可看大图。</p>
       </div>
       <div class="card"><h2>我的视觉收藏</h2><div id="visualList"></div></div>
     </section><!-- ==== 功能：视觉灵感 END ==== --><!-- ==== 功能：灵感速记 START ==== --><section class="page" id="page-quick">
       <div class="page-title">灵感速记</div><div class="page-sub">一句话先记下来，不要求分类。之后再整理进经验摘录或行动清单。</div>
       <div class="card">
-        <div class="row"><input id="quickInput" placeholder="突然想到什么"><button class="btn" onclick="Quick.add()">记下</button></div>
+        <textarea id="quickInput" placeholder="突然想到什么——可以写很长，按 Ctrl+Enter 提交" style="min-height:120px;width:100%"></textarea>
+        <div class="row" style="margin-top:8px"><button class="btn" onclick="Quick.add()">记下</button><span class="hint" style="margin-left:auto">长按列表里的灵感可复制全文</span></div>
       </div>
       <div class="card"><h2>未整理灵感</h2><div id="quickList"></div></div>
     </section><!-- ==== 功能：灵感速记 END ==== --><!-- ==== 功能：心愿行动 START ==== --><section class="page" id="page-wish">
@@ -1020,9 +1062,9 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
           <button class="btn" onclick="AutoBackup.pickFolder()">选同步文件夹</button>
           <button class="btn ghost" onclick="AutoBackup.runNow()">立即备份</button>
         </div>
-        <label style="margin-top:10px"><input type="checkbox" id="autoBackupOn" style="width:auto;min-height:auto;margin-right:6px">每月自动备份</label>
+        <label style="margin-top:10px"><input type="checkbox" id="autoBackupOn" style="width:auto;min-height:auto;margin-right:6px">每月自动备份（开启后，每月首次打开会自动写一份并弹提醒）</label>
         <button class="btn ghost small" style="margin-left:6px" onclick="AutoBackup.saveToggle()">保存</button>
-        <label style="margin-top:10px;display:block"><input type="checkbox" id="autoBackupExit" style="width:auto;min-height:auto;margin-right:6px" onchange="AutoBackup.saveExitToggle()">手机端：退出时自动下载备份到下载目录</label>
+        <p class="hint" style="margin-top:8px">平时不会自动备份：以你手动点「立即备份」为主，避免每次刷新都触发下载被浏览器拦截。月度开关打开后，每月只自动写一次并提醒你。</p>
         <p class="hint" id="autoBackupInfo"></p>
       </div>
       <div class="card">
@@ -1072,6 +1114,7 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
   <button data-group="life" onclick="Hub.open('life')"><span class="ico">🥗</span>生活</button>
 </nav>
 <div class="toast" id="toast"></div>
+<div class="modal-mask" id="modalMask" style="display:none" onclick="if(event.target===this)UI.closeModal()"><div class="modal-box"><div class="modal-head"><span id="modalTitle"></span><button class="modal-x" onclick="UI.closeModal()">×</button></div><div class="modal-body" id="modalBody"></div></div></div>
 <script>
 const SCHEMA_VERSION = 4;
 const Store = (() => {
@@ -1645,6 +1688,18 @@ const UI = {
   item(title, desc, actions='', attrs=''){
     const handle = /data-sort-id/.test(attrs) ? this.grab() : '';
     return `<div class="item" ${attrs}>${handle}<div class="grow"><div class="title">${Util.esc(title)}</div>${desc ? `<div class="desc">${Util.esc(desc)}</div>` : ''}</div>${actions}</div>`;
+  },
+  modal(title, html){
+    const mask = document.getElementById('modalMask');
+    document.getElementById('modalTitle').textContent = title || '';
+    document.getElementById('modalBody').innerHTML = html || '';
+    mask.style.display = 'flex';
+    requestAnimationFrame(() => mask.classList.add('on'));
+  },
+  closeModal(){
+    const mask = document.getElementById('modalMask');
+    mask.classList.remove('on');
+    setTimeout(() => { mask.style.display = 'none'; }, 200);
   }
 };
 /* ==== 排序：电脑用鼠标拖，手机按住把手或长按卡片拖 ==== */
@@ -1652,12 +1707,15 @@ const DragSort = {
   _from:null,
   clearHints(){ document.querySelectorAll('.drop-hint').forEach(x => x.classList.remove('drop-hint')); },
   dashCase(attr){ return 'data-' + attr.replace(/[A-Z]/g, m => '-' + m.toLowerCase()); },
-  pointTarget(touch, selector, attrName){
-    const hit = document.elementFromPoint(touch.clientX, touch.clientY);
-    if(!hit) return null;
-    let node = hit.closest('[' + attrName + ']');
-    while(node && !node.matches(selector)) node = node.parentElement?.closest('[' + attrName + ']') || null;
-    return node;
+  pointTarget(touch, selector, attrName, exclude){
+    /* 几何命中：直接比对每张可排序卡片的矩形，排除正在拖的那张。
+       不用 elementFromPoint —— 手机上手指正压在源卡片上，会永远命中自己导致无法换位。 */
+    const els = Array.from(document.querySelectorAll(selector)).filter(e => e !== exclude);
+    for(const e of els){
+      const r = e.getBoundingClientRect();
+      if(touch.clientX >= r.left && touch.clientX <= r.right && touch.clientY >= r.top && touch.clientY <= r.bottom) return e;
+    }
+    return null;
   },
   reorderStore(key, fromId, toId){
     const a = Store.get(key, []);
@@ -1705,9 +1763,10 @@ const DragSort = {
         if(DragSort._sel === selector && from && to && from !== to) onMove(from, to, el, DragSort._fromEl);
         DragSort._from = null; DragSort._fromEl = null; DragSort._sel = null;
       });
-      const handleEl = el.querySelector('[data-grab]');
+      const whole = opts.whole;
+      const handleEl = whole ? null : el.querySelector('[data-grab]');
       const source = handleEl || el;
-      const delay = handleEl ? 0 : 340;
+      const delay = (opts.delay != null) ? opts.delay : (handleEl ? 0 : 340);
       let timer = null, active = false, sx = 0, sy = 0;
       const release = () => { if(DragSort._claim === el) DragSort._claim = null; };
       const stop = () => { clearTimeout(timer); timer = null; if(active){ active = false; el.classList.remove('dragging'); DragSort.clearHints(); } release(); };
@@ -1727,7 +1786,7 @@ const DragSort = {
         }
         e.preventDefault();
         DragSort.clearHints();
-        const target = DragSort.pointTarget(t, selector, attrName);
+        const target = DragSort.pointTarget(t, selector, attrName, el);
         if(target && target !== el) target.classList.add('drop-hint');
       }, {passive:false});
       source.addEventListener('touchend', e => {
@@ -1735,7 +1794,7 @@ const DragSort = {
         if(!active){ release(); return; }
         active = false; el.classList.remove('dragging'); DragSort.clearHints(); release();
         const t = e.changedTouches[0];
-        const target = DragSort.pointTarget(t, selector, attrName);
+        const target = DragSort.pointTarget(t, selector, attrName, el);
         if(target && target !== el){
           const from = idOf(el), to = idOf(target);
           if(from && to && from !== to) onMove(from, to, target, el);
@@ -1750,12 +1809,17 @@ const AI = {
     const key = Store.getSecret('ai');
     const base = Store.get('aiBase','https://api.deepseek.com/v1/chat/completions');
     const model = Store.get('aiModel','deepseek-chat');
-    if (!key) { App.go('settings'); throw new Error('还没配置 AI key'); }
+    if (!key) { App.go('settings'); throw new Error('还没配置 AI key，请去设置里填'); }
     const threadKey = options.threadKey;
     const history = threadKey ? Store.get('ai_thread_'+threadKey, []) : [];
     const messages = [{role:'system',content:options.system || '你是一个温和、清醒、具体的个人复盘助手。回答要简明、可落地，不要说教。'}, ...history.slice(-10), {role:'user',content:prompt}];
-    const r = await fetch(base, { method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer ' + key}, body:JSON.stringify({model, messages, temperature:.6}) });
-    if (r.status === 401) throw new Error('AI key 可能不对，请去设置检查');
+    let r;
+    try { r = await fetch(base, { method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer ' + key}, body:JSON.stringify({model, messages, temperature:.6}) }); }
+    catch(e){ throw new Error('连不上 AI 服务器（可能是网络问题）'); }
+    if (r.status === 401) throw new Error('AI key 不对，请去设置里检查');
+    if (r.status === 402) throw new Error('AI 余额不足（请去服务商充值，DeepSeek 在 platform.deepseek.com → 充值）');
+    if (r.status === 404) throw new Error('AI 接口地址或模型名不对，请去设置里核对（默认 deepseek-chat）');
+    if (r.status === 429) throw new Error('AI 调用太频繁，稍等几秒再试');
     if (!r.ok) throw new Error('AI 接口暂时不可用：' + r.status);
     const data = await r.json();
     const out = data.choices?.[0]?.message?.content || '没有拿到分析结果';
@@ -1764,7 +1828,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-12-v32';
+const BUILD_VERSION = '2026-08-13-v33';
 const App = {
   current:'home',
   booting:true,
@@ -2177,11 +2241,12 @@ const Home = {
     if(id==='tasks') return '<div class="list" id="todayTasks"></div>';
     if(id==='tracker') return '<div id="homeTracker"></div>';
     if(id==='entries') return `<div id="homeEntries"></div><p class="hint" style="margin-top:8px">点 📌 钉到首页，点 🚫 隐藏。</p>`;
-    if(id==='wheel') return `<div class="wheel-wrap"><div class="wheel" id="homeWheel"></div><div><p class="muted">转盘菜名可在做菜栏直接输入。</p><button class="btn small" onclick="Cooking.spin('home')">转一下</button><div class="hint" id="homeSpinResult">等待选择</div></div></div>`;
+    if(id==='wheel') return `<div class="wheel-mini"><div class="wheel-mini-disk" id="homeWheel"></div><div class="wheel-mini-side"><button class="btn ghost small" id="homeWheelSpin" onclick="Cooking.spin('home')">点一下自动转</button><div class="hint" id="homeSpinResult">点上面转一下</div></div></div>`;
     if(id==='life') return `<div id="homeLifeSummary"></div><button class="btn ghost" style="margin-top:10px;width:100%" onclick="App.go('lifeAnalysis')">查看完整分析</button>`;
     return '';
   },
-  entryIds(){ const hiddenRoutes=App.hiddenRoutes ? App.hiddenRoutes() : []; return this.allEntryIds().filter(id=>!Store.get('home_hidden_entries',[]).includes(id) && !hiddenRoutes.includes(id)); },
+  /* 首页「更多」只受 home_hidden_entries 控制，与 Hub 隐藏状态互不干扰 */
+  entryIds(){ return this.allEntryIds().filter(id=>!Store.get('home_hidden_entries',[]).includes(id)); },
   /* 更多 = 文件夹：按日记 / 知识 / 生活 分三个抽屉，可收起展开，里面的小栏目能钉到首页顶部 */
   folderDefs(){ return [{key:'diary',icon:'🌙',title:'日记与自我'},{key:'knowledge',icon:'📚',title:'知识与积累'},{key:'life',icon:'🍲',title:'生活与日常'},{key:'other',icon:'🧺',title:'其他'}]; },
   folderOf(id){
@@ -2271,14 +2336,14 @@ const Home = {
   toggleSize(id){ const a=this.widgets().map(w=>w.id===id?{...w,size:w.size==='small'?'wide':'small'}:w); this.saveWidgets(a); this.render(); },
   toggleCollapse(id){ const a=this.widgets().map(w=>w.id===id?{...w,collapsed:!w.collapsed}:w); this.saveWidgets(a); this.render(); },
   bindDrag(){
-    /* 桌面块：整块可拖（鼠标拖任意位置，手机按住把手） */
+    /* 桌面块：整块可拖（电脑鼠标拖任意位置；手机长按整张卡片 340ms 即可拖动；大小卡片都支持） */
     DragSort.attach('[data-widget]', (from, to) => {
       const a=this.widgets();
       const fi=a.findIndex(x=>x.id===from), ti=a.findIndex(x=>x.id===to);
       if(fi<0||ti<0||fi===ti) return;
       const [m]=a.splice(fi,1); a.splice(ti,0,m);
       this.saveWidgets(a); this.render();
-    }, {attr:'widget'});
+    }, {attr:'widget', delay:340, whole:true});
     /* 顶部四格 */
     DragSort.attach('[data-sort-id][data-zone="top"]', (from, to) => {
       const a=this.topTiles();
@@ -2652,6 +2717,113 @@ const DiaryBook = {
     if(pick) pick.value=curLeft;
     /* 汇总页视觉上与日记页区分（更轻的纸色 + 更紧的字距），减少"翻页撞墙"感 */
     right.classList.toggle('summary', isSunday);
+    /* 进入日记本时刷新 AI 词云 */
+    this._renderKeywordsIfEmpty();
+  },
+  async _renderKeywordsIfEmpty(){
+    const box = document.getElementById('dbKeywordsBody');
+    if(!box) return;
+    if(box.dataset.loaded === '1') return;
+    box.dataset.loaded = '1';
+    const cached = Store.get('keywords_30d', null);
+    if(cached){ box.innerHTML = this.keywordsHtml(cached.kws); return; }
+    box.innerHTML = '<div class="hint">提炼中（首次约 10 秒）…</div>';
+    const kws = await this.generateKeywords();
+    box.innerHTML = this.keywordsHtml(kws);
+  },
+  /* 日记存放处：按年份归档显示所有有记录的日期 */
+  archiveHtml(){
+    const keys = Store.keyList().filter(k => k.startsWith('success:'));
+    const dates = keys.map(k => k.slice(8)).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d));
+    if(!dates.length) return '<div class="empty">还没有日记记录</div>';
+    const byYear = {};
+    dates.sort().reverse().forEach(d => { const y = d.slice(0,4); (byYear[y] = byYear[y] || []).push(d); });
+    return Object.keys(byYear).sort((a,b)=>b.localeCompare(a)).map(y => {
+      const days = byYear[y];
+      return `<section class="card" style="padding:10px;margin-bottom:8px;box-shadow:none">
+        <h3 style="margin:0 0 6px;font-size:15px">📅 ${y} 年 <span class="muted" style="font-weight:400;font-size:12px">${days.length} 天</span></h3>
+        <div class="db-day-grid">${days.map(d => `<button class="pill" onclick="DiaryBook.go('${d}')" style="margin:2px">${d.slice(5)}</button>`).join('')}</div>
+      </section>`;
+    }).join('');
+  },
+  toggleArchive(){
+    const box = document.getElementById('dbArchiveBox');
+    if(!box) return;
+    const open = box.style.display !== 'none';
+    box.style.display = open ? 'none' : '';
+    if(!open) box.innerHTML = this.archiveHtml();
+  },
+  /* AI 提炼最近做了些啥 → 关键词词云（按天数定大小） */
+  async generateKeywords(){
+    const days = Util.rangeDays(30);
+    const corpus = days.map(d => {
+      const s = Store.get(Success.key(d), {});
+      const t = Store.get(Tracker.dayKey(d), {});
+      const text = [s.wins, Success.norm(s.tomorrow).map(x=>x.text).join('、'), t.line, (Store.get('moods',[]).find(m=>m.date===d)||{}).text||''].filter(Boolean).join(' / ');
+      return {date:d, text};
+    }).filter(x => x.text);
+    if(!corpus.length) return [];
+    const fallback = this._localKeywords(corpus);
+    const cached = Store.get('keywords_30d', null);
+    if(cached && Date.now() - cached.at < 1000*60*60*12) return cached.kws;
+    try{
+      const prompt = `请从下面这些日记/记录里提炼「最近做的事」的关键词，返回 JSON 数组，5-12 个词；每个词带 days（出现天数，整数，去重后）、dates（涉及的具体日期列表，yyyy-MM-dd）。要的是跨天连续做的零碎事，不要"健康""感恩"这种通用词。\n数据：\n` + corpus.map(c=>c.date+'：'+c.text.slice(0,200)).join('\n');
+      const out = await AI.ask(prompt + '\n\n只返回 JSON，不要其他内容，不要 markdown 代码块。');
+      const m = String(out).match(/\[[\s\S]*\]/);
+      if(m){
+        const arr = JSON.parse(m[0]);
+        if(Array.isArray(arr)) {
+          const kws = arr.map(x => ({word:String(x.word||'').slice(0,12), days:Number(x.days)||1, dates:Array.isArray(x.dates)?x.dates.filter(d=>/^\d{4}-\d{2}-\d{2}$/.test(d)):[]}));
+          Store.set('keywords_30d', {at:Date.now(), kws});
+          return kws;
+        }
+      }
+    }catch(e){ /* 静默回退到本地 */ }
+    return fallback;
+  },
+  _localKeywords(corpus){
+    const stop = new Set(['今天','昨天','明天','今日','一个','一些','没有','什么','怎么','我们','你们','他们','这个','那个','因为','所以','可以','应该','需要','已经','还是','不是','可能','比较','大概','其实','感觉','觉得','开始','继续','完成','做了','做完','写好','写了','读到','看了','想想','以后','现在','时间','一些']);
+    const freq = {};
+    corpus.forEach(c => {
+      const text = String(c.text).replace(/[\s\d\p{P}]+/gu, '');
+      const seen = new Set();
+      for(let i=0; i<text.length-1; i++){
+        for(let len=2; len<=5 && i+len<=text.length; len++){
+          const w = text.slice(i, i+len);
+          if(stop.has(w)) continue;
+          seen.add(w);
+        }
+      }
+      seen.forEach(w => { freq[w] = freq[w] || {word:w, days:0, dates:new Set()}; freq[w].days++; freq[w].dates.add(c.date); });
+    });
+    return Object.values(freq).filter(x => x.dates.size >= 2).sort((a,b)=>b.dates.size - a.dates.size).slice(0, 18).map(x=>({word:x.word, days:x.dates.size, dates:[...x.dates].sort()}));
+  },
+  keywordsHtml(kws){
+    if(!kws || !kws.length) return '<div class="empty">最近 30 天还没提炼出关键词</div>';
+    const max = Math.max(...kws.map(k=>k.days));
+    return kws.map(k => {
+      const size = 12 + Math.round((k.days/Math.max(max,1)) * 16);
+      return `<span class="db-keyword" style="font-size:${size}px" onclick="DiaryBook.showKeywordDays('${Util.esc(k.word).replace(/'/g,"\\'")}')" title="点开看涉及的天数">${Util.esc(k.word)}<sup>${k.days}</sup></span>`;
+    }).join('<span class="db-keyword-sep"> </span>');
+  },
+  async refreshKeywords(){
+    const box = document.getElementById('dbKeywordsBody');
+    if(!box) return;
+    box.innerHTML = '<div class="hint">AI 正在提炼最近 30 天…（首次可能要 10 秒）</div>';
+    Store.remove('keywords_30d');
+    delete box.dataset.loaded;
+    const kws = await this.generateKeywords();
+    box.innerHTML = this.keywordsHtml(kws);
+  },
+  showKeywordDays(word){
+    const cached = Store.get('keywords_30d', null);
+    const kws = cached ? cached.kws : [];
+    const item = kws.find(k => k.word === word);
+    const dates = item ? item.dates : [];
+    const html = dates.length
+      ? `<p class="hint">「${Util.esc(word)}」出现在 ${dates.length} 天：</p><div class="db-day-grid">${dates.map(d=>`<button class="pill" onclick="UI.closeModal();DiaryBook.go('${d}')">${d.slice(5)}</button>`).join('')}</div>`
+      : '<div class="empty">没找到对应日期</div>';
+    UI.modal(`「${word}」涉及的天数`, html);
   },
 }
 /* ==== 功能：日记本 END ==== */
@@ -2702,7 +2874,7 @@ const Tracker = {
     }).join('');
     const moodCells=days.map(dt=>{ const rec=Store.get(this.dayKey(dt),{habits:{},mood:''}); return `<div class="habit-day mood" title="${dt}">${Util.esc(rec.mood||'')}</div>`; }).join('');
     return `<div class="habit-board" style="border:none;padding:4px 0 0;background:transparent"><div class="habit-grid" style="grid-template-columns:96px repeat(7,minmax(22px,1fr))">${dateRow}${habitRows}<div class="habit-label">情绪</div>${moodCells}</div></div>
-      <div style="margin-top:8px"><a href="javascript:App.go('daily')" style="color:var(--accent);font-size:12px;text-decoration:none">去每日记录填写 →</a></div>`;
+      <div style="margin-top:8px"><a href="javascript:App.go('tracker')" style="color:var(--accent);font-size:12px;text-decoration:none">打开追踪表 →</a></div>`;
   },
   saveHome(){
     const current = Store.get(this.dayKey(), {habits:{}, mood:'😊', line:''});
@@ -2734,18 +2906,18 @@ const Tracker = {
   detailBoard(n){
     const days=Util.rangeDays(n), items=this.items();
     const cols=Math.max(1, days.length);
-    /* 短区间（≤10 列）用 flex 填满卡片；长区间保持 18px 列宽左右滑动 */
-    const fill = cols<=10;
-    /* 日期标签：≤7 天每天都标，≤14 每 2 天，≤31 每 5 天，更长每 7 天；末尾再补一个 */
+    /* 短区间（≤10 列）用 flex 填满卡片；长区间（月/年）放宽列宽并加间距，方块里直接标「日」 */
+    const long = cols>10;
     const step = cols<=7?1:cols<=14?2:cols<=31?5:7;
     const dateRow = `<div></div>${days.map((d,i)=>`<div class="habit-date ${(i%step===0||i===cols-1)?'tick':''}">${(i%step===0||i===cols-1)?d.slice(8):''}</div>`).join('')}`;
     const rows = items.map(it=>{
       const done=days.filter(d=>Store.get(this.dayKey(d),{habits:{}}).habits?.[it.id]).length;
-      return `<div class="habit-label" title="${Util.esc(it.name)}">${Util.esc(it.name)}<span class="habit-count">${done}天</span></div>${days.map(d=>`<div class="habit-day ${Store.get(this.dayKey(d),{habits:{}}).habits?.[it.id]?'on':''}" title="${d} ${Util.esc(it.name)}"></div>`).join('')}`;
+      return `<div class="habit-label" title="${Util.esc(it.name)}">${Util.esc(it.name)}<span class="habit-count">${done}天</span></div>${days.map(d=>`<div class="habit-day ${Store.get(this.dayKey(d),{habits:{}}).habits?.[it.id]?'on':''}" title="${d} ${Util.esc(it.name)}">${long?`<span class="dd">${Number(d.slice(8))}</span>`:''}</div>`).join('')}`;
     }).join('');
     const moodRow = `<div class="habit-label">情绪</div>${days.map(d=>{ const m=Store.get(this.dayKey(d),{mood:''}).mood||''; return `<div class="habit-day mood" title="${d} ${Util.esc(moodLabel(m)||m)}">${Util.esc(m||'')}</div>`; }).join('')}`;
-    const tpl = fill ? `112px repeat(${cols},minmax(22px,1fr))` : `112px repeat(${cols},18px)`;
-    return `<h2 style="font-size:15px;margin-bottom:8px">习惯明细</h2><p class="hint" style="margin-bottom:8px">${fill?'一周一目了然。':'左右滑动查看全部日期。'}</p><div class="habit-board"><div class="habit-grid" style="grid-template-columns:${tpl}">${dateRow}${rows}${moodRow}</div></div>`;
+    const tpl = long ? `112px repeat(${cols},minmax(30px,34px))` : `112px repeat(${cols},minmax(22px,1fr))`;
+    const rangeName = cols>=300 ? '整年' : cols>=28 ? '近一月' : '本周';
+    return `<h2 style="font-size:15px;margin-bottom:8px">习惯明细 · ${rangeName}</h2><p class="hint" style="margin-bottom:8px">${long?'左右滑动查看全部日期，每个方块里的数字是「日」。':'一周一目了然。'}</p><div class="habit-board"><div class="habit-grid" style="grid-template-columns:${tpl};gap:${long?'6px 5px':'6px'}">${dateRow}${rows}${moodRow}</div></div>`;
   },
   async aiAnalyze(){ trackerAi.textContent='分析中...'; try{ trackerAi.textContent=await AI.ask('请分析我的习惯和情绪趋势，给出简短统计、触发模式和三个优化建议：\n'+JSON.stringify(Util.rangeDays(31).map(d=>({date:d,track:Store.get(this.dayKey(d),{})})))); }catch(e){ trackerAi.textContent=e.message; } }
 };
@@ -2788,6 +2960,7 @@ const DailyLog = {
     dlAi.textContent = '';
     if(Store.get('daily_mood_collapsed', null)===null) Store.set('daily_mood_collapsed', true);
     this.applyMoodCollapse();
+    this.renderSportMini();
     this.bindAutosave();
     this.history();
   },
@@ -2853,6 +3026,42 @@ const DailyLog = {
     dlAi.textContent = '分析中...';
     try{ dlAi.textContent = await AI.ask('请复盘这段记录，输出：1 事件一句话总结；2 情绪一句话；3 触发点；4 我可以学到什么；5 一个1分钟行动建议。\n内容：\n'+text); }
     catch(e){ dlAi.textContent = e.message; }
+  },
+  /* AI 一句话总结情绪（基于今日感恩日记+情绪日记+习惯） */
+  async aiSummarizeMood(){
+    const d = Util.today();
+    const s = Store.get(Success.key(d), {});
+    const m = Store.get('moods', []).find(x => x.date === d);
+    const wins = Util.lines(s.wins||'').slice(0,3).join('；') || '（无）';
+    const moodText = m ? m.text.slice(0, 80) : '（无）';
+    dlMoodLine.placeholder = '生成中…';
+    try{
+      const out = await AI.ask('请根据以下今日内容，用 1 句不超过 20 字的话总结今天的情绪：\n成就：' + wins + '\n情绪日记：' + moodText);
+      dlMoodLine.value = out.trim().replace(/^["「"]|["」"]$/g, '');
+      dlMoodLine.placeholder = '（AI 总结会填到这里，可手动改）';
+      UI.toast('已填到下方，可手动改');
+    }catch(e){ dlMoodLine.placeholder = '生成失败：' + e.message + '，可手动填'; }
+  },
+  /* 今日运动（直接写进 sport_logs，不重复做 Sport 页面） */
+  addSport(){
+    const t = Sport.types().find(x => x.id === dlSportType.value);
+    if(!t) return UI.toast('先选运动类型');
+    const dur = Number(dlSportDur.value);
+    if(!dur) return UI.toast('先选时长');
+    Store.set('sport_logs', [{id:Util.uid(),date:Util.today(),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),type:t,duration:dur}, ...Sport.logs()]);
+    Coin.checkSport();
+    this.renderSportMini();
+    Home.render();
+    UI.toast('已记录：'+t.name+' '+dur+'h');
+  },
+  renderSportMini(){
+    const list = Sport.logs().filter(x => x.date === Util.today());
+    if(document.getElementById('dlSportType')){
+      dlSportType.innerHTML = Sport.types().map(t=>`<option value="${t.id}">${t.icon} ${Util.esc(t.name)}</option>`).join('');
+    }
+    if(document.getElementById('dlSportList')){
+      dlSportList.innerHTML = list.length ? ('今日：' + list.map(x=>`${x.type.icon} ${x.type.name} ${x.duration}h`).join(' · ')) : '还没打卡，点上面选类型+时长即可';
+    }
   },
   history(){
     const items = Tracker.items();
@@ -2958,7 +3167,11 @@ const Companion = {
       );
       this.push({role:'assistant', content:out, at:this.now(), refs});
     }catch(e){
-      this.push({role:'assistant', content:'没连上：' + e.message, at:this.now()});
+      /* 余额不足 / 401 等给出可操作提示 */
+      let hint = e.message;
+      if(/余额|402/.test(e.message)) hint += '\n👉 DeepSeek 充值：https://platform.deepseek.com → 左侧「充值」';
+      if(/key|401/.test(e.message)) hint += '\n👉 设置 → AI 分析 → 检查 key 是否复制完整';
+      this.push({role:'assistant', content:'没连上：' + hint, at:this.now()});
     }
   },
   async manual(){
@@ -3062,22 +3275,20 @@ const AutoBackup = {
     }
     const month = Util.today().slice(0, 7);
     const text = JSON.stringify(Store.exportAll(), null, 2);
-    const name = this.fileName();   // 固定一份：恢复就读它
+    const name = this.fileName();
     const dir = await this.handle();
     if(dir && await this.ensurePermission(dir)){
       try{
-        /* 1) 固定一份写入主文件 */
         const fh = await dir.getFileHandle(name, {create:true});
         const wr = await fh.createWritable(); await wr.write(text); await wr.close();
-        /* 2) 备份的备份：带日期的历史副本放进同名子文件夹，永不覆盖旧日期 */
         try{
           const sub = await dir.getDirectoryHandle(this.historyDir(), {create:true});
           const hf = await sub.getFileHandle(this.historyName(), {create:true});
           const hw = await hf.createWritable(); await hw.write(text); await hw.close();
-        }catch(e){ /* 历史副本写失败不影响主备份 */ }
+        }catch(e){}
         try{ await this.exportMediaFolders(dir); }catch(e){}
         this.save({lastMonth:month});
-        if(!silent) UI.toast('已写入 ' + (this.cfg().dirName || '所选文件夹') + '（固定一份 + 备份历史 + 分类图片）');
+        if(!silent) UI.toast('✅ 已写入「' + (this.cfg().dirName || '所选文件夹') + '」（固定一份 + 备份历史 + 分类图片）');
         this.render();
         return true;
       }catch(e){ if(!silent) UI.toast('写入失败：' + e.message); }
@@ -3085,7 +3296,7 @@ const AutoBackup = {
     if(silent) return false;
     Util.download(name, text, 'application/json');
     this.save({lastMonth:month});
-    UI.toast('已下载备份文件，请放进 360AI 同步文件夹');
+    UI.toast('✅ 已下载备份文件，放进 360AI 同步文件夹即可');
     this.render();
     return true;
   },
@@ -3113,10 +3324,11 @@ const AutoBackup = {
     const month = Util.today().slice(0, 7);
     if(c.lastMonth === month) return;
     const ok = await this.runNow(true).catch(() => false);
-    if(ok) UI.toast('这个月的自动备份已经写好了');
+    if(ok) UI.toast('✅ 本月自动备份已写入「' + (c.dirName || '本机下载') + '」');
   },
-  /* 手机端：退出页面时尽量自动下载一份备份（部分浏览器会拦截自动下载） */
+  /* 手机端：默认不再退出时自动备份（避免每次刷新都被浏览器拦下载）；开启后才备份 */
   exitBackup(){
+    if(Store.get('__autoBackupQuiet')) return;
     const c=this.cfg();
     if(!c.exitDl) return;
     if(!Store.hasUserData()) return;
@@ -3299,7 +3511,26 @@ const Notes = {
 const Quick = {
   list(){ return Store.get('quick',[]); },
   add(){ const text=quickInput.value.trim(); if(!text)return; Store.set('quick',[{id:Util.uid(),date:Util.today(),text},...this.list()]); quickInput.value=''; this.render(); },
-  render(){ quickList.innerHTML=this.list().length?this.list().map(x=>UI.item(x.date,x.text,`<button class="del" onclick="Quick.del('${x.id}')">✕</button>`,`draggable="true" data-sort-id="${x.id}"`)).join(''):'<div class="empty">还没有灵感</div>'; DragSort.bind('#quickList [data-sort-id]','quick',()=>Quick.render()); },
+  render(){ quickList.innerHTML=this.list().length?this.list().map(x=>{
+    const press = `if(window.getSelection().toString())return;const t=${JSON.stringify(x.text)};navigator.clipboard?.writeText(t);UI.toast('已复制全文');`;
+    return `<div class="item long-press" data-quick-id="${x.id}" oncontextmenu="${press}">
+      <div class="grow" onpointerdown="Quick.tapStart('${x.id}',event)" onpointerup="Quick.tapEnd('${x.id}',event)" onpointermove="Quick.tapEnd('${x.id}',event)">
+        <div class="title" style="white-space:pre-wrap">${Util.esc(x.text)}</div>
+        <div class="desc">${x.date}</div>
+      </div>
+      <button class="del" onclick="Quick.del('${x.id}')">✕</button>
+    </div>`;
+  }).join(''):'<div class="empty">还没有灵感</div>'; DragSort.bind('#quickList [data-sort-id]','quick',()=>Quick.render()); },
+  /* 长按 ≈0.45s 复制全文（手机/桌面通用） */
+  _holdTimer:null,
+  tapStart(id, e){
+    if(e.target.closest('button')) return;
+    const item = this.list().find(x => x.id === id);
+    if(!item) return;
+    clearTimeout(this._holdTimer);
+    this._holdTimer = setTimeout(() => { navigator.clipboard?.writeText(item.text); UI.toast('已复制全文'); }, 450);
+  },
+  tapEnd(){ clearTimeout(this._holdTimer); },
   del(id){ Store.set('quick',this.list().filter(x=>x.id!==id)); this.render(); }
 };
 /* ==== 功能：灵感速记 END ==== */
@@ -3361,8 +3592,12 @@ const Wish = {
           </div>`).join('')}</div>`;
       }
     }
-    doneWishList.innerHTML = this.renderList(this.list().filter(x=>x.done),'done');
+    doneWishList.innerHTML = (this.renderList(this.list().filter(x=>x.done),'done')).replace(/<div class="item /g, '<div class="item ').replace(/<button class="del" onclick="Wish.del\('([^']+)'\)/g, '<button class="del" onclick="Wish.del(\'$1\')" title="删除">✕</button> <button class="del" onclick="Wish.restoreDone(\'$1\')" title="恢复为未完成" style="margin-right:4px;color:var(--accent)">↺</button>') + `<div class="hint" style="margin-top:8px">误点了完成？点这里 ↺ 可恢复，10 秒内顶部「撤销」按钮也行。</div><button class="btn ghost small" id="wishUndoBtn" onclick="Wish.undoLast()" style="margin-top:6px;width:100%;display:none">↺ 撤销最近一次完成（10 秒内）</button>`;
     DragSort.bind('[data-wish-sort]','wishes',()=>Wish.render());
+    /* 显示「撤销最近一次完成」按钮（仅 10 秒内） */
+    const u = Store.get('wish_undo', null);
+    const btn = document.getElementById('wishUndoBtn');
+    if(btn) btn.style.display = (u && Date.now() - u.at < 10000) ? '' : 'none';
   },
   fillParentSelect(){
     const sel=document.getElementById('wishParent'); if(!sel) return;
@@ -3376,7 +3611,27 @@ const Wish = {
     this.render();
   },
   renderList(list,group){ return list.length?list.map(x=>`<div class="item ${x.done?'done':''}"><span style="font-size:14px;margin-right:6px">${x.type==='wish'?'✨':'📌'}</span><div class="grow"><div class="title">${Util.esc(x.text)}</div><div class="desc">${x.date}${x.wishId?' · 归属心愿':''}</div></div></div>`).join(''):'<div class="empty">暂无</div>'; },
-  toggle(id){ const item=this.list().find(x=>x.id===id); if(item && !item.done) Coin.checkWishDone(); Store.set('wishes',this.list().map(x=>x.id===id?{...x,done:!x.done}:x)); this.render(); },
+  toggle(id){
+    const item=this.list().find(x=>x.id===id);
+    if(!item) return;
+    if(!item.done){
+      /* 标记完成：记一个 undo 锚点（10 秒内可撤销） */
+      Store.set('wish_undo', {id, at:Date.now()});
+      Coin.checkWishDone();
+    }
+    Store.set('wishes',this.list().map(x=>x.id===id?{...x,done:!x.done}:x));
+    this.render();
+  },
+  undoLast(){
+    const u = Store.get('wish_undo', null);
+    if(!u) return UI.toast('没有最近一次完成的记录');
+    if(Date.now() - u.at > 10000) return UI.toast('已超过 10 秒，无法撤销');
+    Store.set('wishes', this.list().map(x=>x.id===u.id?{...x, done:false}:x));
+    Store.remove('wish_undo');
+    this.render();
+    UI.toast('已撤销最近一次完成');
+  },
+  restoreDone(id){ Store.set('wishes', this.list().map(x=>x.id===id?{...x, done:false}:x)); this.render(); UI.toast('已恢复为未完成'); },
   del(id){ Store.set('wishes',this.list().filter(x=>x.id!==id)); this.render(); }
 };
 /* ==== 功能：心愿行动 END ==== */
@@ -3708,40 +3963,125 @@ const Coin = {
 /* ==== 功能：英语积累 END ==== */
 /* ==== 功能：视觉灵感 START ==== */
 const Visual = {
-  daily:[
-    ['🎬 影视','《瞬息全宇宙》','多重宇宙、强色彩和荒诞构图'],
-    ['🎨 艺术','蒙德里安 · 红黄蓝构图','秩序感和基础色块的经典案例'],
-    ['🏛️ 展览','故宫博物院常设展','传统纹样、配色和留白参考'],
-    ['✨ 素材','Collect UI','每天看一组产品界面结构'],
-    ['🌿 配色','叶片绿 + 石榴红','自然底色里放一个小面积高饱和点'],
-    ['📐 构图','三分法留白','主体不要塞满，给视线呼吸的位置'],
-    ['👗 穿搭','低饱和上衣 + 亮色配饰','日常好穿，但有一个记忆点'],
-    ['🖼️ UI','底部导航 + 更多','手机上最省心的路径是少想、直接点']
-  ],
-  list(){ return Store.get('visuals',[]); },
-  picks(){
-    const manual=Store.get('visual_daily_override');
-    if(manual?.date===Util.today()) return manual.items;
-    const seed=new Date().getDate()%this.daily.length;
-    return Array.from({length:4},(_,i)=>this.daily[(seed+i)%this.daily.length]);
+  defaultCats:['美图','动漫','风景','学习'],
+  cats(){ const custom = Store.get('visual_cats', null); return Array.isArray(custom) && custom.length ? custom : this.defaultCats.slice(); },
+  saveCats(arr){ const clean = [...new Set((arr||[]).map(x=>String(x||'').trim()).filter(Boolean))]; Store.set('visual_cats', clean.length ? clean : this.defaultCats.slice()); },
+  editCategories(){
+    const cur = this.cats().join('、');
+    const next = prompt('管理分类（用、隔开）', cur);
+    if(next == null) return;
+    this.saveCats(next.split(/[,,、\s]+/));
+    this.render();
+    UI.toast('分类已更新');
   },
-  shuffleDaily(){ const shuffled=[...this.daily].sort(()=>Math.random()-.5).slice(0,4); Store.set('visual_daily_override',{date:Util.today(),items:shuffled}); this.render(); },
-  render(){ visualTag.innerHTML=Util.options('visual_tag',['配色','构图','素材','UI','穿搭','展览','影视'],visualTag.value||'配色'); visualDaily.innerHTML=this.picks().map(x=>`<div class="card"><h2>${x[0]}</h2><div class="title">${Util.esc(x[1])}</div><p class="hint">${Util.esc(x[2])}</p></div>`).join(''); visualList.innerHTML=this.list().length?this.list().map((x,i)=>`<div class="item" draggable="true" data-sort-id="${x.id}">${this.mediaHtml(x)}<div class="grow"><div class="title">${Util.esc(x.tag||'灵感')}</div><div class="desc">${Util.esc(x.note||'')}<br>${x.media && x.media.length>1 ? (x.media.length+' 个素材') : (x.fileName?Util.esc(x.fileName):'')}</div></div><button class="del" onclick="Visual.move(${i},-1)">↑</button><button class="del" onclick="Visual.move(${i},1)">↓</button><button class="del" onclick="Visual.del('${x.id}')">✕</button></div>`).join(''):'<div class="empty">还没有收藏</div>'; DragSort.bind('#visualList [data-sort-id]','visuals',()=>Visual.render()); Media.paint(visualList); },
+  list(){ return Store.get('visuals',[]); },
+  /* 全屏查看器：左右翻页 + 下方下载按钮（不走新页面，避免浏览器拦截下载） */
+  _viewer:null,
+  async openViewer(id){
+    const list = this.list();
+    const flat = list.flatMap(x => Array.isArray(x.media) ? x.media.map(m=>({...m, _itemId:x.id, _note:x.note||''})) : (x.mediaId ? [{id:x.mediaId, _itemId:x.id, _note:x.note||''}] : []));
+    const idx = flat.findIndex(m => m.id === id);
+    if(idx < 0) return;
+    this._viewer = {items: flat, idx, itemId: flat[idx]._itemId};
+    this._renderViewer();
+  },
+  async _renderViewer(){
+    const v = this._viewer; if(!v) return;
+    let box = document.getElementById('visualViewer');
+    if(!box){
+      box = document.createElement('div'); box.id = 'visualViewer'; box.className = 'visual-viewer';
+      box.innerHTML = `<button class="vv-close" onclick="Visual.closeViewer()">×</button><button class="vv-prev" onclick="Visual.viewerNav(-1)">‹</button><div class="vv-stage" id="vvStage"></div><button class="vv-next" onclick="Visual.viewerNav(1)">›</button><div class="vv-bar"><a class="vv-dl" id="vvDl" download>⬇ 下载</a><span class="vv-info" id="vvInfo"></span></div>`;
+      document.body.appendChild(box);
+    }
+    box.style.display = 'flex';
+    const m = v.items[v.idx];
+    const stage = document.getElementById('vvStage');
+    const url = await Media.objectUrl(m.id);
+    stage.innerHTML = (m.type?.startsWith?.('video/') || (/\.mp4$|\.webm$|\.mov$/i.test(m.name||''))) ? `<video src="${url}" controls autoplay style="max-width:100%;max-height:80vh"></video>` : `<img src="${url}" style="max-width:100%;max-height:80vh;object-fit:contain">`;
+    const dl = document.getElementById('vvDl');
+    if(dl){ dl.href = url; dl.download = (m.name || ('visual-' + m.id)) + Media.extOf(m.type || 'image/jpeg'); }
+    const info = document.getElementById('vvInfo');
+    if(info){ const item = this.list().find(x => x.id === v.itemId); info.textContent = (v.idx+1) + '/' + v.items.length + ' · ' + (item?.tag || '') + (item?.note ? ' · ' + item.note : ''); }
+  },
+  viewerNav(delta){
+    const v = this._viewer; if(!v) return;
+    v.idx = (v.idx + delta + v.items.length) % v.items.length;
+    this._renderViewer();
+  },
+  closeViewer(){ const box = document.getElementById('visualViewer'); if(box) box.style.display = 'none'; this._viewer = null; },
+  /* 点缩略图 → 走 viewer（而不是 window.open） */
+  thumbClick(id, e){ e?.stopPropagation?.(); this.openViewer(id); },
+  /* 文字内容长按即复制 */
+  copyNote(text){ navigator.clipboard?.writeText(text); UI.toast('已复制文本'); },
+  render(){
+    const cats = this.cats();
+    if(!cats.includes(Store.get('visual_tag_last', ''))) Store.set('visual_tag_last', cats[0]);
+    visualTag.innerHTML = cats.map(c=>`<option value="${Util.esc(c)}">${Util.esc(c)}</option>`).join('');
+    visualTag.value = Store.get('visual_tag_last', cats[0]);
+    const list=this.list();
+    visualList.innerHTML=list.length?list.map((x,i)=>{
+      const thumbs = this.mediaHtml(x);
+      const note = x.note || '';
+      return `<div class="item" draggable="true" data-sort-id="${x.id}">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">${thumbs}</div>
+        <div class="grow">
+          <div class="title">
+            <select data-visual-cat="${x.id}" onchange="Visual.changeTag('${x.id}',this.value)" style="font-size:11px;padding:2px 4px;border-radius:6px;border:1px solid var(--line)">${cats.map(c=>`<option ${c===x.tag?'selected':''}>${Util.esc(c)}</option>`).join('')}</select>
+            <span class="desc" style="cursor:text;margin-left:6px" ondblclick="Visual.editNote('${x.id}')" oncontextmenu="Visual.copyNote(${JSON.stringify(note)});return false" title="双击编辑，右键复制">${note ? Util.esc(note) : '（双击写一句简介）'}</span>
+          </div>
+          <div class="desc">${x.date}${x.media && x.media.length>1 ? (' · ' + x.media.length + ' 个素材') : ''}</div>
+        </div>
+        <button class="del" onclick="Visual.move(${i},-1)">↑</button><button class="del" onclick="Visual.move(${i},1)">↓</button><button class="del" onclick="Visual.del('${x.id}')">✕</button>
+      </div>`;
+    }).join(''):'<div class="empty">还没有收藏</div>';
+    DragSort.bind('#visualList [data-sort-id]','visuals',()=>Visual.render());
+    Media.paint(visualList);
+    /* 给缩略图绑新的点击 → 走 viewer */
+    visualList.querySelectorAll('[data-media]').forEach(el => {
+      el.removeAttribute('onclick');
+      el.style.cursor = 'zoom-in';
+      el.addEventListener('click', e => { e.stopPropagation(); Visual.openViewer(el.dataset.media); });
+    });
+    /* 监听键盘左右键 */
+    if(!this._keyBound){
+      this._keyBound = true;
+      document.addEventListener('keydown', e => {
+        if(!this._viewer) return;
+        if(e.key === 'ArrowLeft') this.viewerNav(-1);
+        if(e.key === 'ArrowRight') this.viewerNav(1);
+        if(e.key === 'Escape') this.closeViewer();
+      });
+    }
+  },
+  changeTag(id, tag){
+    Store.set('visuals', this.list().map(x => x.id === id ? {...x, tag} : x));
+    Store.set('visual_tag_last', tag);
+  },
+  editNote(id){
+    const item = this.list().find(x => x.id === id);
+    if(!item) return;
+    const next = prompt('写一句简介', item.note || '');
+    if(next == null) return;
+    Store.set('visuals', this.list().map(x => x.id === id ? {...x, note: next.trim().slice(0, 80)} : x));
+    this.render();
+  },
   mediaHtml(x){
     if(!x) return '';
     const arr = Array.isArray(x.media) ? x.media : [];
-    if(arr.length) return arr.map(m => `<img class="thumb" data-media="${m.id}" alt="" onclick="Media.openFull('${m.id}')">`).join('');
-    if(x.mediaId) return `<img class="thumb" data-media="${x.mediaId}" alt="" onclick="Media.openFull('${x.mediaId}')">`;
-    if(x.media){ /* 旧版 base64 兼容 */
+    if(arr.length) return arr.map(m => `<img class="thumb" data-media="${m.id}" alt="" title="点击查看大图">`).join('');
+    if(x.mediaId) return `<img class="thumb" data-media="${x.mediaId}" alt="" title="点击查看大图">`;
+    if(x.media){
       if(x.mediaType==='video') return `<video class="thumb" src="${x.media}" controls></video>`;
       return `<img class="thumb" src="${x.media}" alt="">`;
     }
     return '';
   },
   async add(){
-    const note = visualNote.value.trim();
+    const note = visualNote.value.trim().slice(0, 80);
     const files = [...visualFile.files];
-    if(!note && !files.length) return UI.toast('写一句内容或上传一个素材');
+    const tag = visualTag.value || this.cats()[0];
+    Store.set('visual_tag_last', tag);
+    if(!note && !files.length) return UI.toast('写一句简介或上传一个素材');
     const media = [];
     for(const file of files){
       if(file.type.startsWith('video/') && file.size > 1800000){ UI.toast('视频「'+(file.name||'')+'」太大了，建议先压到 2MB 以内'); continue; }
@@ -3749,8 +4089,7 @@ const Visual = {
       if(saved) media.push(saved);
     }
     if(!note && !media.length) return UI.toast('没有可保存的内容');
-    Util.bump('visual_tag', visualTag.value);
-    Store.set('visuals', [{id:Util.uid(), date:Util.today(), tag:visualTag.value, note, media, fileName: media[0]?.name || ''}, ...this.list()]);
+    Store.set('visuals', [{id:Util.uid(), date:Util.today(), tag, note, media, fileName: media[0]?.name || ''}, ...this.list()]);
     visualNote.value=''; visualFile.value=''; UI.toast('已收藏'); this.render();
   },
   move(i,d){ const a=this.list(); const j=i+d; if(j<0||j>=a.length)return; [a[i],a[j]]=[a[j],a[i]]; Store.set('visuals',a); this.render(); },
@@ -4039,9 +4378,9 @@ const LifeAnalysis = {
     const d=this.data(31);
     return `<div class="grid">
       <div class="tile"><h3>今日必做</h3><div class="big">${d.taskDone}<small>/${d.taskTotal}</small></div></div>
-      <div class="tile"><h3>习惯完成率</h3><div class="big">${d.habitRate}<small>%</small></div></div>
+      <div class="tile"><h3>英语学习</h3><div class="big">${d.englishDays}<small>天</small></div></div>
       <div class="tile"><h3>🪙 金币</h3><div class="big" style="color:#d4a017">${d.coinTotal}<small>枚</small></div></div>
-      <div class="tile"><h3>连续打卡</h3><div class="big">${d.streak}<small>天</small></div></div>
+      <div class="tile"><h3>会做几道菜</h3><div class="big">${d.dishes}<small>道</small></div></div>
     </div>`;
   },
   render(){
@@ -4385,9 +4724,7 @@ const PWAInstall = {
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
   }
-  /* 手机端退出时尽量自动下载一份备份 */
-  window.addEventListener('pagehide', () => { try { AutoBackup.exitBackup(); } catch(e){} });
-  document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'hidden'){ try { AutoBackup.exitBackup(); } catch(e){} } });
+  /* 备份策略：手动（💾/立即备份）+ 月度自动（AutoBackup.check）。不再在刷新/退出时自动下载，避免每次刷新都被浏览器拦下载、也说不清是否真备份了 */
 })();
 </script>
 </body>
