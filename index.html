@@ -684,15 +684,8 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 </div>
 <div class="welcome" id="welcomeScreen">
   <div class="welcome-card">
-    <div class="welcome-orb">☀️</div>
     <h1 id="welcomeTitle">嗨，小彘</h1>
-    <p id="welcomeText" style="position:relative">
-      你今天真棒，能打开这里就已经是在照顾自己了。
-      <button class="wp-btn" id="wpUploadBtn" onclick="Welcome.uploadWallpaper()" title="上传你自己的图片作为欢迎页背景">📷</button>
-    </p>
-    <div style="display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap">
-      <button class="btn" onclick="Welcome.start()">开始今天 ✨</button>
-    </div>
+    <p id="welcomeText">你今天真棒，能打开这里就已经是在照顾自己了。</p>
   </div>
 </div>
 <div class="drawer-scrim" id="drawerScrim" onclick="App.closeDrawer()"></div>
@@ -795,7 +788,7 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
       <div class="page-title">追踪表</div><div class="page-sub">习惯追踪和情绪记录合在这里。每天只填今天，可按周、月、年查看。</div>
       <div class="card">
         <h2>今天</h2>
-        <div id="trackerToday"></div>
+        <div id="trackerToday" class="pill-row pill-row-compact"></div>
         <label>今日情绪符号</label>
         <select id="trackerMood">
           <option value="😊">😊 开心</option><option value="🥰">🥰 温暖</option><option value="😌">😌 平静</option><option value="😐">😐 平淡</option><option value="🤔">🤔 思考</option><option value="😟">😟 焦虑</option><option value="😣">😣 紧绷</option><option value="😴">😴 疲惫</option><option value="😡">😡 烦躁</option><option value="😢">😢 难过</option><option value="🤩">🤩 兴奋</option><option value="💪">💪 高能</option>
@@ -1925,7 +1918,7 @@ const DragSort = {
       const whole = opts.whole;
       const handleEl = whole ? null : el.querySelector('[data-grab]');
       const source = handleEl || el;
-      const delay = (opts.delay != null) ? opts.delay : (handleEl ? 0 : 340);
+      const delay = (opts.delay != null) ? opts.delay : (handleEl ? 0 : 700);
       let timer = null, dragging = false, revealed = false, cancelled = false, sx = 0, sy = 0;
       const release = () => { if(DragSort._claim === el) DragSort._claim = null; };
       /* 背景点击（手机/电脑）收起已浮出的编辑控件 */
@@ -2021,7 +2014,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-13-v43';
+const BUILD_VERSION = '2026-08-13-v44';
 const App = {
   current:'home',
   booting:true,
@@ -2140,7 +2133,8 @@ const Daily = {
   streak(){ const days = Store.get('openDays', []); let n=0, d=Util.today(); while(days.includes(d)){ n++; d=Util.dateAdd(d,-1); } return n; }
 };
 const Welcome = {
-  DEFAULT_WALLPAPER: './assets/welcome-default.jpg',
+  /* v44: 删掉欢迎页壁纸、上传按钮、开始按钮；欢迎页只保留标题 + 一句鼓励，3 秒后自动进入应用 */
+  AUTO_DISMISS_MS: 3000,
   prompts:[
     ['新的一天，你不需要完美，只需要开始。','每一步都算数，哪怕只是打开了这个工作台。'],
     ['今天也谢谢你愿意好好对待自己。','慢慢来，比较快。'],
@@ -2154,10 +2148,10 @@ const Welcome = {
     const msg = cached ? cached : await this.build(day).catch(()=>this.fallback(day));
     welcomeTitle.textContent = '嗨，' + AppCustom.getShortName();
     welcomeText.textContent = msg.text;
-    /* 壁纸优先级：用户自定义 > 默认石榴树图（联网每日壁纸已移除，改为纯本地、不依赖外部网络） */
-    const custom = Store.get('welcome_custom_wallpaper');
-    this.applyWallpaper(custom || this.DEFAULT_WALLPAPER);
     welcomeScreen.classList.add('on');
+    /* v44: 显示 3 秒后自动进入应用（用户不再需要点「开始今天」） */
+    clearTimeout(this._autoTimer);
+    this._autoTimer = setTimeout(() => this.start(), this.AUTO_DISMISS_MS);
   },
   fallback(day){
     const p = this.prompts[day.charCodeAt(day.length-1)%this.prompts.length];
@@ -2186,33 +2180,8 @@ const Welcome = {
     return {text:(a||text)+'\n'+(b||''), quote:a||text};
   },
   refresh(){ this.build(Util.today()).then(msg => { welcomeText.textContent = msg.text; }).catch(()=>{}); },
-  applyWallpaper(url){
-    if(welcomeScreen) welcomeScreen.style.background = `linear-gradient(rgba(20,40,22,.35),rgba(20,40,22,.55)), center/cover no-repeat url("${url}")`;
-  },
-  /* 上传自定义欢迎页壁纸 */
-  uploadWallpaper(){
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = e => {
-      const file = e.target.files[0];
-      if(!file) return;
-      /* 限制大小 5MB */
-      if(file.size > 5*1024*1024){ UI.toast('图片太大了，请选 5MB 以内的'); return; }
-      const reader = new FileReader();
-      reader.onload = ev => {
-        const dataUrl = ev.target.result;
-        Store.set('welcome_custom_wallpaper', dataUrl);
-        this.applyWallpaper(dataUrl);
-        UI.toast('✅ 壁纸已更换');
-        /* 清除 Bing 缓存，优先使用自定义 */
-        Store.remove('welcome_wallpaper');
-      };
-      reader.readAsDataURL(file);
-    };
-    input.click();
-  },
-  start(){ welcomeScreen.classList.remove('on'); Store.set('welcomeSeen', Util.today()); Home.render(); }
+  /* v44: 欢迎页不再有壁纸、上传按钮、开始按钮；只保留标题+一句鼓励，3 秒后自动调用 start() */
+  start(){ clearTimeout(this._autoTimer); welcomeScreen.classList.remove('on'); Store.set('welcomeSeen', Util.today()); Home.render(); }
 };
 const Hub = {
   groups:{
@@ -3094,7 +3063,7 @@ const Tracker = {
   ]; },
   items(){ const items=Store.get('tracker_items'); if(items) return items; Store.set('tracker_items', this.defaults()); return this.defaults(); },
   dayKey(date=Util.today()){ return 'tracker:'+date; },
-  render(){ const rec=Store.get(this.dayKey(),{habits:{},mood:'😊',line:''}); trackerToday.innerHTML=this.items().map(it=>`<label class="pill" style="margin:5px 6px 5px 0"><input type="checkbox" data-habit="${it.id}" ${rec.habits?.[it.id]?'checked':''} style="width:auto;min-height:auto;margin-right:6px"><span class="pill-text">${Util.esc(it.name)}${it.desc?`<br><small class="habit-desc">${Util.esc(it.desc)}</small>`:''}</span></label>`).join(''); trackerMood.value=rec.mood||'😊'; Util.fillMoodSelect('trackerMood'); trackerMood.value=rec.mood||'😊'; trackerMoodLine.value=rec.line||''; this.bindAutosave(); this.renderItems(); this.stats(); },
+  render(){ const rec=Store.get(this.dayKey(),{habits:{},mood:'😊',line:''}); trackerToday.innerHTML=this.items().map(it=>`<label class="pill" title="${Util.esc(it.desc||it.name)}"><input type="checkbox" data-habit="${it.id}" ${rec.habits?.[it.id]?'checked':''}><span class="pill-text">${Util.esc(it.name)}</span></label>`).join(''); trackerMood.value=rec.mood||'😊'; Util.fillMoodSelect('trackerMood'); trackerMood.value=rec.mood||'😊'; trackerMoodLine.value=rec.line||''; this.bindAutosave(); this.renderItems(); this.stats(); },
   bindAutosave(){
     if(this._autosaveBound) return;
     this._autosaveBound=true;
