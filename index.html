@@ -417,10 +417,9 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .edit-actions .ea-btn{width:26px;height:26px;border:0;background:transparent;border-radius:6px;font-size:13px;color:var(--text);cursor:pointer;line-height:1}
 .edit-actions .ea-btn:hover{background:rgba(107,152,79,.18)}
 .edit-actions .ea-btn.danger{color:#c85346}
-/* 编辑模式（首页顶部"✎ 编辑"开启）下，所有卡片浮出编辑控件；此时拖动被禁用 */
-body.home-editing .edit-actions{display:flex}
-body.home-editing .tile,body.home-editing .mini-entry,body.home-editing .home-widget{outline:2px dashed rgba(107,152,79,.4);outline-offset:2px;cursor:default}
-body.home-editing [data-drag-home]{touch-action:auto}
+/* 长按（手机）/悬停（电脑）卡片时浮出编辑控件；拖动始终可用，不再有独立编辑开关 */
+@media (hover:hover){ .tile:hover>.edit-actions,.mini-entry:hover>.edit-actions{display:flex} }
+.editing>.edit-actions{display:flex}
 .tile.pinned-tile.touch-action{position:relative}
 .pinned-tile .grab{position:absolute;left:5px;top:6px;z-index:2}
 .pinned-tile{position:relative}
@@ -530,7 +529,9 @@ body.home-editing [data-drag-home]{touch-action:auto}
 @keyframes pulse-install{0%,100%{box-shadow:0 2px 8px rgba(107,152,79,.35)}50%{box-shadow:0 2px 16px rgba(107,152,79,.6),0 0 0 4px rgba(107,152,79,.15)}}
 /* 明日必做结构化编辑器 */
 .must-editor .must-item{display:flex;align-items:center;gap:6px;margin:6px 0}
-.must-editor .must-item .must-grab{color:#b6ad95;cursor:grab;font-size:14px;flex-shrink:0;touch-action:none;user-select:none}
+.must-editor .must-item .must-move{display:flex;flex-direction:column;flex-shrink:0;gap:2px}
+.must-editor .must-item .mm-btn{width:26px;height:20px;border:0;background:rgba(107,152,79,.14);border-radius:5px;color:var(--accent);font-size:13px;line-height:1;cursor:pointer}
+.must-editor .must-item .mm-btn:disabled{opacity:.35;cursor:default}
 .must-editor .must-item .must-text{flex:1;min-width:0}
 .must-editor .must-item .must-quest{flex:0 0 40%}
 .must-editor .must-add{margin-top:6px}
@@ -663,6 +664,12 @@ body.home-editing [data-drag-home]{touch-action:auto}
 .today-must .tm-item{display:flex;gap:6px;align-items:flex-start;font-size:13px;padding:2px 0}
 .today-must .tm-item .tm-check{color:var(--accent);flex-shrink:0}
 .today-must .tm-empty{font-size:12px;color:var(--text-dim)}
+.today-must-fold{margin-bottom:8px;border:1px solid rgba(107,152,79,.18);border-radius:12px;overflow:hidden;background:rgba(107,152,79,.07)}
+.today-must-fold>summary{list-style:none;cursor:pointer;padding:7px 10px;font-size:11px;font-weight:700;color:var(--accent);user-select:none}
+.today-must-fold>summary::-webkit-details-marker{display:none}
+.today-must-fold>summary::before{content:'▸ '}
+.today-must-fold[open]>summary::before{content:'▾ '}
+.today-must-fold .today-must{margin-bottom:0;border:0;background:transparent;padding:0 10px 8px}
 </style>
 </head>
 <body>
@@ -716,7 +723,6 @@ body.home-editing [data-drag-home]{touch-action:auto}
         </div>
       </section>
       <section class="grid" id="homeTopGrid"></section>
-      <div class="home-editbar"><button class="btn ghost small" id="homeEditBtn" onclick="Home.toggleEditMode()">✎ 编辑桌面</button><span class="muted" id="homeEditHint" style="font-size:11px;margin-left:8px"></span></div>
       <section class="home-board" id="homeBoard"></section>
     </section><!-- ==== 功能：首页 END ==== --><!-- ==== 功能：分类 START ==== --><section class="page" id="page-hub">
       <div class="page-title" id="hubTitle">分类</div><div class="page-sub" id="hubSub">把相关功能放在一起。</div>
@@ -735,7 +741,7 @@ body.home-editing [data-drag-home]{touch-action:auto}
       <div class="card">
         <h2>② 感恩日记</h2>
         <textarea id="dlWins" placeholder="今天值得感恩的事，一行一件"></textarea>
-        <div class="today-must" id="dlTodayMust"></div>
+        <details class="today-must-fold" id="dlTodayMustWrap"><summary>今日必做（来自昨晚的计划）</summary><div class="today-must" id="dlTodayMust"></div></details>
         <label>明天必做（今晚填，明早自动变成「今日必做」）</label>
         <div id="dlMustBox" class="must-editor"></div>
       </div>
@@ -1837,6 +1843,8 @@ const UI = {
 const DragSort = {
   _from:null,
   clearHints(){ document.querySelectorAll('.drop-hint').forEach(x => x.classList.remove('drop-hint')); },
+  /* 长按（手机）时只让当前卡片浮出编辑控件，其余收起 */
+  setEditing(el){ document.querySelectorAll('.editing').forEach(n => { if(n !== el) n.classList.remove('editing'); }); if(el) el.classList.add('editing'); },
   dashCase(attr){ return 'data-' + attr.replace(/[A-Z]/g, m => '-' + m.toLowerCase()); },
   pointTarget(touch, selector, attrName, exclude){
     /* 几何命中：直接比对每张可排序卡片的矩形，排除正在拖的那张。
@@ -1882,7 +1890,6 @@ const DragSort = {
       this._mouseUpBound = true;
       document.addEventListener('mouseup', () => {
         document.querySelectorAll('.sortable[draggable="false"]').forEach(n => { n.draggable = true; });
-        document.querySelectorAll('.editing').forEach(n => n.classList.remove('editing'));
       });
     }
     document.querySelectorAll(selector).forEach(el => {
@@ -1896,8 +1903,6 @@ const DragSort = {
       });
       const idOf = n => n && n.dataset ? n.dataset[attr] : '';
       el.addEventListener('dragstart', e => {
-        /* 编辑模式下不拖动：用户在点编辑控件，不是排顺序 */
-        if(document.body.classList.contains('home-editing')){ e.preventDefault(); return; }
         e.stopPropagation();
         DragSort._from = idOf(el); DragSort._fromEl = el; DragSort._sel = selector; el.classList.add('dragging');
         try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', DragSort._from || ''); } catch {}
@@ -1924,11 +1929,10 @@ const DragSort = {
       const stop = () => { clearTimeout(timer); timer = null; if(active){ active = false; el.classList.remove('dragging'); el.classList.remove('editing'); DragSort.clearHints(); } release(); };
       source.addEventListener('touchstart', e => {
         if(DragSort._claim) return;            /* 嵌套时里层先认领，外层不抢 */
-        if(document.body.classList.contains('home-editing')) return;  /* 编辑模式：不进入拖动 */
         DragSort._claim = el;
         const t = e.touches[0]; sx = t.clientX; sy = t.clientY;
-        if(delay === 0){ active = true; el.classList.add('dragging'); }
-        else timer = setTimeout(() => { active = true; el.classList.add('dragging'); try { navigator.vibrate?.(12); } catch {} }, delay);
+        if(delay === 0){ active = true; el.classList.add('dragging'); DragSort.setEditing(el); }
+        else timer = setTimeout(() => { active = true; el.classList.add('dragging'); DragSort.setEditing(el); try { navigator.vibrate?.(12); } catch {} }, delay);
       }, {passive:true});
       source.addEventListener('touchmove', e => {
         if(DragSort._claim !== el) return;
@@ -1945,7 +1949,7 @@ const DragSort = {
       source.addEventListener('touchend', e => {
         clearTimeout(timer);
         if(!active){ release(); return; }
-        active = false; el.classList.remove('dragging'); el.classList.remove('editing'); DragSort.clearHints(); release();
+        active = false; el.classList.remove('dragging'); DragSort.clearHints(); release();
         const t = e.changedTouches[0];
         const target = DragSort.pointTarget(t, selector, attrName, el);
         if(target && target !== el){
@@ -1981,7 +1985,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-13-v39';
+const BUILD_VERSION = '2026-08-13-v40';
 const App = {
   current:'home',
   booting:true,
@@ -2374,8 +2378,6 @@ const Home = {
     return q[new Date().getDate()%q.length];
   },
   render(){
-    const btn=document.getElementById('homeEditBtn'); if(btn) btn.textContent = this._editMode ? '✔ 完成' : '✎ 编辑桌面';
-    const hint=document.getElementById('homeEditHint'); if(hint) hint.textContent = this._editMode ? '点卡片上的按钮可缩小/放大/折叠/关闭；此时不拖动' : '';
     document.getElementById('homeQuote').textContent=this.quote();
     document.getElementById('homeDate').textContent=new Date().toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric',weekday:'long'});
     const tasks = Success.todayTasks();
@@ -2572,14 +2574,6 @@ const Home = {
       if(item && item.questId) MainQuest.checkinById(item.questId);
     }
     this.render();
-  },
-  /* 编辑桌面开关：开启时 body.home-editing → 显示所有卡片的编辑控件并禁用拖动 */
-  _editMode:false,
-  toggleEditMode(){
-    this._editMode = !this._editMode;
-    document.body.classList.toggle('home-editing', this._editMode);
-    this.render();
-    if(this._editMode) UI.toast('编辑模式：点卡片按钮调整，再次点「✔ 完成」退出');
   }
 };
 /* ==== 功能：首页 END ==== */
@@ -2641,7 +2635,10 @@ const MustEditor = {
     if(!items.length){ list.innerHTML = ''; return; }
     list.innerHTML = items.map((it, i)=>`
       <div class="must-item" data-sort-id="must:${i}">
-        <span class="must-grab" data-grab title="按住拖动排序">⠿</span>
+        <span class="must-move">
+          <button class="mm-btn" title="上移" ${i===0?'disabled':''} onclick="MustEditor.move('${boxId}',${i},-1)">↑</button>
+          <button class="mm-btn" title="下移" ${i===items.length-1?'disabled':''} onclick="MustEditor.move('${boxId}',${i},1)">↓</button>
+        </span>
         <input class="must-text" data-mi="${i}" value="${Util.esc(it.text||'')}" placeholder="必做事项">
         <select class="must-quest" data-mi="${i}">
           <option value="">不关联</option>
@@ -2649,23 +2646,6 @@ const MustEditor = {
         </select>
         <button class="del" title="删除" onclick="MustEditor.remove('${boxId}',${i})">✕</button>
       </div>`).join('');
-    /* 绑定拖动排序：只从 ⠿ 手柄触发，不会误触输入框 */
-    setTimeout(() => {
-      DragSort.attach('#'+boxId+'_list [data-sort-id]', (from, to) => {
-        const l = document.getElementById(boxId+'_list'); if(!l) return;
-        const rows = [...l.querySelectorAll('.must-item')];
-        const fi = rows.findIndex(r => r.dataset.sortId === from);
-        const ti = rows.findIndex(r => r.dataset.sortId === to);
-        if(fi < 0 || ti < 0 || fi === ti) return;
-        const [m] = rows.splice(fi, 1); rows.splice(ti, 0, m);
-        rows.forEach(r => l.appendChild(r));
-        [...l.querySelectorAll('.must-item')].forEach((r, i) => {
-          r.dataset.sortId = 'must:' + i;
-          r.querySelectorAll('[data-mi]').forEach(el => el.dataset.mi = String(i));
-        });
-        UI.toast('已调整顺序');
-      }, {attr:'sortId', delay:280, whole:false});
-    }, 0);
   },
   read(boxId){
     const list = document.getElementById(boxId+'_list');
@@ -2688,6 +2668,13 @@ const MustEditor = {
     const cur = this.read(boxId);
     cur.splice(i,1);
     this.paint(boxId, cur);
+  },
+  move(boxId, i, dir){
+    const items = this.read(boxId);
+    const j = i + dir;
+    if(j < 0 || j >= items.length) return;
+    const tmp = items[i]; items[i] = items[j]; items[j] = tmp;
+    this.paint(boxId, items);
   },
   collect(boxId){ return this.read(boxId); }
 };
@@ -3263,12 +3250,12 @@ const DailyLog = {
     dlMoodLine.value = rec.line || '';
     const s = Store.get(Success.key(d), {});
     dlWins.value = s.wins||''; if(document.getElementById('dlMustBox')) MustEditor.mount('dlMustBox', Success.norm(s.tomorrow));
-    /* 只读展示「今日必做」（来自昨天规划的明日必做），与下面的「明天必做」编辑器区分开 */
+    /* 只读展示「今日必做」（来自昨天规划的明日必做），折叠在「今日必做」标题下，默认收起 */
     const tm = document.getElementById('dlTodayMust');
     if(tm){
       const t = Success.todayTasks();
       const done = Store.getDaily('task_done', []);
-      tm.innerHTML = `<div class="tm-label">今日必做（昨天晚上计划的）</div>` + (t.length ? t.map((x,i)=>`<div class="tm-item"><span class="tm-check">${done.includes(i)?'✓':''}</span><span>${Util.esc(x.text||'')}</span></div>`).join('') : '<div class="tm-empty">今天还没计划，下面填「明天必做」吧</div>');
+      tm.innerHTML = (t.length ? t.map((x,i)=>`<div class="tm-item"><span class="tm-check">${done.includes(i)?'✓':''}</span><span>${Util.esc(x.text||'')}</span></div>`).join('') : '<div class="tm-empty">今天还没计划，下面填「明天必做」吧</div>');
     }
     if(document.getElementById('dlSleep')) dlSleep.value = s.sleepTime || '23:00';
     if(document.getElementById('dlWake')) dlWake.value = s.wakeTime || '08:00';

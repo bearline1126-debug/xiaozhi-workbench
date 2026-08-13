@@ -4,7 +4,7 @@
 # 用户首次部署：把 token 粘到那个文件里，之后所有推送自动用同一个 token。
 
 set -e
-WORK_DIR="/c/Users/cheng/Documents/Codex/2026-08-10/skill-1-skill-skill-md-2/小彘的工作台 - v2-workbuddy"
+WORK_DIR="$(cd "$(dirname "$0")" && pwd)"
 TOKEN_FILE="/c/Users/cheng/.workbuddy/github-token.txt"
 
 if [ ! -f "$TOKEN_FILE" ]; then
