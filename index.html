@@ -420,6 +420,8 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 /* 长按（手机）/悬停（电脑）卡片时浮出编辑控件；拖动始终可用，不再有独立编辑开关 */
 @media (hover:hover){ .tile:hover>.edit-actions,.mini-entry:hover>.edit-actions{display:flex} }
 .editing>.edit-actions{display:flex}
+/* 「更多」里的小卡片：右上角编辑按钮（📌/✕/折叠）常显，不用长按 */
+.mini-entry .edit-actions{display:flex}
 .tile.pinned-tile.touch-action{position:relative}
 .pinned-tile .grab{position:absolute;left:5px;top:6px;z-index:2}
 .pinned-tile{position:relative}
@@ -1924,22 +1926,33 @@ const DragSort = {
       const handleEl = whole ? null : el.querySelector('[data-grab]');
       const source = handleEl || el;
       const delay = (opts.delay != null) ? opts.delay : (handleEl ? 0 : 340);
-      let timer = null, active = false, sx = 0, sy = 0;
+      let timer = null, dragging = false, sx = 0, sy = 0;
       const release = () => { if(DragSort._claim === el) DragSort._claim = null; };
-      const stop = () => { clearTimeout(timer); timer = null; if(active){ active = false; el.classList.remove('dragging'); el.classList.remove('editing'); DragSort.clearHints(); } release(); };
+      /* 背景点击（手机/电脑）收起已浮出的编辑控件 */
+      if(!DragSort._bgBound){
+        DragSort._bgBound = true;
+        const clearAll = ev => { if(!ev.target.closest('.editing')) document.querySelectorAll('.editing').forEach(n => n.classList.remove('editing')); };
+        document.addEventListener('touchstart', clearAll, true);
+        document.addEventListener('mousedown', clearAll, true);
+      }
+      /* 长按只"浮出编辑控件"，不进入拖动；真正拖动需之后再明显移动（>10px） */
+      const reveal = () => { DragSort.setEditing(el); };
       source.addEventListener('touchstart', e => {
         if(DragSort._claim) return;            /* 嵌套时里层先认领，外层不抢 */
         DragSort._claim = el;
-        const t = e.touches[0]; sx = t.clientX; sy = t.clientY;
-        if(delay === 0){ active = true; el.classList.add('dragging'); DragSort.setEditing(el); }
-        else timer = setTimeout(() => { active = true; el.classList.add('dragging'); DragSort.setEditing(el); try { navigator.vibrate?.(12); } catch {} }, delay);
+        const t = e.touches[0]; sx = t.clientX; sy = t.clientY; dragging = false;
+        if(delay === 0){ reveal(); }
+        else timer = setTimeout(reveal, delay);
       }, {passive:true});
       source.addEventListener('touchmove', e => {
         if(DragSort._claim !== el) return;
         const t = e.touches[0];
-        if(!active){
-          if(Math.abs(t.clientY - sy) > 8 || Math.abs(t.clientX - sx) > 8){ clearTimeout(timer); release(); }
-          return;
+        if(!dragging){
+          if(Math.hypot(t.clientX - sx, t.clientY - sy) < 10) return;  /* 抖动/微移不触发拖动 */
+          clearTimeout(timer);
+          dragging = true; el.classList.add('dragging');
+          DragSort._from = idOf(el); DragSort._fromEl = el; DragSort._sel = selector;
+          DragSort.clearHints();
         }
         e.preventDefault();
         DragSort.clearHints();
@@ -1948,16 +1961,21 @@ const DragSort = {
       }, {passive:false});
       source.addEventListener('touchend', e => {
         clearTimeout(timer);
-        if(!active){ release(); return; }
-        active = false; el.classList.remove('dragging'); DragSort.clearHints(); release();
+        if(!dragging){
+          /* 只是长按浮出，没有拖动：保留 editing，按钮可点；背景点击会清除 */
+          release();
+          return;
+        }
+        dragging = false; el.classList.remove('dragging'); DragSort.clearHints(); release();
         const t = e.changedTouches[0];
         const target = DragSort.pointTarget(t, selector, attrName, el);
         if(target && target !== el){
           const from = idOf(el), to = idOf(target);
           if(from && to && from !== to) onMove(from, to, target, el);
         }
+        /* 不移除 editing：拖动后也可立即点按钮；背景点击会清除 */
       });
-      source.addEventListener('touchcancel', stop);
+      source.addEventListener('touchcancel', () => { clearTimeout(timer); if(dragging){ dragging = false; el.classList.remove('dragging'); DragSort.clearHints(); } release(); });
     });
   }
 };
@@ -1985,7 +2003,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-13-v40';
+const BUILD_VERSION = '2026-08-13-v41';
 const App = {
   current:'home',
   booting:true,
