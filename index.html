@@ -134,6 +134,8 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .collapsible-head{display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer}
 .collapsible-head:hover{opacity:.85}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.home-editbar{display:flex;align-items:center;margin:6px 0 2px}
+.home-editbar .muted{color:var(--text-dim)}
 .home-board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;position:relative;overflow:visible}
 .home-widget{grid-column:span 2;touch-action:manipulation}
 .home-widget.small{grid-column:span 1}
@@ -415,8 +417,10 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .edit-actions .ea-btn{width:26px;height:26px;border:0;background:transparent;border-radius:6px;font-size:13px;color:var(--text);cursor:pointer;line-height:1}
 .edit-actions .ea-btn:hover{background:rgba(107,152,79,.18)}
 .edit-actions .ea-btn.danger{color:#c85346}
-.editing .edit-actions{display:flex}
-.editing{outline:2px dashed rgba(107,152,79,.45);outline-offset:2px}
+/* 编辑模式（首页顶部"✎ 编辑"开启）下，所有卡片浮出编辑控件；此时拖动被禁用 */
+body.home-editing .edit-actions{display:flex}
+body.home-editing .tile,body.home-editing .mini-entry,body.home-editing .home-widget{outline:2px dashed rgba(107,152,79,.4);outline-offset:2px;cursor:default}
+body.home-editing [data-drag-home]{touch-action:auto}
 .tile.pinned-tile.touch-action{position:relative}
 .pinned-tile .grab{position:absolute;left:5px;top:6px;z-index:2}
 .pinned-tile{position:relative}
@@ -526,6 +530,7 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 @keyframes pulse-install{0%,100%{box-shadow:0 2px 8px rgba(107,152,79,.35)}50%{box-shadow:0 2px 16px rgba(107,152,79,.6),0 0 0 4px rgba(107,152,79,.15)}}
 /* 明日必做结构化编辑器 */
 .must-editor .must-item{display:flex;align-items:center;gap:6px;margin:6px 0}
+.must-editor .must-item .must-grab{color:#b6ad95;cursor:grab;font-size:14px;flex-shrink:0;touch-action:none;user-select:none}
 .must-editor .must-item .must-text{flex:1;min-width:0}
 .must-editor .must-item .must-quest{flex:0 0 40%}
 .must-editor .must-add{margin-top:6px}
@@ -636,6 +641,28 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .img-grid>img,.img-cell>img{width:72px;height:72px;object-fit:cover;border-radius:10px;border:1px solid #eee}
 .img-cell{position:relative;display:inline-block;margin:0 6px 6px 0}
 .img-cell .del{position:absolute;top:-7px;right:-7px;padding:0 6px;line-height:20px;height:20px}
+/* ==== 视觉灵感相册（点分类进入，展示该分类全部图片 + 单删） ==== */
+.album-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.album-head .ab-title{font-family:var(--title-font);font-size:16px;font-weight:700}
+.album-head .ab-count{font-size:12px;color:var(--accent);background:rgba(107,152,79,.14);padding:1px 9px;border-radius:999px}
+.album-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+.album-cell{position:relative;border-radius:12px;overflow:hidden;background:#e8e4d8;aspect-ratio:1/1}
+.album-cell img,.album-cell video{width:100%;height:100%;object-fit:cover;display:block}
+.album-cell .ab-del{position:absolute;top:4px;right:4px;width:24px;height:24px;border:0;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.album-empty{opacity:.6;padding:18px 0;text-align:center}
+/* 心愿已完成：按心愿分组 */
+.done-group{margin-bottom:10px}
+.done-group .dg-head{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;padding:4px 2px}
+.done-group .dg-kids{margin:4px 0 0 14px;border-left:2px solid #ece6cf;padding-left:8px;display:flex;flex-direction:column;gap:4px}
+.done-kid{display:flex;align-items:center;gap:6px;font-size:12px;color:#555}
+.done-kid .title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
+.done-orphan{font-size:12px;color:#777;padding-left:2px}
+/* 每日记录里的"今日必做"只读展示 */
+.today-must{background:rgba(107,152,79,.07);border:1px solid rgba(107,152,79,.18);border-radius:12px;padding:8px 10px;margin-bottom:8px}
+.today-must .tm-label{font-size:11px;color:var(--accent);font-weight:700;margin-bottom:4px}
+.today-must .tm-item{display:flex;gap:6px;align-items:flex-start;font-size:13px;padding:2px 0}
+.today-must .tm-item .tm-check{color:var(--accent);flex-shrink:0}
+.today-must .tm-empty{font-size:12px;color:var(--text-dim)}
 </style>
 </head>
 <body>
@@ -689,6 +716,7 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
         </div>
       </section>
       <section class="grid" id="homeTopGrid"></section>
+      <div class="home-editbar"><button class="btn ghost small" id="homeEditBtn" onclick="Home.toggleEditMode()">✎ 编辑桌面</button><span class="muted" id="homeEditHint" style="font-size:11px;margin-left:8px"></span></div>
       <section class="home-board" id="homeBoard"></section>
     </section><!-- ==== 功能：首页 END ==== --><!-- ==== 功能：分类 START ==== --><section class="page" id="page-hub">
       <div class="page-title" id="hubTitle">分类</div><div class="page-sub" id="hubSub">把相关功能放在一起。</div>
@@ -707,7 +735,8 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
       <div class="card">
         <h2>② 感恩日记</h2>
         <textarea id="dlWins" placeholder="今天值得感恩的事，一行一件"></textarea>
-        <label>明天必做事项</label>
+        <div class="today-must" id="dlTodayMust"></div>
+        <label>明天必做（今晚填，明早自动变成「今日必做」）</label>
         <div id="dlMustBox" class="must-editor"></div>
       </div>
       <div class="card">
@@ -1864,14 +1893,13 @@ const DragSort = {
       /* 在输入框里按下鼠标时临时关掉拖拽，免得选不中文字 */
       el.addEventListener('mousedown', e => {
         el.draggable = !e.target.closest('input,textarea,select,[contenteditable="true"]');
-        /* 鼠标按下立即显示编辑控件（不需要长按） */
-        if(el.draggable) el.classList.add('editing');
       });
       const idOf = n => n && n.dataset ? n.dataset[attr] : '';
       el.addEventListener('dragstart', e => {
+        /* 编辑模式下不拖动：用户在点编辑控件，不是排顺序 */
+        if(document.body.classList.contains('home-editing')){ e.preventDefault(); return; }
         e.stopPropagation();
         DragSort._from = idOf(el); DragSort._fromEl = el; DragSort._sel = selector; el.classList.add('dragging');
-        el.classList.add('editing');
         try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', DragSort._from || ''); } catch {}
       });
       el.addEventListener('dragend', () => { el.classList.remove('dragging'); el.classList.remove('editing'); DragSort.clearHints(); });
@@ -1896,10 +1924,11 @@ const DragSort = {
       const stop = () => { clearTimeout(timer); timer = null; if(active){ active = false; el.classList.remove('dragging'); el.classList.remove('editing'); DragSort.clearHints(); } release(); };
       source.addEventListener('touchstart', e => {
         if(DragSort._claim) return;            /* 嵌套时里层先认领，外层不抢 */
+        if(document.body.classList.contains('home-editing')) return;  /* 编辑模式：不进入拖动 */
         DragSort._claim = el;
         const t = e.touches[0]; sx = t.clientX; sy = t.clientY;
-        if(delay === 0){ active = true; el.classList.add('dragging'); el.classList.add('editing'); }
-        else timer = setTimeout(() => { active = true; el.classList.add('dragging'); el.classList.add('editing'); try { navigator.vibrate?.(12); } catch {} }, delay);
+        if(delay === 0){ active = true; el.classList.add('dragging'); }
+        else timer = setTimeout(() => { active = true; el.classList.add('dragging'); try { navigator.vibrate?.(12); } catch {} }, delay);
       }, {passive:true});
       source.addEventListener('touchmove', e => {
         if(DragSort._claim !== el) return;
@@ -1952,7 +1981,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-13-v38';
+const BUILD_VERSION = '2026-08-13-v39';
 const App = {
   current:'home',
   booting:true,
@@ -2290,7 +2319,7 @@ const Home = {
       <button class="grab" data-grab style="position:absolute;left:5px;top:6px" onclick="event.stopPropagation()">⠿</button>
       <div class="edit-actions" onclick="event.stopPropagation()">
         <button class="ea-btn" onclick="Home.toggleTopSize('${id}')" title="${isSmall?'放大':'缩小'}">${isSmall?'▢':'▣'}</button>
-        <button class="ea-btn" onclick="Home.unpin('${id}')" title="收回更多">↩</button>
+        <button class="ea-btn" onclick="Home.unpin('${id}')" title="收回桌面">↩</button>
         ${!removable?'':`<button class="ea-btn danger" onclick="Home.unpin('${id}')" title="关闭">✕</button>`}
       </div>
       <button style="border:0;background:transparent;text-align:left;color:inherit;padding:0;width:100%" ${t.go?`onclick="App.go('${t.go}')"`:''}>
@@ -2302,17 +2331,13 @@ const Home = {
     const m=Store.get('home_top_size',{}); m[id]=m[id]==='small'?'':'small'; Store.set('home_top_size',m); this.render();
   },
   pin(id){
-    /* 把更多栏目里的卡片置顶到「更多」列表的最前面，不再插到顶部横栏，避免"添加小卡片就跑到最上面"的混乱 */
-    const entries = this.allEntryIds();
-    const without = entries.filter(x => x !== id);
-    Store.set('home_entries', [id, ...without]);
-    /* 兼容旧版本：如果之前 pinned 到了顶部横栏，顺手清掉 */
-    const top = this.topTiles(); if(top.includes(id)){
-      Store.set('home_top_tiles', top.filter(x => x !== id));
-      Store.set('home_pinned_entries', (Store.get('home_pinned_entries',[])).filter(x => x !== id));
-    }
-    this.render(); UI.toast('已置顶到更多');
+    /* 加到桌面顶部横栏（home_top_tiles）。更多里仍保留该栏目，二者可共存（与 daily/english 等默认一致）。 */
+    const top=this.topTiles();
+    if(top.includes(id)) return UI.toast('已经在桌面了');
+    Store.set('home_top_tiles', [id, ...top]);
+    this.render(); UI.toast('已加到桌面顶部');
   },
+  addToDesktop(id){ this.pin(id); },
   unpin(id){
     Store.set('home_top_tiles', this.topTiles().filter(x=>x!==id));
     Store.set('home_pinned_entries', Store.get('home_pinned_entries',[]).filter(x=>x!==id));
@@ -2349,6 +2374,8 @@ const Home = {
     return q[new Date().getDate()%q.length];
   },
   render(){
+    const btn=document.getElementById('homeEditBtn'); if(btn) btn.textContent = this._editMode ? '✔ 完成' : '✎ 编辑桌面';
+    const hint=document.getElementById('homeEditHint'); if(hint) hint.textContent = this._editMode ? '点卡片上的按钮可缩小/放大/折叠/关闭；此时不拖动' : '';
     document.getElementById('homeQuote').textContent=this.quote();
     document.getElementById('homeDate').textContent=new Date().toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric',weekday:'long'});
     const tasks = Success.todayTasks();
@@ -2445,7 +2472,7 @@ const Home = {
     return `<div class="mini-entry x-host" data-mini-id="${id}" data-drag-home="mini:${id}">
       <div class="edit-actions" onclick="event.stopPropagation()">
         <button class="ea-btn" onclick="Home.toggleEntry('${id}')" title="${collapsed?'展开':'折叠'}">${collapsed?'＋':'－'}</button>
-        <button class="ea-btn" onclick="Home.pin('${id}')" title="置顶到更多">↑</button>
+        <button class="ea-btn" onclick="Home.addToDesktop('${id}')" title="加到桌面">📌</button>
         <button class="ea-btn danger" onclick="Home.hideEntry('${id}')" title="关闭">✕</button>
       </div>
       <button style="border:0;background:transparent;text-align:left;color:inherit;padding:0;width:100%" onclick="App.go('${id}')">
@@ -2545,6 +2572,14 @@ const Home = {
       if(item && item.questId) MainQuest.checkinById(item.questId);
     }
     this.render();
+  },
+  /* 编辑桌面开关：开启时 body.home-editing → 显示所有卡片的编辑控件并禁用拖动 */
+  _editMode:false,
+  toggleEditMode(){
+    this._editMode = !this._editMode;
+    document.body.classList.toggle('home-editing', this._editMode);
+    this.render();
+    if(this._editMode) UI.toast('编辑模式：点卡片按钮调整，再次点「✔ 完成」退出');
   }
 };
 /* ==== 功能：首页 END ==== */
@@ -2605,7 +2640,8 @@ const MustEditor = {
     const q = MainQuest.list();
     if(!items.length){ list.innerHTML = ''; return; }
     list.innerHTML = items.map((it, i)=>`
-      <div class="must-item">
+      <div class="must-item" data-sort-id="must:${i}">
+        <span class="must-grab" data-grab title="按住拖动排序">⠿</span>
         <input class="must-text" data-mi="${i}" value="${Util.esc(it.text||'')}" placeholder="必做事项">
         <select class="must-quest" data-mi="${i}">
           <option value="">不关联</option>
@@ -2613,6 +2649,23 @@ const MustEditor = {
         </select>
         <button class="del" title="删除" onclick="MustEditor.remove('${boxId}',${i})">✕</button>
       </div>`).join('');
+    /* 绑定拖动排序：只从 ⠿ 手柄触发，不会误触输入框 */
+    setTimeout(() => {
+      DragSort.attach('#'+boxId+'_list [data-sort-id]', (from, to) => {
+        const l = document.getElementById(boxId+'_list'); if(!l) return;
+        const rows = [...l.querySelectorAll('.must-item')];
+        const fi = rows.findIndex(r => r.dataset.sortId === from);
+        const ti = rows.findIndex(r => r.dataset.sortId === to);
+        if(fi < 0 || ti < 0 || fi === ti) return;
+        const [m] = rows.splice(fi, 1); rows.splice(ti, 0, m);
+        rows.forEach(r => l.appendChild(r));
+        [...l.querySelectorAll('.must-item')].forEach((r, i) => {
+          r.dataset.sortId = 'must:' + i;
+          r.querySelectorAll('[data-mi]').forEach(el => el.dataset.mi = String(i));
+        });
+        UI.toast('已调整顺序');
+      }, {attr:'sortId', delay:280, whole:false});
+    }, 0);
   },
   read(boxId){
     const list = document.getElementById(boxId+'_list');
@@ -3210,6 +3263,13 @@ const DailyLog = {
     dlMoodLine.value = rec.line || '';
     const s = Store.get(Success.key(d), {});
     dlWins.value = s.wins||''; if(document.getElementById('dlMustBox')) MustEditor.mount('dlMustBox', Success.norm(s.tomorrow));
+    /* 只读展示「今日必做」（来自昨天规划的明日必做），与下面的「明天必做」编辑器区分开 */
+    const tm = document.getElementById('dlTodayMust');
+    if(tm){
+      const t = Success.todayTasks();
+      const done = Store.getDaily('task_done', []);
+      tm.innerHTML = `<div class="tm-label">今日必做（昨天晚上计划的）</div>` + (t.length ? t.map((x,i)=>`<div class="tm-item"><span class="tm-check">${done.includes(i)?'✓':''}</span><span>${Util.esc(x.text||'')}</span></div>`).join('') : '<div class="tm-empty">今天还没计划，下面填「明天必做」吧</div>');
+    }
     if(document.getElementById('dlSleep')) dlSleep.value = s.sleepTime || '23:00';
     if(document.getElementById('dlWake')) dlWake.value = s.wakeTime || '08:00';
     /* 补记模式提示 */
@@ -3981,26 +4041,29 @@ const Wish = {
         </div></div>`).join('')}</div>`;
       }
     }
-    /* 已完成列表：并排成 wish-grid 小卡片；行动保留归属显示，每条 ↺ 单恢复 */
+    /* 已完成列表：按心愿分组——心愿卡 + 其已完成行动嵌套显示，清晰体现归属关系 */
     const done = this.list().filter(x=>x.done);
     const doneArea = document.getElementById('doneWishList');
     if(doneArea){
       if(done.length){
-        const cards = done.map(x=>{
-          const parent = x.wishId ? this.list().find(w=>w.id===x.wishId) : null;
-          const parentText = parent ? parent.text : '';
-          const icon = x.type==='wish' ? '✨' : '📌';
-          /* 紧凑单行：图标 + 文字 + 恢复 + 删除，无归属描述（节省空间） */
-          return `<div class="card wish-card done-card">
-            <div class="item done" style="padding:2px 0;border:0;background:transparent">
-              <span style="font-size:13px;margin-right:3px;flex-shrink:0">${icon}</span>
-              <div class="grow" style="min-width:0"><div class="title" style="font-size:12px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${Util.esc(x.text)}${parentText?' · 归属「'+Util.esc(parentText)+'」':''}">${Util.esc(x.text)}</div></div>
-              <button class="del" onclick="Wish.restoreDone('${x.id}')" title="恢复" style="color:var(--accent);font-size:14px;padding:0 3px">↺</button>
-              <button class="del" onclick="Wish.del('${x.id}')" title="删除" style="font-size:14px;padding:0 3px">✕</button>
+        const doneWishes = done.filter(x=>x.type==='wish');
+        const doneActions = done.filter(x=>x.type==='action');
+        let html = '';
+        doneWishes.forEach(w=>{
+          const kids = doneActions.filter(a=>a.wishId===w.id);
+          html += `<div class="done-group">
+            <div class="dg-head">✨ ${Util.esc(w.text)}
+              <button class="del" onclick="Wish.restoreDone('${w.id}')" title="恢复为未完成" style="color:var(--accent);font-size:14px">↺</button>
+              <button class="del" onclick="Wish.del('${w.id}')" title="删除">✕</button>
             </div>
+            ${kids.length?`<div class="dg-kids">${kids.map(a=>`<div class="done-kid"><span>📌 ${Util.esc(a.text)}</span><button class="del" onclick="Wish.restoreDone('${a.id}')" title="恢复" style="color:var(--accent);font-size:13px">↺</button><button class="del" onclick="Wish.del('${a.id}')" title="删除" style="font-size:13px">✕</button></div>`).join('')}</div>`:''}
           </div>`;
-        }).join('');
-        doneArea.innerHTML = `<div class="wish-grid done-grid">${cards}</div>`;
+        });
+        const orphans = doneActions.filter(a=>!a.wishId || !doneWishes.find(w=>w.id===a.wishId));
+        if(orphans.length){
+          html += `<div class="done-group"><div class="dg-head">📌 其他行动</div><div class="dg-kids">${orphans.map(a=>`<div class="done-kid"><span>${Util.esc(a.text)}</span><button class="del" onclick="Wish.restoreDone('${a.id}')" title="恢复" style="color:var(--accent);font-size:13px">↺</button><button class="del" onclick="Wish.del('${a.id}')" title="删除" style="font-size:13px">✕</button></div>`).join('')}</div></div>`;
+        }
+        doneArea.innerHTML = html;
       } else {
         doneArea.innerHTML = '<div class="empty">暂无</div>';
       }
@@ -4373,11 +4436,13 @@ const Visual = {
   cats(){ const custom = Store.get('visual_cats', null); return Array.isArray(custom) && custom.length ? custom : this.defaultCats.slice(); },
   saveCats(arr){ const clean = [...new Set((arr||[]).map(x=>String(x||'').trim()).filter(Boolean))]; Store.set('visual_cats', clean.length ? clean : this.defaultCats.slice()); },
   editCategories(){
-    /* 用弹窗让用户逐项管理：可改、可加、可删，最少保留 1 个 */
+    /* 用弹窗让用户逐项管理：可改名、用 ▲▼ 排序、点「＋」加、点「✕」删 */
     const editing = [...this.cats()];
     const drawIn = (body)=>{
-      body.querySelector('#vcEditList').innerHTML = editing.map((v,i)=>`<div class="row" style="margin-bottom:6px">
-        <input data-vc="${i}" value="${Util.esc(v)}" placeholder="分类名" style="flex:1">
+      body.querySelector('#vcEditList').innerHTML = editing.map((v,i)=>`<div class="row" style="margin-bottom:6px;align-items:center">
+        <button class="btn ghost small" data-vc-up="${i}" title="上移" ${i===0?'disabled style="opacity:.35"':''}>↑</button>
+        <button class="btn ghost small" data-vc-down="${i}" title="下移" ${i===editing.length-1?'disabled style="opacity:.35"':''}>↓</button>
+        <input data-vc="${i}" value="${Util.esc(v)}" placeholder="分类名" style="flex:1;min-width:0">
         <button class="del" data-vc-del="${i}" title="删除">✕</button>
       </div>`).join('');
       body.querySelectorAll('#vcEditList input').forEach(inp=>{
@@ -4386,9 +4451,15 @@ const Visual = {
       body.querySelectorAll('[data-vc-del]').forEach(btn=>{
         btn.addEventListener('click', ()=>{ editing.splice(Number(btn.dataset.vcDel),1); drawIn(body); });
       });
+      body.querySelectorAll('[data-vc-up]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{ const i=Number(btn.dataset.vcUp); if(i>0){ [editing[i-1],editing[i]]=[editing[i],editing[i-1]]; drawIn(body); } });
+      });
+      body.querySelectorAll('[data-vc-down]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{ const i=Number(btn.dataset.vcDown); if(i<editing.length-1){ [editing[i+1],editing[i]]=[editing[i],editing[i+1]]; drawIn(body); } });
+      });
     };
     UI.modal('分类管理', `
-      <p class="hint" style="margin:0 0 8px">改文字、改顺序、点「＋」加，点「✕」删。点保存后立即生效。</p>
+      <p class="hint" style="margin:0 0 8px">改名、用 ↑↓ 调顺序、点「＋」加、点「✕」删。保存后顺序会同步到收藏页和上传下拉。</p>
       <div id="vcEditList"></div>
       <button class="btn ghost small" id="vcEditAdd" style="margin-top:8px">＋ 加一个分类</button>
       <div class="row" style="margin-top:14px"><button class="btn" id="vcEditSave">保存</button><button class="btn ghost" id="vcEditCancel">取消</button></div>
@@ -4441,6 +4512,49 @@ const Visual = {
   thumbClick(id, e){ e?.stopPropagation?.(); this.openViewer(id); },
   /* 文字内容长按即复制 */
   copyNote(text){ navigator.clipboard?.writeText(text); UI.toast('已复制文本'); },
+  /* 打开相册：展示某分类（或 __all__ 全部）下所有图片，每张可单删 */
+  _album:null,
+  openAlbum(tag){
+    const all=this.list();
+    const items = tag==='__all__' ? all : all.filter(x=>x.tag===tag);
+    const flat = items.flatMap(x => Array.isArray(x.media) ? x.media.map(m=>({...m, _itemId:x.id, _tag:x.tag, _note:x.note||''})) : (x.mediaId ? [{id:x.mediaId, _itemId:x.id, _tag:x.tag, _note:x.note||''}] : []));
+    if(!flat.length) return UI.toast('这个分类下还没有素材');
+    this._album = {tag, items: flat};
+    const title = tag==='__all__' ? '全部图片' : tag;
+    UI.modal('🖼 '+title, `<div class="album-head"><span class="ab-title">${Util.esc(title)}</span><span class="ab-count">${flat.length} 张</span></div><div class="album-grid" id="albumGrid"></div>`);
+    this._renderAlbum();
+  },
+  _renderAlbum(){
+    const grid=document.getElementById('albumGrid'); if(!grid||!this._album) return;
+    if(!this._album.items.length){ grid.innerHTML='<div class="album-empty">已经删光啦</div>'; return; }
+    const isVid = m => m.type?.startsWith?.('video/') || /\.mp4$|\.webm$|\.mov$/i.test(m.name||'');
+    grid.innerHTML = this._album.items.map(m=>`<div class="album-cell">${isVid(m)?`<video data-mid="${m.id}" muted playsinline></video>`:`<img data-mid="${m.id}" alt="">`}<button class="ab-del" onclick="Visual.delMedia('${m._itemId}','${m.id}')">✕</button></div>`).join('');
+    this._album.items.forEach(m=>{
+      const el=grid.querySelector(`[data-mid="${m.id}"]`); if(!el) return;
+      Media.objectUrl(m.id).then(u=>{ el.src=u; }).catch(()=>{});
+    });
+  },
+  /* 删除单张素材：从所属收藏里移除这一张；若整条收藏空了就删掉整条 */
+  async delMedia(itemId, mediaId){
+    if(!confirm('删除这张素材？')) return;
+    const list=this.list();
+    const item=list.find(x=>x.id===itemId); if(!item) return;
+    let newList;
+    if(Array.isArray(item.media)){
+      const nm=item.media.filter(m=>m.id!==mediaId);
+      newList = nm.length ? list.map(x=>x.id===itemId?{...x, media:nm}:x) : list.filter(x=>x.id!==itemId);
+    } else {
+      newList = list.filter(x=>x.id!==itemId);
+    }
+    Media.del(mediaId);
+    Store.set('visuals', newList);
+    this.render();
+    if(this._album){
+      this._album.items = this._album.items.filter(m=>m.id!==mediaId);
+      if(this._album.items.length) this._renderAlbum(); else UI.closeModal();
+    }
+    UI.toast('已删除');
+  },
   render(){
     const cats = this.cats();
     if(!cats.includes(Store.get('visual_tag_last', ''))) Store.set('visual_tag_last', cats[0]);
@@ -4457,10 +4571,7 @@ const Visual = {
       const latest = items[0]; /* list 已按新到旧排序（unshift） */
       const count = items.reduce((s, x) => s + (x.media?.length || (x.mediaId ? 1 : 1)), 0);
       const isEmpty = !latest;
-      return `<div class="visual-cat ${isEmpty?'visual-cat-empty':''}" data-cat="${Util.esc(cat)}" data-cat-count="${items.length}" onclick="Visual.openCategory('${Util.esc(cat)}')">
-        <div class="vc-actions" onclick="event.stopPropagation()">
-          <button class="danger" title="删除该分类下所有素材" onclick="Visual.delByTag('${Util.esc(cat)}')">✕</button>
-        </div>
+      return `<div class="visual-cat ${isEmpty?'visual-cat-empty':''}" data-cat="${Util.esc(cat)}" data-cat-count="${items.length}" onclick="Visual.openAlbum('${Util.esc(cat)}')">
         <div class="vc-head">
           <span class="vc-title">${Util.esc(cat)}</span>
           <span class="vc-count">${items.length}</span>
@@ -4470,7 +4581,14 @@ const Visual = {
         <div class="vc-foot">${latest?.note ? Util.esc(latest.note) : (isEmpty ? '点上传会自动归到这里' : '点开看全部 ' + count + ' 张')}</div>
       </div>`;
     }).join('');
-    visualList.innerHTML = `<div class="visual-cat-grid">${cards}</div>`;
+    /* 「全部图片」入口：跨分类查看所有收藏 */
+    const allCount = list.length;
+    const allCard = `<div class="visual-cat visual-cat-all" onclick="Visual.openAlbum('__all__')">
+        <div class="vc-head"><span class="vc-title">🖼 全部图片</span><span class="vc-count">${allCount}</span></div>
+        <div class="vc-thumb"><div style="font-size:30px;color:#9bb07f">▦</div></div>
+        <div class="vc-foot">看所有分类的收藏</div>
+      </div>`;
+    visualList.innerHTML = `<div class="visual-cat-grid">${cards}${allCard}</div>`;
 
     /* 缩略图填 src（异步） */
     Media.paint(visualList);
