@@ -14,17 +14,22 @@ if [ ! -f "$TOKEN_FILE" ]; then
   exit 1
 fi
 
-TOKEN=$(tr -d '\r\n' < "$TOKEN_FILE")
-if [[ "$TOKEN" != ghp_* && "$TOKEN" != github_pat_* ]]; then
-  echo "⚠️ token 文件里不是以 ghp_/github_pat_ 开头的字符串（$(echo $TOKEN | head -c 12)...）。先确认内容。"
+# 从文件里抽取真正的 token（兼容文件里混入了说明注释的情况）：
+# 匹配 ghp_/github_pat_ 开头的串，取长度最长的那一个当作真 token
+TOKEN=$(grep -oE '(github_pat_[A-Za-z0-9_]+|ghp_[A-Za-z0-9]+)' "$TOKEN_FILE" \
+  | awk '{ print length($0), $0 }' | sort -rn | head -1 | cut -d' ' -f2-)
+if [[ -z "$TOKEN" ]]; then
+  echo "❌ token 文件里没找到 ghp_/github_pat_ 形式的 token，请确认粘贴正确。"
   exit 1
 fi
+echo "✓ 已从文件中抽取到 token（前缀: ${TOKEN:0:12}..., 长度: ${#TOKEN}）"
 
 cd "$WORK_DIR"
 
 # 验证本地 token 是否能在 github 认证
 echo "🔑 正在用本地 token 验证 GitHub 访问..."
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: token $TOKEN" https://api.github.com/user)
+# fine-grained PAT 用 Bearer，classic PAT 也可兼容
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $TOKEN" https://api.github.com/user)
 if [ "$HTTP_CODE" != "200" ]; then
   echo "❌ GitHub 校验失败 (HTTP $HTTP_CODE)。请检查 token 是否过期/撤销/权限不足。"
   exit 1
