@@ -1,0 +1,38 @@
+#!/bin/bash
+# 用法： bash deploy_github.sh
+# token 从 ~/.workbuddy/github-token.txt 读，一次粘贴永久用。
+# 用户首次部署：把 token 粘到那个文件里，之后所有推送自动用同一个 token。
+
+set -e
+WORK_DIR="/c/Users/cheng/Documents/Codex/2026-08-10/skill-1-skill-skill-md-2/小彘的工作台 - v2-workbuddy"
+TOKEN_FILE="/c/Users/cheng/.workbuddy/github-token.txt"
+
+if [ ! -f "$TOKEN_FILE" ]; then
+  echo "❌ 没找到 token 文件: $TOKEN_FILE"
+  echo "   请先创建这个文件，里面粘贴你的 GitHub PAT。"
+  echo "   旧 token 已经在之前对话里明文泄露过，记得去 https://github.com/settings/tokens 撤销。"
+  exit 1
+fi
+
+TOKEN=$(tr -d '\r\n' < "$TOKEN_FILE")
+if [[ "$TOKEN" != ghp_* && "$TOKEN" != github_pat_* ]]; then
+  echo "⚠️ token 文件里不是以 ghp_/github_pat_ 开头的字符串（$(echo $TOKEN | head -c 12)...）。先确认内容。"
+  exit 1
+fi
+
+cd "$WORK_DIR"
+
+# 验证本地 token 是否能在 github 认证
+echo "🔑 正在用本地 token 验证 GitHub 访问..."
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: token $TOKEN" https://api.github.com/user)
+if [ "$HTTP_CODE" != "200" ]; then
+  echo "❌ GitHub 校验失败 (HTTP $HTTP_CODE)。请检查 token 是否过期/撤销/权限不足。"
+  exit 1
+fi
+echo "✅ 校验通过，开始推送..."
+
+# 用 git config + insteadOf 把 token 注入到 URL，再 push
+# 注意：insteadOf 是「把左边替换成右边」，左边是被替换的原始 URL
+git -c url."https://$TOKEN@github.com/".insteadOf="https://github.com/" push origin master
+
+echo "✅ 推送完成。"
