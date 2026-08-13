@@ -340,7 +340,8 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .wheel-mini-disk::after{content:'';position:absolute;top:-4px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:9px solid #b00020}
 .wheel-mini-side{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}
 .wheel-mini-side .btn{font-size:12px;padding:6px 8px}
-.wish-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:8px}
+.wish-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:8px}
+.wish-grid.done-grid{grid-template-columns:repeat(auto-fill,minmax(115px,1fr));gap:6px}
 .wish-card{padding:8px}
 .wish-card .item{padding:4px 0}
 .wish-card .item .title{font-size:13px}
@@ -348,10 +349,13 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .wish-add-inline input{flex:1;min-width:0;height:30px;font-size:12px;padding:4px 8px;border-radius:8px}
 .wish-add-inline button{padding:0 10px;height:30px}
 .wish-kids{margin:4px 0 0 14px;border-left:2px solid #ece6cf;padding-left:6px}
-.done-card{padding:6px 8px;opacity:.78}
+.done-card{padding:4px 6px;opacity:.78}
 .done-card .item{padding:0;border:0;background:transparent}
+.done-card .item .title{font-size:12px;line-height:1.3}
 .wish-card{padding:6px 8px;margin-bottom:0}
 .wish-kids{margin-left:10px;margin-top:4px;border-left:2px solid #e8e4d8;padding-left:8px}
+/* 已完成小卡：极简一行 + 恢复 + 删除 */
+.done-card .item{justify-content:space-between;gap:4px}
 .wheel-mini-side .hint{font-size:11px;margin-top:1px;line-height:1.3}
 /* 紧凑型 pill 行：用于每日记录里的习惯勾选，占空间更少 */
 .pill-row-compact{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
@@ -361,9 +365,11 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 /* 灵感条目右边的 3 个小动作按钮（📥 池 / ↗ 愿 / ＋ 日） */
 .quick-act{font-size:11px;border:0;background:#f0ebd8;color:#5a4a2a;border-radius:8px;padding:3px 7px;cursor:pointer;line-height:1.3}
 .quick-act:hover{background:#e6dfc4}
-.quick-actions{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end;align-content:flex-end;margin-top:auto;align-self:flex-end;max-width:140px}
+.quick-actions{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end;margin-top:6px;padding-top:6px;border-top:1px dashed #ece6cf;width:100%}
 .quick-actions .del{margin-left:2px}
-.quick-item{display:flex;align-items:flex-start;gap:8px}
+.quick-item{display:flex;flex-direction:column;align-items:stretch;gap:4px;width:100%}
+.quick-item .grow{width:100%;min-width:0}
+.quick-item .title{white-space:pre-wrap;word-break:break-word}
 /* 通用弹窗（被 UI.modal 调用） */
 .ui-modal-mask{position:fixed;inset:0;background:rgba(20,28,30,.45);z-index:9998;display:flex;align-items:center;justify-content:center;padding:14px}
 .ui-modal-card{background:var(--card);border-radius:14px;max-width:480px;width:100%;max-height:80vh;overflow:hidden;box-shadow:0 16px 36px rgba(20,30,18,.25);display:flex;flex-direction:column}
@@ -374,7 +380,25 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .ui-modal-body{padding:14px 16px;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .ui-modal-body input{font-size:15px}
 .ui-modal-body .btn{font-size:14px;padding:9px 14px}
-/* ==== 视觉灵感全屏查看器 ==== */
+/* ==== 视觉灵感分类网格：按分类并排，每格只显示最新一张 ==== */
+.visual-cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:8px}
+.visual-cat{position:relative;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.76);padding:10px;cursor:pointer;display:flex;flex-direction:column;gap:6px;min-height:140px;touch-action:manipulation;transition:transform .15s,box-shadow .15s}
+.visual-cat:active{transform:scale(.98)}
+.visual-cat .vc-head{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.visual-cat .vc-title{font-family:var(--title-font);font-size:14px;font-weight:700;display:flex;align-items:center;gap:5px}
+.visual-cat .vc-count{font-size:11px;color:var(--text-dim);background:rgba(107,152,79,.14);color:var(--accent);padding:1px 7px;border-radius:999px}
+.visual-cat .vc-thumb{width:100%;height:100px;border-radius:10px;overflow:hidden;background:#e8e4d8;display:flex;align-items:center;justify-content:center}
+.visual-cat .vc-thumb img,.visual-cat .vc-thumb video{width:100%;height:100%;object-fit:cover}
+.visual-cat .vc-date{font-size:10px;color:var(--text-dim)}
+.visual-cat .vc-foot{font-size:11px;color:var(--text);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.visual-cat-empty{opacity:.55}
+.visual-cat .vc-more{position:absolute;right:6px;top:6px;background:rgba(255,255,255,.92);border:0;border-radius:50%;width:26px;height:26px;display:none;align-items:center;justify-content:center;cursor:pointer;color:var(--text);font-size:13px}
+.editing .visual-cat .vc-more,.editing .visual-cat .vc-actions{display:flex}
+.vc-actions{display:none;position:absolute;left:6px;top:6px;gap:4px;background:rgba(255,255,255,.92);padding:3px;border-radius:10px;box-shadow:0 2px 8px rgba(38,54,40,.18)}
+.vc-actions button{width:24px;height:24px;border:0;background:transparent;border-radius:6px;cursor:pointer;font-size:12px;color:var(--text)}
+.vc-actions button:hover{background:rgba(107,152,79,.18)}
+.vc-actions button.danger{color:#c85346}
+.editing{outline:2px dashed rgba(107,152,79,.45);outline-offset:2px}
 .visual-viewer{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:200;display:none;flex-direction:column;align-items:center;justify-content:center}
 .visual-viewer[style*="flex"]{display:flex}
 .visual-viewer .vv-close{position:absolute;top:14px;right:18px;background:rgba(255,255,255,.18);border:0;color:#fff;font-size:24px;width:38px;height:38px;border-radius:50%;cursor:pointer}
@@ -386,6 +410,18 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .visual-viewer .vv-bar{display:flex;gap:14px;align-items:center;justify-content:center;width:100%;padding:14px;color:#fff;font-size:13px}
 .visual-viewer .vv-dl{color:#fff;background:rgba(255,255,255,.16);padding:8px 14px;border-radius:18px;text-decoration:none;font-size:13px}
 .visual-viewer .vv-info{opacity:.7}
+/* 长按拖动排布时显示的小卡片编辑控件：缩小/放大/折叠/删除，平时隐藏 */
+.edit-actions{display:none;position:absolute;right:6px;top:6px;gap:4px;z-index:3;background:rgba(255,255,255,.92);padding:3px 4px;border-radius:10px;box-shadow:0 2px 8px rgba(38,54,40,.18)}
+.edit-actions .ea-btn{width:26px;height:26px;border:0;background:transparent;border-radius:6px;font-size:13px;color:var(--text);cursor:pointer;line-height:1}
+.edit-actions .ea-btn:hover{background:rgba(107,152,79,.18)}
+.edit-actions .ea-btn.danger{color:#c85346}
+.editing .edit-actions{display:flex}
+.editing{outline:2px dashed rgba(107,152,79,.45);outline-offset:2px}
+.tile.pinned-tile.touch-action{position:relative}
+.pinned-tile .grab{position:absolute;left:5px;top:6px;z-index:2}
+.pinned-tile{position:relative}
+/* 拖动时正在编辑的小卡片：lift 一下 */
+.editing.dragging{transform:scale(1.02);box-shadow:0 8px 20px rgba(38,54,40,.18)}
 .sortable{touch-action:pan-y}
 .sort-tip{font-size:11px;color:var(--text-dim);margin:2px 2px 0}
 /* ==== 首页文件夹式更多 ==== */
@@ -671,10 +707,8 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
       <div class="card">
         <h2>② 感恩日记</h2>
         <textarea id="dlWins" placeholder="今天值得感恩的事，一行一件"></textarea>
-        <label>明天必做事项，最多 3 件</label>
+        <label>明天必做事项</label>
         <div id="dlMustBox" class="must-editor"></div>
-        <label style="margin-top:10px">关联到的年度计划</label>
-        <div class="pill-row" id="dlPlans" style="margin-top:6px"></div>
       </div>
       <div class="card">
         <h2>③ 今天的习惯与情绪</h2>
@@ -709,7 +743,7 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
       <div class="card">
         <h2>今天所有值得感恩的事情</h2>
         <textarea id="successWins" placeholder="今天值得感恩的事，一行一件"></textarea>
-        <label>明天必做事项，最多 3 件</label>
+        <label>明天必做事项</label>
         <div id="successMustBox" class="must-editor"></div>
         <label style="margin-top:10px">感恩瞬间（可上传图片）</label>
         <div class="row" style="align-items:center"><input id="successImgFile" type="file" accept="image/*" style="flex:1;font-size:14px"><button class="btn" onclick="Success.uploadGratitude()">上传</button></div>
@@ -920,7 +954,7 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
       <div class="card">
         <label>分类</label>
         <div class="row"><select id="visualTag" style="flex:1"></select><button class="btn ghost small" onclick="Visual.editCategories()">管理分类</button></div>
-        <label style="margin-top:6px">上传照片或短视频，可多选，原图原件保存</label>
+        <label style="margin-top:6px">上传（可多选）</label>
         <input id="visualFile" type="file" accept="image/*,video/*" multiple>
         <button class="btn" style="margin-top:10px;width:100%" onclick="Visual.add()">保存灵感</button>
       </div>
@@ -1817,7 +1851,10 @@ const DragSort = {
     const attrName = this.dashCase(attr);
     if(!this._mouseUpBound){
       this._mouseUpBound = true;
-      document.addEventListener('mouseup', () => { document.querySelectorAll('.sortable[draggable="false"]').forEach(n => { n.draggable = true; }); });
+      document.addEventListener('mouseup', () => {
+        document.querySelectorAll('.sortable[draggable="false"]').forEach(n => { n.draggable = true; });
+        document.querySelectorAll('.editing').forEach(n => n.classList.remove('editing'));
+      });
     }
     document.querySelectorAll(selector).forEach(el => {
       if(el.dataset.dsBound === '1') return;
@@ -1827,14 +1864,17 @@ const DragSort = {
       /* 在输入框里按下鼠标时临时关掉拖拽，免得选不中文字 */
       el.addEventListener('mousedown', e => {
         el.draggable = !e.target.closest('input,textarea,select,[contenteditable="true"]');
+        /* 鼠标按下立即显示编辑控件（不需要长按） */
+        if(el.draggable) el.classList.add('editing');
       });
       const idOf = n => n && n.dataset ? n.dataset[attr] : '';
       el.addEventListener('dragstart', e => {
         e.stopPropagation();
         DragSort._from = idOf(el); DragSort._fromEl = el; DragSort._sel = selector; el.classList.add('dragging');
+        el.classList.add('editing');
         try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', DragSort._from || ''); } catch {}
       });
-      el.addEventListener('dragend', () => { el.classList.remove('dragging'); DragSort.clearHints(); });
+      el.addEventListener('dragend', () => { el.classList.remove('dragging'); el.classList.remove('editing'); DragSort.clearHints(); });
       el.addEventListener('dragover', e => {
         e.preventDefault(); e.stopPropagation();
         if(DragSort._sel && DragSort._sel !== selector) return; /* 只在同一组之间排序 */
@@ -1853,13 +1893,13 @@ const DragSort = {
       const delay = (opts.delay != null) ? opts.delay : (handleEl ? 0 : 340);
       let timer = null, active = false, sx = 0, sy = 0;
       const release = () => { if(DragSort._claim === el) DragSort._claim = null; };
-      const stop = () => { clearTimeout(timer); timer = null; if(active){ active = false; el.classList.remove('dragging'); DragSort.clearHints(); } release(); };
+      const stop = () => { clearTimeout(timer); timer = null; if(active){ active = false; el.classList.remove('dragging'); el.classList.remove('editing'); DragSort.clearHints(); } release(); };
       source.addEventListener('touchstart', e => {
         if(DragSort._claim) return;            /* 嵌套时里层先认领，外层不抢 */
         DragSort._claim = el;
         const t = e.touches[0]; sx = t.clientX; sy = t.clientY;
-        if(delay === 0){ active = true; el.classList.add('dragging'); }
-        else timer = setTimeout(() => { active = true; el.classList.add('dragging'); try { navigator.vibrate?.(12); } catch {} }, delay);
+        if(delay === 0){ active = true; el.classList.add('dragging'); el.classList.add('editing'); }
+        else timer = setTimeout(() => { active = true; el.classList.add('dragging'); el.classList.add('editing'); try { navigator.vibrate?.(12); } catch {} }, delay);
       }, {passive:true});
       source.addEventListener('touchmove', e => {
         if(DragSort._claim !== el) return;
@@ -1876,7 +1916,7 @@ const DragSort = {
       source.addEventListener('touchend', e => {
         clearTimeout(timer);
         if(!active){ release(); return; }
-        active = false; el.classList.remove('dragging'); DragSort.clearHints(); release();
+        active = false; el.classList.remove('dragging'); el.classList.remove('editing'); DragSort.clearHints(); release();
         const t = e.changedTouches[0];
         const target = DragSort.pointTarget(t, selector, attrName, el);
         if(target && target !== el){
@@ -1912,7 +1952,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-13-v37';
+const BUILD_VERSION = '2026-08-13-v38';
 const App = {
   current:'home',
   booting:true,
@@ -2245,18 +2285,33 @@ const Home = {
     const removable=!this.topDefaults().includes(id);
     const desc=t.value?Util.esc(t.desc||''):Util.esc(this.entryPreview(id));
     const val=t.value?`<div class="big">${t.value()}<small>${t.unit||''}</small></div>`:'';
-    return `<div class="tile pinned-tile" data-sort-id="${id}" data-zone="top" data-drag-home="top:${id}">
+    const isSmall = Store.get('home_top_size', {})[id] === 'small';
+    return `<div class="tile pinned-tile ${isSmall?'tile-small':''}" data-sort-id="${id}" data-zone="top" data-drag-home="top:${id}">
       <button class="grab" data-grab style="position:absolute;left:5px;top:6px" onclick="event.stopPropagation()">⠿</button>
-      ${removable?`<button class="pin-btn" onclick="event.stopPropagation();Home.unpin('${id}')" title="收回更多">↩</button>`:''}
+      <div class="edit-actions" onclick="event.stopPropagation()">
+        <button class="ea-btn" onclick="Home.toggleTopSize('${id}')" title="${isSmall?'放大':'缩小'}">${isSmall?'▢':'▣'}</button>
+        <button class="ea-btn" onclick="Home.unpin('${id}')" title="收回更多">↩</button>
+        ${!removable?'':`<button class="ea-btn danger" onclick="Home.unpin('${id}')" title="关闭">✕</button>`}
+      </div>
       <button style="border:0;background:transparent;text-align:left;color:inherit;padding:0;width:100%" ${t.go?`onclick="App.go('${t.go}')"`:''}>
         <h3 style="margin-top:16px">${t.icon} ${Util.esc(t.name)}</h3>${val}<p class="muted">${desc}</p>
       </button>
     </div>`;
   },
+  toggleTopSize(id){
+    const m=Store.get('home_top_size',{}); m[id]=m[id]==='small'?'':'small'; Store.set('home_top_size',m); this.render();
+  },
   pin(id){
-    const top=this.topTiles(); if(!top.includes(id)) Store.set('home_top_tiles', top.concat(id));
-    const pinned=Store.get('home_pinned_entries',[]); if(!pinned.includes(id)) Store.set('home_pinned_entries', pinned.concat(id));
-    this.render(); UI.toast('已放到首页顶部');
+    /* 把更多栏目里的卡片置顶到「更多」列表的最前面，不再插到顶部横栏，避免"添加小卡片就跑到最上面"的混乱 */
+    const entries = this.allEntryIds();
+    const without = entries.filter(x => x !== id);
+    Store.set('home_entries', [id, ...without]);
+    /* 兼容旧版本：如果之前 pinned 到了顶部横栏，顺手清掉 */
+    const top = this.topTiles(); if(top.includes(id)){
+      Store.set('home_top_tiles', top.filter(x => x !== id));
+      Store.set('home_pinned_entries', (Store.get('home_pinned_entries',[])).filter(x => x !== id));
+    }
+    this.render(); UI.toast('已置顶到更多');
   },
   unpin(id){
     Store.set('home_top_tiles', this.topTiles().filter(x=>x!==id));
@@ -2385,15 +2440,18 @@ const Home = {
   miniEntryHtml(id){
     const r=App.routes.find(x=>x.id===id); if(!r) return '';
     const pinned=this.topTiles().includes(id);
+    const collapsed = Store.get('home_entry_collapsed',[]).includes(id);
+    const preview = collapsed ? '' : this.entryPreview(id);
     return `<div class="mini-entry x-host" data-mini-id="${id}" data-drag-home="mini:${id}">
-      <div class="entry-actions">
-        <button class="pin-btn" title="${pinned?'从首页顶部收回':'钉到首页桌面'}" onclick="event.stopPropagation();Home.${pinned?'unpin':'pin'}('${id}')">${pinned?'📍':'📌'}</button>
-        <button class="pin-btn x-close" title="从首页隐藏" onclick="event.stopPropagation();Home.hideEntry('${id}')">🚫</button>
+      <div class="edit-actions" onclick="event.stopPropagation()">
+        <button class="ea-btn" onclick="Home.toggleEntry('${id}')" title="${collapsed?'展开':'折叠'}">${collapsed?'＋':'－'}</button>
+        <button class="ea-btn" onclick="Home.pin('${id}')" title="置顶到更多">↑</button>
+        <button class="ea-btn danger" onclick="Home.hideEntry('${id}')" title="关闭">✕</button>
       </div>
       <button style="border:0;background:transparent;text-align:left;color:inherit;padding:0;width:100%" onclick="App.go('${id}')">
         <div class="mini-ico">${r.icon}</div>
         <div class="mini-name">${Util.esc(r.name)}</div>
-        <div class="mini-desc">${this.entryPreview(id)}</div>
+        ${preview?`<div class="mini-desc">${preview}</div>`:''}
       </button>
     </div>`;
   },
@@ -2425,12 +2483,14 @@ const Home = {
   toggleCollapse(id){ const a=this.widgets().map(w=>w.id===id?{...w,collapsed:!w.collapsed}:w); this.saveWidgets(a); this.render(); },
   bindDrag(){
     /* 整页所有可拖元素共享同一 selector [data-drag-home]，
-       data-drag-home = "zone:id"（zone∈widget/top/mini），onMove 内按 zone 处理 + 跨区拖动 */
-    DragSort.attach('[data-drag-home]', (from, to) => {
+       data-drag-home = "zone:id"（zone∈widget/top/mini），onMove 内按 zone 处理 + 跨区拖动
+       简化：跨区只允许 mini↔top（互换位置），mini↔widget 已禁用（之前"拖下去消失"的根因）
+       关键修复：每个 zone 单独 attach，selector 限定到当前 zone 的元素 → 拖 mini 时不会误命中大卡片 widget。 */
+    const zoneSel = zone => '[data-drag-home^="'+zone+':"]';
+    const move = (from, to) => {
       const [fZone, fId] = from.split(':');
       const [tZone, tId] = to.split(':');
       if(!fZone || !tZone || fId === tId) return;
-      /* 同区：直接 reorder */
       if(fZone === 'widget' && tZone === 'widget'){
         const a=this.widgets(); const fi=a.findIndex(x=>x.id===fId), ti=a.findIndex(x=>x.id===tId);
         if(fi<0||ti<0) return;
@@ -2444,43 +2504,35 @@ const Home = {
         if(fi<0||ti<0) return;
         const [m]=a.splice(fi,1); a.splice(ti,0,m); Store.set('home_entries', a); this.render();
       } else {
-        /* 跨区：把 from 移到 toZone 的 tId 后面 */
-        const insertAfter = (arr, idx) => { const out = arr.slice(); out.splice(idx+1, 0, fId); return out; };
-        const removeFrom = (arr) => arr.filter(x => x !== fId);
-        if(fZone==='mini' && tZone==='widget'){
-          const ws=this.widgets(); const ti=ws.findIndex(x=>x.id===tId); if(ti<0) return;
-          const newW=ws.slice(); newW.splice(ti+1, 0, {id:fId, size:'small', collapsed:false});
-          this.saveWidgets(newW); Store.set('home_entries', this.allEntryIds().filter(x=>x!==fId)); this.render();
-        } else if(fZone==='widget' && tZone==='mini'){
-          const ws=this.widgets(); if(!ws.find(x=>x.id===fId)) return;
-          const ei=this.allEntryIds().indexOf(tId);
-          Store.set('home_entries', ei>=0 ? insertAfter(this.allEntryIds(), ei) : [...this.allEntryIds(), fId]);
-          this.saveWidgets(ws.filter(x=>x.id!==fId)); this.render();
-        } else if(fZone==='top' && tZone==='widget'){
-          const ts=this.topTiles(); if(!ts.includes(fId)) return;
-          const ti=this.widgets().findIndex(x=>x.id===tId); if(ti<0) return;
-          const newW=this.widgets().slice(); newW.splice(ti+1, 0, {id:fId, size:'small', collapsed:false});
-          this.saveWidgets(newW); Store.set('home_top_tiles', ts.filter(x=>x!==fId)); this.render();
-        } else if(fZone==='widget' && tZone==='top'){
-          const ws=this.widgets(); if(!ws.find(x=>x.id===fId)) return;
-          const ti=this.topTiles().indexOf(tId);
-          Store.set('home_top_tiles', ti>=0 ? insertAfter(this.topTiles(), ti) : [...this.topTiles(), fId]);
-          this.saveWidgets(ws.filter(x=>x.id!==fId)); this.render();
-        } else if(fZone==='top' && tZone==='mini'){
-          const ts=this.topTiles(); if(!ts.includes(fId)) return;
-          const ei=this.allEntryIds().indexOf(tId);
-          Store.set('home_top_tiles', ts.filter(x=>x!==fId));
-          Store.set('home_entries', ei>=0 ? insertAfter(this.allEntryIds(), ei) : [...this.allEntryIds(), fId]);
-          this.render();
-        } else if(fZone==='mini' && tZone==='top'){
-          const ei=this.allEntryIds().indexOf(fId); if(ei<0) return;
-          const ti=this.topTiles().indexOf(tId);
+        /* 跨区：只允许 mini↔top。落到对方区时源卡片整体过去，不会"消失"。 */
+        if(fZone==='mini' && tZone==='top'){
+          const top=this.topTiles(); const ti=top.indexOf(tId);
+          if(top.includes(fId)) return;
+          Store.set('home_top_tiles', ti>=0 ? [...top.slice(0,ti+1), fId, ...top.slice(ti+1)] : [...top, fId]);
           Store.set('home_entries', this.allEntryIds().filter(x=>x!==fId));
-          Store.set('home_top_tiles', ti>=0 ? insertAfter(this.topTiles(), ti) : [...this.topTiles(), fId]);
           this.render();
+        } else if(fZone==='top' && tZone==='mini'){
+          const top=this.topTiles(); if(!top.includes(fId)) return;
+          const entries=this.allEntryIds(); const ti=entries.indexOf(tId);
+          Store.set('home_top_tiles', top.filter(x=>x!==fId));
+          Store.set('home_entries', ti>=0 ? [...entries.slice(0,ti+1), fId, ...entries.slice(ti+1)] : [...entries, fId]);
+          this.render();
+        } else if(fZone==='mini' && tZone==='widget'){
+          /* mini 拖到大卡片位置：让 mini 落到对应 widget 下方"更多"列表里（不掉失） */
+          const entries=this.allEntryIds(); const ws=this.widgets(); const ti=ws.findIndex(x=>x.id===tId);
+          /* 找到当前 tId widget 在"更多"列表里相邻的 entry，作为插入点 */
+          let insertAt = -1;
+          for(let i=entries.length-1;i>=0;i--){ if(this.folderOf(entries[i])) { insertAt = i; break; } }
+          Store.set('home_entries', insertAt>=0 ? [...entries.slice(0,insertAt+1), fId, ...entries.slice(insertAt+1)] : [fId, ...entries]);
+          this.render();
+        } else {
+          UI.toast('放到这里不方便');
         }
       }
-    }, {attr:'dragHome', delay:340, whole:true});
+    };
+    DragSort.attach(zoneSel('widget'), move, {attr:'dragHome', delay:340, whole:true});
+    DragSort.attach(zoneSel('top'), move, {attr:'dragHome', delay:340, whole:true});
+    DragSort.attach(zoneSel('mini'), move, {attr:'dragHome', delay:340, whole:true});
   },
   toggleTask(i){
     const done=Store.getDaily('task_done',[]);
@@ -2525,12 +2577,14 @@ const Success = {
   todayTasks(){ const today=Store.get(this.key(),{}); if (today.todayTasks?.length) return this.norm(today.todayTasks); const y=Store.get(this.key(Util.dateAdd(Util.today(),-1)),{}); return this.norm(y.tomorrow || []); },
   tasksFor(date){ const d=Store.get(this.key(date),{}); if(d.todayTasks?.length) return this.norm(d.todayTasks); const y=Store.get(this.key(Util.dateAdd(date,-1)),{}); return this.norm(y.tomorrow || []); },
   todayWinCount(){ return Util.lines(Store.get(this.key(),{}).wins || '').length; },
-  /* 外部快速写入「明日必做」列表（来自灵感转过来等） */
+  /* 外部快速写入「明日必做」列表（来自灵感转过来等）
+     写入"今天"的 success.tomorrow，这样：
+     - 用户立刻能在感恩日记页的「明天必做」输入框里看到新加的项（视觉一致）
+     - 到了明天（今天变成"昨天"），会通过 todayTasks() 的"读昨天的 tomorrow"路径自动出现为今日必做 */
   setTasks(arr){
-    const y = Util.dateAdd(Util.today(), -1);
-    const old = Store.get(this.key(y), {});
+    const old = Store.get(this.key(), {});
     old.tomorrow = this.norm(arr);
-    Store.set(this.key(y), old);
+    Store.set(this.key(), old);
   },
   history(){ const days=Util.rangeDays(14).reverse(); const rows=days.map(date=>[date,Store.get(this.key(date),null)]).filter(x=>x[1]); successHistory.innerHTML=rows.length?rows.map(([date,d])=>UI.item(date,`感恩：${Util.lines(d.wins||'').length} 条\n明日必做：${this.norm(d.tomorrow).map(x=>x.text).join(' / ')}`)).join(''):'<div class="empty">还没有感恩日记</div>'; },
   collect(days=7){ return Util.rangeDays(days).map(date=>({date,...Store.get(this.key(date),{})})).filter(x=>x.wins); }
@@ -2542,8 +2596,7 @@ const MustEditor = {
     const box = document.getElementById(boxId);
     if(!box) return;
     box.innerHTML = `<div class="must-list" id="${boxId}_list"></div>
-      <div class="row must-add"><input id="${boxId}_input" placeholder="写一件明天必做的事"><button class="btn" onclick="MustEditor.add('${boxId}')">添加</button></div>
-      <p class="hint">最多 3 件；可关联到主线任务，完成时自动给主线任务 +1。</p>`;
+      <div class="row must-add"><input id="${boxId}_input" placeholder="写一件明天必做的事"><button class="btn" onclick="MustEditor.add('${boxId}')">添加</button></div>`;
     this.paint(boxId, items || []);
   },
   paint(boxId, items){
@@ -2574,7 +2627,6 @@ const MustEditor = {
     const text = (input.value||'').trim();
     if(!text) return UI.toast('先写点什么');
     const cur = this.read(boxId);
-    if(cur.length>=3) return UI.toast('最多 3 件');
     cur.push({text, questId:null});
     input.value='';
     this.paint(boxId, cur);
@@ -2584,7 +2636,7 @@ const MustEditor = {
     cur.splice(i,1);
     this.paint(boxId, cur);
   },
-  collect(boxId){ return this.read(boxId).slice(0,3); }
+  collect(boxId){ return this.read(boxId); }
 };
 /* ==== 功能：明日必做结构化编辑器 END ==== */
 /* ==== 功能：主线任务 START ==== */
@@ -3160,9 +3212,6 @@ const DailyLog = {
     dlWins.value = s.wins||''; if(document.getElementById('dlMustBox')) MustEditor.mount('dlMustBox', Success.norm(s.tomorrow));
     if(document.getElementById('dlSleep')) dlSleep.value = s.sleepTime || '23:00';
     if(document.getElementById('dlWake')) dlWake.value = s.wakeTime || '08:00';
-    const plans = Review.plans();
-    const linked = Store.get('daily_plans:' + d, []);
-    dlPlans.innerHTML = plans.length ? plans.map(p=>`<label class="pill"><input type="checkbox" data-dl-plan="${p.id}" ${linked.includes(p.id)?'checked':''} style="width:auto;min-height:auto;margin-right:6px">${Util.esc(p.title)}</label>`).join('') : '<span class="muted">还没列年度计划，去复盘中心加。</span>';
     /* 补记模式提示 */
     if(this._pendingDate && this._pendingDate!==Util.today()){
       const titleEl = document.querySelector('#page-daily .page-title');
@@ -3191,7 +3240,6 @@ const DailyLog = {
     Store.set(Tracker.dayKey(d), {...cur, date:d, habits, mood:dlMood.value, line:dlMoodLine.value.trim()});
     const old = Store.get(Success.key(d), {});
     Store.set(Success.key(d), {...old, date:d, wins:dlWins.value.trim(), tomorrow:MustEditor.collect('dlMustBox'), sleepTime:document.getElementById('dlSleep')?.value||'23:00', wakeTime:document.getElementById('dlWake')?.value||'08:00'});
-    Store.set('daily_plans:' + d, [...document.querySelectorAll('[data-dl-plan]')].filter(x => x.checked).map(x => x.dataset.dlPlan));
     const hint=document.getElementById('dailyAutoSaveHint'); if(hint) hint.textContent='已自动保存到本机 · '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
   },
   toggleMood(){ Store.set('daily_mood_collapsed', !Store.get('daily_mood_collapsed', true)); this.applyMoodCollapse(); },
@@ -3207,9 +3255,6 @@ const DailyLog = {
     /* 2. 感恩日记 */
     const old = Store.get(Success.key(d), {});
     Store.set(Success.key(d), {...old, date:d, wins:dlWins.value.trim(), tomorrow:MustEditor.collect('dlMustBox'), sleepTime:document.getElementById('dlSleep')?.value||'23:00', wakeTime:document.getElementById('dlWake')?.value||'08:00'});
-    /* 3.5 年度计划关联（勾了才算关联一天） */
-    const planIds = [...document.querySelectorAll('[data-dl-plan]')].filter(x => x.checked).map(x => x.dataset.dlPlan);
-    Store.set('daily_plans:' + d, planIds);
     /* 3. 情绪日记，写了才存 */
     let extra = '';
     const text = dlMoodText.value.trim();
@@ -3774,14 +3819,13 @@ const Quick = {
     this.render();
     UI.toast('已成为一条心愿 ✓');
   },
-  /* 链接到每日必做：把内容作为新的一项加入"明日必做"，不跳页、不限数量 */
+  /* 链接到每日必做：把内容作为新的一项加入"明日必做"（写入今天的 success.tomorrow，明天自动出现为今日必做），不跳页、不限数量 */
   toTask(id){
     const it = this.list().find(x=>x.id===id); if(!it) return;
-    const tasks = Success.todayTasks();
-    Success.setTasks([{text:it.text, done:false}, ...tasks]);
+    Success.setTasks([{text:it.text, done:false}, ...Success.todayTasks()]);
     Store.set('quick', this.list().filter(x=>x.id!==id));
     this.render();
-    UI.toast('已加入明日必做 ✓（注意是明天的，今天首页只显示今天的事）');
+    UI.toast('已加到「明天必做」 ✓');
     if(App.current==='home') Home.render();
   },
   /* 灵感池 → 恢复到未整理灵感 */
@@ -3824,16 +3868,15 @@ const Quick = {
     ta.addEventListener('keydown', e => { if(e.ctrlKey||e.metaKey){ finish(); } });
   },
   render(){
-    /* 未整理灵感：左右两列（左文本、右下角 3 个跳转按钮 + 删除），整条仍可长按复制 */
+    /* 未整理灵感：上方满行文本，下方一行放池/愿/日/✕ 按钮 */
     quickList.innerHTML = this.list().length ? this.list().map(x=>{
       return `<div class="item long-press quick-item" data-quick-id="${x.id}" data-sort-id="${x.id}">
         <div class="grow" onpointerdown="Quick.tapStart('${x.id}',event)" onpointerup="Quick.tapEnd('${x.id}',event)" onpointermove="Quick.tapEnd('${x.id}',event)">
-          <div class="title" style="white-space:pre-wrap;cursor:text" onclick="Quick.editStart('${x.id}')" title="点文字直接编辑">${Util.esc(x.text)}</div>
-          <div class="desc">${x.date}</div>
+          <div class="title" style="cursor:text" onclick="Quick.editStart('${x.id}')" title="点文字直接编辑">${Util.esc(x.text)}</div>
         </div>
         <div class="quick-actions">
-          <button class="quick-act" onclick="Quick.toTask('${x.id}')" title="加入明日必做">＋ 日</button>
-          <button class="quick-act" onclick="Quick.toWish('${x.id}')" title="链接到心愿">↗ 愿</button>
+          <button class="quick-act" onclick="Quick.toTask('${x.id}')" title="加到明天必做">＋ 日</button>
+          <button class="quick-act" onclick="Quick.toWish('${x.id}')" title="成为心愿/挂行动">↗ 愿</button>
           <button class="quick-act" onclick="Quick.toPool('${x.id}')" title="放入灵感池">📥 池</button>
           <button class="del" onclick="Quick.del('${x.id}')" title="删除">✕</button>
         </div>
@@ -3847,15 +3890,14 @@ const Quick = {
     quickPoolList.innerHTML = this.poolList().length ? this.poolList().map(x=>{
       return `<div class="item long-press quick-item" data-quick-pool-id="${x.id}" data-sort-id="${x.id}">
         <div class="grow" onpointerdown="Quick.tapStart('${x.id}',event,1)" onpointerup="Quick.tapEnd('${x.id}',event)" onpointermove="Quick.tapEnd('${x.id}',event)">
-          <div class="title" style="white-space:pre-wrap;cursor:text" onclick="Quick.editPoolStart('${x.id}')" title="点文字直接编辑">${Util.esc(x.text)}</div>
-          <div class="desc">${x.date}</div>
+          <div class="title" style="cursor:text" onclick="Quick.editPoolStart('${x.id}')" title="点文字直接编辑">${Util.esc(x.text)}</div>
         </div>
         <div class="quick-actions">
           <button class="quick-act" onclick="Quick.toUnPool('${x.id}')" title="恢复到未整理灵感" style="color:#779679">↺ 还原</button>
           <button class="del" onclick="Quick.delPool('${x.id}')" title="删除">✕</button>
         </div>
       </div>`;
-    }).join('') : '<div class="empty">还是空的，把喜欢的灵感 ⇥ 灵感池</div>';
+    }).join('') : '<div class="empty">还是空的</div>';
     DragSort.bind('#quickPoolList [data-sort-id]','quickPool',()=>Quick.render());
   },
   /* 长按 ≈0.45s 复制全文（手机/桌面通用） */
@@ -3948,16 +3990,17 @@ const Wish = {
           const parent = x.wishId ? this.list().find(w=>w.id===x.wishId) : null;
           const parentText = parent ? parent.text : '';
           const icon = x.type==='wish' ? '✨' : '📌';
+          /* 紧凑单行：图标 + 文字 + 恢复 + 删除，无归属描述（节省空间） */
           return `<div class="card wish-card done-card">
-            <div class="item done" style="padding:4px 0;border:0">
-              <span style="font-size:14px;margin-right:4px">${icon}</span>
-              <div class="grow"><div class="title" style="font-size:12px">${Util.esc(x.text)}</div>${parentText ? `<div class="desc" style="font-size:10px">归属「${Util.esc(parentText)}」</div>` : ''}</div>
-              <button class="del" onclick="Wish.restoreDone('${x.id}')" title="恢复为未完成" style="color:var(--accent);font-size:16px">↺</button>
-              <button class="del" onclick="Wish.del('${x.id}')" title="删除">✕</button>
+            <div class="item done" style="padding:2px 0;border:0;background:transparent">
+              <span style="font-size:13px;margin-right:3px;flex-shrink:0">${icon}</span>
+              <div class="grow" style="min-width:0"><div class="title" style="font-size:12px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${Util.esc(x.text)}${parentText?' · 归属「'+Util.esc(parentText)+'」':''}">${Util.esc(x.text)}</div></div>
+              <button class="del" onclick="Wish.restoreDone('${x.id}')" title="恢复" style="color:var(--accent);font-size:14px;padding:0 3px">↺</button>
+              <button class="del" onclick="Wish.del('${x.id}')" title="删除" style="font-size:14px;padding:0 3px">✕</button>
             </div>
           </div>`;
         }).join('');
-        doneArea.innerHTML = `<div class="wish-grid">${cards}</div>`;
+        doneArea.innerHTML = `<div class="wish-grid done-grid">${cards}</div>`;
       } else {
         doneArea.innerHTML = '<div class="empty">暂无</div>';
       }
@@ -4403,30 +4446,34 @@ const Visual = {
     if(!cats.includes(Store.get('visual_tag_last', ''))) Store.set('visual_tag_last', cats[0]);
     visualTag.innerHTML = cats.map(c=>`<option value="${Util.esc(c)}">${Util.esc(c)}</option>`).join('');
     visualTag.value = Store.get('visual_tag_last', cats[0]);
-    const list=this.list();
-    visualList.innerHTML=list.length?list.map((x,i)=>{
-      const thumbs = this.mediaHtml(x);
-      const note = x.note || '';
-      return `<div class="item" draggable="true" data-sort-id="${x.id}">
-        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">${thumbs}</div>
-        <div class="grow">
-          <div class="title">
-            <select data-visual-cat="${x.id}" onchange="Visual.changeTag('${x.id}',this.value)" style="font-size:11px;padding:2px 4px;border-radius:6px;border:1px solid var(--line)">${cats.map(c=>`<option ${c===x.tag?'selected':''}>${Util.esc(c)}</option>`).join('')}</select>
-            <span class="desc" style="cursor:text;margin-left:6px" ondblclick="Visual.editNote('${x.id}')" oncontextmenu="Visual.copyNote(${JSON.stringify(note)});return false" title="双击编辑，右键复制">${note ? Util.esc(note) : '（双击写一句简介）'}</span>
-          </div>
-          <div class="desc">${x.date}${x.media && x.media.length>1 ? (' · ' + x.media.length + ' 个素材') : ''}</div>
+
+    /* 按分类并排：每个分类一个 card，只显示该分类下最新一张 + 计数；
+       点 card → 打开 viewer 过滤该 tag 的所有 media；长按拖动时可单删单条 */
+    const list = this.list();
+    const byTag = {};
+    list.forEach(x => { (byTag[x.tag] = byTag[x.tag] || []).push(x); });
+    const cards = cats.map(cat => {
+      const items = byTag[cat] || [];
+      const latest = items[0]; /* list 已按新到旧排序（unshift） */
+      const count = items.reduce((s, x) => s + (x.media?.length || (x.mediaId ? 1 : 1)), 0);
+      const isEmpty = !latest;
+      return `<div class="visual-cat ${isEmpty?'visual-cat-empty':''}" data-cat="${Util.esc(cat)}" data-cat-count="${items.length}" onclick="Visual.openCategory('${Util.esc(cat)}')">
+        <div class="vc-actions" onclick="event.stopPropagation()">
+          <button class="danger" title="删除该分类下所有素材" onclick="Visual.delByTag('${Util.esc(cat)}')">✕</button>
         </div>
-        <button class="del" onclick="Visual.move(${i},-1)">↑</button><button class="del" onclick="Visual.move(${i},1)">↓</button><button class="del" onclick="Visual.del('${x.id}')">✕</button>
+        <div class="vc-head">
+          <span class="vc-title">${Util.esc(cat)}</span>
+          <span class="vc-count">${items.length}</span>
+        </div>
+        <div class="vc-thumb" data-cat-thumb="${Util.esc(cat)}">${latest ? this.mediaHtml(latest) : '<div style="font-size:30px;color:#cdd1c4">+</div>'}</div>
+        <div class="vc-date">${latest ? latest.date : '点上传保存到这里'}</div>
+        <div class="vc-foot">${latest?.note ? Util.esc(latest.note) : (isEmpty ? '点上传会自动归到这里' : '点开看全部 ' + count + ' 张')}</div>
       </div>`;
-    }).join(''):'<div class="empty">还没有收藏</div>';
-    DragSort.bind('#visualList [data-sort-id]','visuals',()=>Visual.render());
+    }).join('');
+    visualList.innerHTML = `<div class="visual-cat-grid">${cards}</div>`;
+
+    /* 缩略图填 src（异步） */
     Media.paint(visualList);
-    /* 给缩略图绑新的点击 → 走 viewer */
-    visualList.querySelectorAll('[data-media]').forEach(el => {
-      el.removeAttribute('onclick');
-      el.style.cursor = 'zoom-in';
-      el.addEventListener('click', e => { e.stopPropagation(); Visual.openViewer(el.dataset.media); });
-    });
     /* 监听键盘左右键 */
     if(!this._keyBound){
       this._keyBound = true;
@@ -4437,6 +4484,25 @@ const Visual = {
         if(e.key === 'Escape') this.closeViewer();
       });
     }
+  },
+  /* 打开指定分类的 viewer：只显示该 tag 的所有 media */
+  openCategory(tag){
+    const items = this.list().filter(x => x.tag === tag);
+    if(!items.length) return UI.toast('这个分类下还没有素材');
+    /* 复用 _viewer，但需把 items 改成"按 tag 过滤"的扁平列表 */
+    const flat = items.flatMap(x => Array.isArray(x.media) ? x.media.map(m=>({...m, _itemId:x.id, _note:x.note||''})) : (x.mediaId ? [{id:x.mediaId, _itemId:x.id, _note:x.note||''}] : []));
+    if(!flat.length) return UI.toast('这个分类下还没有可看的素材');
+    this._viewer = {items: flat, idx: 0, itemId: flat[0]._itemId};
+    this._renderViewer();
+  },
+  /* 删除指定分类下所有素材 */
+  delByTag(tag){
+    if(!confirm('删除「' + tag + '」分类下所有收藏？')) return;
+    const flat = this.list().filter(x => x.tag === tag).flatMap(x => Array.isArray(x.media) ? x.media : (x.mediaId ? [x.mediaId] : []));
+    flat.forEach(id => Media.del(id));
+    Store.set('visuals', this.list().filter(x => x.tag !== tag));
+    this.render();
+    UI.toast('已删除 ' + tag);
   },
   changeTag(id, tag){
     Store.set('visuals', this.list().map(x => x.id === id ? {...x, tag} : x));
@@ -4453,10 +4519,10 @@ const Visual = {
   mediaHtml(x){
     if(!x) return '';
     const arr = Array.isArray(x.media) ? x.media : [];
-    if(arr.length) return arr.map(m => `<img class="thumb" data-media="${m.id}" alt="" title="点击查看大图">`).join('');
-    if(x.mediaId) return `<img class="thumb" data-media="${x.mediaId}" alt="" title="点击查看大图">`;
+    if(arr.length) return arr[0] ? `<img class="thumb" data-media="${arr[0].id}" alt="" title="点开看全部">` : '';
+    if(x.mediaId) return `<img class="thumb" data-media="${x.mediaId}" alt="" title="点开看全部">`;
     if(x.media){
-      if(x.mediaType==='video') return `<video class="thumb" src="${x.media}" controls></video>`;
+      if(x.mediaType==='video') return `<video class="thumb" src="${x.media}" muted></video>`;
       return `<img class="thumb" src="${x.media}" alt="">`;
     }
     return '';
