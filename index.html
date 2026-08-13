@@ -684,8 +684,12 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 </div>
 <div class="welcome" id="welcomeScreen">
   <div class="welcome-card">
+    <div class="welcome-orb">☀️</div>
     <h1 id="welcomeTitle">嗨，小彘</h1>
-    <p id="welcomeText">你今天真棒，能打开这里就已经是在照顾自己了。</p>
+    <p id="welcomeText" style="position:relative">
+      你今天真棒，能打开这里就已经是在照顾自己了。
+      <button class="wp-btn" id="wpUploadBtn" onclick="Welcome.uploadWallpaper()" title="上传你自己的图片作为欢迎页背景">📷</button>
+    </p>
   </div>
 </div>
 <div class="drawer-scrim" id="drawerScrim" onclick="App.closeDrawer()"></div>
@@ -2014,7 +2018,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-13-v44';
+const BUILD_VERSION = '2026-08-13-v45';
 const App = {
   current:'home',
   booting:true,
@@ -2133,8 +2137,9 @@ const Daily = {
   streak(){ const days = Store.get('openDays', []); let n=0, d=Util.today(); while(days.includes(d)){ n++; d=Util.dateAdd(d,-1); } return n; }
 };
 const Welcome = {
-  /* v44: 删掉欢迎页壁纸、上传按钮、开始按钮；欢迎页只保留标题 + 一句鼓励，3 秒后自动进入应用 */
-  AUTO_DISMISS_MS: 3000,
+  /* v45: 恢复欢迎页壁纸（绿色风景图/用户自定义）；无「开始今天」按钮，1 秒后自动进入应用 */
+  DEFAULT_WALLPAPER: './assets/welcome-default.jpg',
+  AUTO_DISMISS_MS: 1000,
   prompts:[
     ['新的一天，你不需要完美，只需要开始。','每一步都算数，哪怕只是打开了这个工作台。'],
     ['今天也谢谢你愿意好好对待自己。','慢慢来，比较快。'],
@@ -2148,8 +2153,11 @@ const Welcome = {
     const msg = cached ? cached : await this.build(day).catch(()=>this.fallback(day));
     welcomeTitle.textContent = '嗨，' + AppCustom.getShortName();
     welcomeText.textContent = msg.text;
+    /* 壁纸优先级：用户自定义 > 默认石榴树图（纯本地，不依赖外部网络） */
+    const custom = Store.get('welcome_custom_wallpaper');
+    this.applyWallpaper(custom || this.DEFAULT_WALLPAPER);
     welcomeScreen.classList.add('on');
-    /* v44: 显示 3 秒后自动进入应用（用户不再需要点「开始今天」） */
+    /* 显示 1 秒后自动进入应用（用户不再需要点「开始今天」） */
     clearTimeout(this._autoTimer);
     this._autoTimer = setTimeout(() => this.start(), this.AUTO_DISMISS_MS);
   },
@@ -2180,7 +2188,31 @@ const Welcome = {
     return {text:(a||text)+'\n'+(b||''), quote:a||text};
   },
   refresh(){ this.build(Util.today()).then(msg => { welcomeText.textContent = msg.text; }).catch(()=>{}); },
-  /* v44: 欢迎页不再有壁纸、上传按钮、开始按钮；只保留标题+一句鼓励，3 秒后自动调用 start() */
+  applyWallpaper(url){
+    if(welcomeScreen) welcomeScreen.style.background = `linear-gradient(rgba(20,40,22,.35),rgba(20,40,22,.55)), center/cover no-repeat url("${url}")`;
+  },
+  /* 上传自定义欢迎页壁纸 */
+  uploadWallpaper(){
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = e => {
+      const file = e.target.files[0];
+      if(!file) return;
+      /* 限制大小 5MB */
+      if(file.size > 5*1024*1024){ UI.toast('图片太大了，请选 5MB 以内的'); return; }
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const dataUrl = ev.target.result;
+        Store.set('welcome_custom_wallpaper', dataUrl);
+        this.applyWallpaper(dataUrl);
+        UI.toast('✅ 壁纸已更换');
+      };
+      reader.readAsDataURL(file);
+    };
+    input.click();
+  },
+  /* 无「开始今天」按钮，1 秒后自动调用 start() 进入应用 */
   start(){ clearTimeout(this._autoTimer); welcomeScreen.classList.remove('on'); Store.set('welcomeSeen', Util.today()); Home.render(); }
 };
 const Hub = {
@@ -3063,7 +3095,7 @@ const Tracker = {
   ]; },
   items(){ const items=Store.get('tracker_items'); if(items) return items; Store.set('tracker_items', this.defaults()); return this.defaults(); },
   dayKey(date=Util.today()){ return 'tracker:'+date; },
-  render(){ const rec=Store.get(this.dayKey(),{habits:{},mood:'😊',line:''}); trackerToday.innerHTML=this.items().map(it=>`<label class="pill" title="${Util.esc(it.desc||it.name)}"><input type="checkbox" data-habit="${it.id}" ${rec.habits?.[it.id]?'checked':''}><span class="pill-text">${Util.esc(it.name)}</span></label>`).join(''); trackerMood.value=rec.mood||'😊'; Util.fillMoodSelect('trackerMood'); trackerMood.value=rec.mood||'😊'; trackerMoodLine.value=rec.line||''; this.bindAutosave(); this.renderItems(); this.stats(); },
+  render(){ const rec=Store.get(this.dayKey(),{habits:{},mood:'😊',line:''}); trackerToday.innerHTML=this.items().map(it=>`<label class="pill"><input type="checkbox" data-habit="${it.id}" ${rec.habits?.[it.id]?'checked':''} style="width:auto;min-height:auto;margin-right:6px"><span class="pill-text">${Util.esc(it.name)}</span></label>`).join(''); trackerMood.value=rec.mood||'😊'; Util.fillMoodSelect('trackerMood'); trackerMood.value=rec.mood||'😊'; trackerMoodLine.value=rec.line||''; this.bindAutosave(); this.renderItems(); this.stats(); },
   bindAutosave(){
     if(this._autosaveBound) return;
     this._autosaveBound=true;
