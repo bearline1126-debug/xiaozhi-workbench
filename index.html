@@ -1926,7 +1926,7 @@ const DragSort = {
       const handleEl = whole ? null : el.querySelector('[data-grab]');
       const source = handleEl || el;
       const delay = (opts.delay != null) ? opts.delay : (handleEl ? 0 : 340);
-      let timer = null, dragging = false, sx = 0, sy = 0;
+      let timer = null, dragging = false, revealed = false, cancelled = false, sx = 0, sy = 0;
       const release = () => { if(DragSort._claim === el) DragSort._claim = null; };
       /* 背景点击（手机/电脑）收起已浮出的编辑控件 */
       if(!DragSort._bgBound){
@@ -1935,34 +1935,52 @@ const DragSort = {
         document.addEventListener('touchstart', clearAll, true);
         document.addEventListener('mousedown', clearAll, true);
       }
-      /* 长按只"浮出编辑控件"，不进入拖动；真正拖动需之后再明显移动（>10px） */
-      const reveal = () => { DragSort.setEditing(el); };
+      /* 关键：区分「滚动页面」与「拖动排序」
+         · 长按住(>delay) → 浮出编辑控件，并"拿起"卡片(revealed)
+         · 长按完成【之后】才明显位移(>10px) → 才算拖动排序
+         · 长按【完成前】就明显位移 → 这是滚动页面，取消并交还浏览器，绝不误换位
+         （v41 滑动就换位的根因：之前在长按完成前只要位移>10px 就直接开始拖动，
+           而手机首页一屏都是卡片，滑动必触发 → 把滚动当成排序） */
+      const arm = () => { revealed = true; DragSort.setEditing(el); try { navigator.vibrate?.(12); } catch {} };
       source.addEventListener('touchstart', e => {
         if(DragSort._claim) return;            /* 嵌套时里层先认领，外层不抢 */
         DragSort._claim = el;
-        const t = e.touches[0]; sx = t.clientX; sy = t.clientY; dragging = false;
-        if(delay === 0){ reveal(); }
-        else timer = setTimeout(reveal, delay);
+        const t = e.touches[0]; sx = t.clientX; sy = t.clientY;
+        dragging = false; revealed = false; cancelled = false;
+        if(delay === 0){ arm(); }
+        else timer = setTimeout(arm, delay);
       }, {passive:true});
       source.addEventListener('touchmove', e => {
         if(DragSort._claim !== el) return;
         const t = e.touches[0];
-        if(!dragging){
-          if(Math.hypot(t.clientX - sx, t.clientY - sy) < 10) return;  /* 抖动/微移不触发拖动 */
+        const dist = Math.hypot(t.clientX - sx, t.clientY - sy);
+        if(dragging){
+          e.preventDefault();
+          DragSort.clearHints();
+          const target = DragSort.pointTarget(t, selector, attrName, el);
+          if(target && target !== el) target.classList.add('drop-hint');
+          return;
+        }
+        if(revealed){
+          /* 已长按拿起：明显位移才开始真正拖动 */
+          if(dist < 10) return;
           clearTimeout(timer);
           dragging = true; el.classList.add('dragging');
           DragSort._from = idOf(el); DragSort._fromEl = el; DragSort._sel = selector;
           DragSort.clearHints();
+          e.preventDefault();
+          const target = DragSort.pointTarget(t, selector, attrName, el);
+          if(target && target !== el) target.classList.add('drop-hint');
+          return;
         }
-        e.preventDefault();
-        DragSort.clearHints();
-        const target = DragSort.pointTarget(t, selector, attrName, el);
-        if(target && target !== el) target.classList.add('drop-hint');
+        /* 长按还没完成就明显位移 → 这是滚动页面，不是拖动：取消并交还浏览器 */
+        if(dist >= 10){ clearTimeout(timer); cancelled = true; release(); }
       }, {passive:false});
       source.addEventListener('touchend', e => {
         clearTimeout(timer);
+        if(cancelled){ cancelled = false; return; }
         if(!dragging){
-          /* 只是长按浮出，没有拖动：保留 editing，按钮可点；背景点击会清除 */
+          /* 只是长按浮出（或长按后没拖动）：保留 editing，按钮可点；背景点击会清除 */
           release();
           return;
         }
@@ -1975,7 +1993,7 @@ const DragSort = {
         }
         /* 不移除 editing：拖动后也可立即点按钮；背景点击会清除 */
       });
-      source.addEventListener('touchcancel', () => { clearTimeout(timer); if(dragging){ dragging = false; el.classList.remove('dragging'); DragSort.clearHints(); } release(); });
+      source.addEventListener('touchcancel', () => { clearTimeout(timer); if(dragging){ dragging = false; el.classList.remove('dragging'); DragSort.clearHints(); } cancelled = false; release(); });
     });
   }
 };
@@ -2003,7 +2021,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-13-v41';
+const BUILD_VERSION = '2026-08-13-v42';
 const App = {
   current:'home',
   booting:true,
@@ -2336,12 +2354,10 @@ const Home = {
     const removable=!this.topDefaults().includes(id);
     const desc=t.value?Util.esc(t.desc||''):Util.esc(this.entryPreview(id));
     const val=t.value?`<div class="big">${t.value()}<small>${t.unit||''}</small></div>`:'';
-    const isSmall = Store.get('home_top_size', {})[id] === 'small';
-    return `<div class="tile pinned-tile ${isSmall?'tile-small':''}" data-sort-id="${id}" data-zone="top" data-drag-home="top:${id}">
+    return `<div class="tile pinned-tile" data-sort-id="${id}" data-zone="top" data-drag-home="top:${id}">
       <button class="grab" data-grab style="position:absolute;left:5px;top:6px" onclick="event.stopPropagation()">⠿</button>
       <div class="edit-actions" onclick="event.stopPropagation()">
-        <button class="ea-btn" onclick="Home.toggleTopSize('${id}')" title="${isSmall?'放大':'缩小'}">${isSmall?'▢':'▣'}</button>
-        <button class="ea-btn" onclick="Home.unpin('${id}')" title="收回桌面">↩</button>
+        <button class="ea-btn" onclick="Home.unpin('${id}')" title="收回更多">↩</button>
         ${!removable?'':`<button class="ea-btn danger" onclick="Home.unpin('${id}')" title="关闭">✕</button>`}
       </div>
       <button style="border:0;background:transparent;text-align:left;color:inherit;padding:0;width:100%" ${t.go?`onclick="App.go('${t.go}')"`:''}>
@@ -2491,7 +2507,6 @@ const Home = {
     const preview = collapsed ? '' : this.entryPreview(id);
     return `<div class="mini-entry x-host" data-mini-id="${id}" data-drag-home="mini:${id}">
       <div class="edit-actions" onclick="event.stopPropagation()">
-        <button class="ea-btn" onclick="Home.toggleEntry('${id}')" title="${collapsed?'展开':'折叠'}">${collapsed?'＋':'－'}</button>
         <button class="ea-btn" onclick="Home.addToDesktop('${id}')" title="加到桌面">📌</button>
         <button class="ea-btn danger" onclick="Home.hideEntry('${id}')" title="关闭">✕</button>
       </div>
