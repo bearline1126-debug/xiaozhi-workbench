@@ -2021,7 +2021,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-13-v42';
+const BUILD_VERSION = '2026-08-13-v43';
 const App = {
   current:'home',
   booting:true,
@@ -3902,7 +3902,9 @@ const Quick = {
   /* 链接到每日必做：把内容作为新的一项加入"明日必做"（写入今天的 success.tomorrow，明天自动出现为今日必做），不跳页、不限数量 */
   toTask(id){
     const it = this.list().find(x=>x.id===id); if(!it) return;
-    Success.setTasks([{text:it.text, done:false}, ...Success.todayTasks()]);
+    /* 只往"今天的明日必做"(tomorrow)追加这条灵感；绝不可拼入 todayTasks（今日必做），否则会把今日必做整份复制进明日必做 */
+    const cur = Store.get(Success.key(), {});
+    Success.setTasks([{text:it.text, done:false}, ...Success.norm(cur.tomorrow || [])]);
     Store.set('quick', this.list().filter(x=>x.id!==id));
     this.render();
     UI.toast('已加到「明天必做」 ✓');
