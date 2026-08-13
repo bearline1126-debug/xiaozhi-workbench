@@ -1211,6 +1211,13 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
         <button class="btn" style="margin-top:10px;width:100%" onclick="AppCustom.applyFromSettings()">保存</button>
         <p class="hint">改完得删掉旧桌面图标再重新安装，新名字才会生效。</p>
       </div>
+      <div class="card" style="border:1px solid #f0c9c0">
+        <h2>恢复与清空</h2>
+        <p class="hint">恢复到最初设置：只重置桌面布局、AI 配置、应用名、密码锁、主题等偏好，<b>保留你所有的日记 / 灵感 / 心愿 / 追踪等记录</b>。</p>
+        <button class="btn ghost" style="width:100%;margin-top:6px" onclick="Settings.resetSettings()">↺ 恢复到最初设置</button>
+        <p class="hint" style="margin-top:12px">清空所有缓存与记录：<b>删除全部数据</b>（含图片视频、日记、灵感、心愿、追踪等），操作不可恢复。用于测试或换机前。</p>
+        <button class="btn red" style="width:100%;margin-top:6px" onclick="Settings.clearAll()">🗑 清空当前所有缓存、记录</button>
+      </div>
       <div class="card">
         <h2>关于</h2>
         <p class="hint">数据只存在当前手机浏览器。换手机前先导出 JSON 备份。</p>
@@ -1419,7 +1426,37 @@ const Store = (() => {
       _mem.forEach((v, k) => { n += (k.length + JSON.stringify(v).length) * 2; });
       Object.keys(localStorage).forEach(k => { if(k.startsWith(NS) || k.startsWith(SEC)) n += (k.length + (localStorage.getItem(k)||'').length) * 2; });
       return n;
-    }
+    },
+    /* 恢复到最初设置：只重置「偏好/配置」（桌面布局、AI、应用名、密码锁、主题、自动备份、欢迎自定义等），
+       保留用户所有记录（日记/灵感/心愿/追踪/感恩/媒体）。不碰 SYS_KEYS 与用户数据 key。 */
+    resetSettings(){
+      const CONFIG_KEYS = ['_appCustom','aiBase','aiModel','aiSeen','aiWelcomeSeen','home_widgets','home_entries','home_hidden_widgets','home_hidden_entries','home_top_tiles','home_top_size','_homeTopFixed','theme','autoBackup','autoBackupOn','welcomeWallpaper','welcomeMsg','welcome_custom_wallpaper','quoteSeen','homeStreakSeen','lockHash','hubGroup','activeGroup','lastWeeklyReview','review_notes','lifeSummaryCache','openDays'];
+      CONFIG_KEYS.forEach(k => { if(_mem.has(k)) this.remove(k); });
+      /* 使用频率缓存（freq_*）一并清掉 */
+      [..._mem.keys()].filter(k => k.startsWith('freq_')).forEach(k => this.remove(k));
+      /* 应用名回到默认 */
+      this.set('_appCustom', {name:'小彘的工作台', shortName:'小彘', icon:''});
+      return true;
+    },
+    /* 清空一切：包括用户记录 + 偏好 + 媒体。不可恢复。用于测试或换机。 */
+    clearAll(){
+      return _tx('readwrite', s => { s.clear(); }).then(() => {
+        _mem.clear();
+        try {
+          const toRemove = [];
+          for(let i = 0; i < localStorage.length; i++){ const k = localStorage.key(i); if(k && (k.startsWith(NS) || k.startsWith(SEC))) toRemove.push(k); }
+          toRemove.forEach(k => localStorage.removeItem(k));
+        } catch {}
+        /* 重置应用名和系统标记，保证重新 init 后是首启状态 */
+        try { _lsSet(NS + '_appCustom', {name:'小彘的工作台', shortName:'小彘', icon:''}); _lsSet(NS + '_schemaVersion', this._schema || 1); _lsSet(NS + '__storeInIDB', 1); } catch {}
+        return true;
+      }).catch(() => {
+        _mem.clear();
+        try { for(let i = 0; i < localStorage.length; i++){ const k = localStorage.key(i); if(k && (k.startsWith(NS) || k.startsWith(SEC))) localStorage.removeItem(k); } } catch {}
+        return true;
+      });
+    },
+    _schema: (typeof SCHEMA_VERSION !== 'undefined' ? SCHEMA_VERSION : 1)
   };
 })();
 const Util = {
@@ -1594,6 +1631,19 @@ const Media = {
       const r = tx.objectStore(this.STORE).getAllKeys();
       r.onsuccess = () => res(r.result || []); r.onerror = () => res([]);
     });
+  },
+  /* 清空整个大仓库（所有图片/视频原件与缩略图），不可恢复。配合 Store.clearAll() 使用。 */
+  async clearAll(){
+    try {
+      const db = await this.open();
+      await new Promise((res) => {
+        const tx = db.transaction(this.STORE, 'readwrite');
+        const req = tx.objectStore(this.STORE).clear();
+        req.onsuccess = () => res(); req.onerror = () => res();
+      });
+    } catch {}
+    this._urls = {};
+    return true;
   },
   /* 保存一个文件：原件 + 缩略图，返回 {id,name,type,size} */
   async save(file, category){
@@ -2018,7 +2068,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-13-v47';
+const BUILD_VERSION = '2026-08-13-v48';
 const App = {
   current:'home',
   booting:true,
@@ -5240,6 +5290,25 @@ const Settings = {
     if(aiBase.value.trim() && base !== aiBase.value.trim()) UI.toast('AI 地址已改回安全 https 地址');
     else UI.toast('AI 设置已保存');
     this.render();
+  },
+  /* 恢复到最初设置：只清偏好，保留记录 */
+  resetSettings(){
+    if(!confirm('恢复到最初设置？\n\n只会重置桌面布局 / AI 配置 / 应用名 / 密码锁 / 主题等偏好。\n你所有的日记、灵感、心愿、追踪等记录都会保留，不会被删除。')) return;
+    Store.resetSettings();
+    UI.toast('已恢复到最初设置 ✓');
+    try { if(typeof Home !== 'undefined') Home.render(); } catch {}
+    try { if(typeof AppCustom !== 'undefined') AppCustom.render(); } catch {}
+    this.render();
+  },
+  /* 清空所有缓存与记录：不可恢复，二次确认 */
+  async clearAll(){
+    if(!confirm('⚠️ 清空所有缓存与记录？\n\n这会删除全部数据：图片视频、日记、灵感、心愿、追踪、感恩日记等，且不可恢复！\n确定要清空吗？')) return;
+    if(!confirm('再次确认：真的要清空一切吗？此操作无法撤销。')) return;
+    UI.toast('正在清空…');
+    try { await Store.clearAll(); } catch(e) { console.error(e); }
+    try { await Media.clearAll(); } catch(e) { console.error(e); }
+    try { if('caches' in window){ const names = await caches.keys(); await Promise.all(names.map(n => caches.delete(n))); } } catch {}
+    setTimeout(() => { location.reload(); }, 500);
   }
 };
 const Lock = {
