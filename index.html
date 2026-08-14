@@ -432,6 +432,14 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .note-cat-card .nc-date{font-size:10px;color:var(--text-dim)}
 /* v58：大分类卡片顶部的图片缩略图（最新一条笔记的首张内嵌图） */
 .note-cat-card.note-cat-empty{opacity:.85;border-style:dashed;background:rgba(255,253,248,.55)}
+/* v60：外层分类卡片 body 直接展示 mini cards（沿用 note-detail-grid 样式但更紧凑），末尾「查看全部」链接 */
+.note-cat-card .nc-mini-grid{grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin-top:6px}
+.note-cat-card .nc-mini-grid .note-mini-card{min-height:62px;padding:6px 7px;gap:3px}
+.note-cat-card .nc-mini-grid .note-mini-card .nmc-title{font-size:11.5px}
+.note-cat-card .nc-mini-grid .note-mini-card .nmc-preview{font-size:10px;-webkit-line-clamp:2}
+.note-cat-card .nc-mini-grid .note-mini-card .nmc-thumbs .note-inline-img{width:20px;height:20px}
+.note-cat-card .nc-see-all{font-size:11.5px;color:var(--accent);text-align:right;margin-top:6px;cursor:pointer;padding:4px 0;font-weight:600}
+.note-cat-card .nc-see-all:hover{text-decoration:underline}
 /* v54：分类详情 modal 里的小卡片网格 */
 .note-detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin-top:8px}
 .note-mini-card{position:relative;background:rgba(255,253,248,.94);border:1px solid var(--line);border-radius:12px;padding:8px 9px;cursor:pointer;display:flex;flex-direction:column;gap:4px;transition:transform .15s ease,box-shadow .15s ease;min-height:78px}
@@ -2446,7 +2454,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-14-v59';
+const BUILD_VERSION = '2026-08-14-v60';
 const App = {
   current:'home',
   booting:true,
@@ -4452,32 +4460,42 @@ const Notes = {
     /* v54：正常模式 → 按分类网格（对标视觉灵感的 visual-cat-grid） */
     const cats = this.cats();
     const byCat = {};
-    list.forEach(x => { const c = cats.includes(x.cat) ? x.cat : (cats[0]||'未分类'); (byCat[c] = byCat[c] || []).push(x); });
+    /* v60：用 trim 归一化分类名，防止「成长 / 成长 」之类空白差异导致分组与计数错位 */ list.forEach(x => { const raw = (x.cat||'').trim() || (cats[0]||'未分类'); const c = cats.includes(raw) ? raw : (cats[0]||'未分类'); (byCat[c] = byCat[c] || []).push(x); });
+    /* v60：外层分类卡片 body 直接渲染 mini cards（最多 4 张），不再只显示文本预览。
+       这样外层看到的卡片数 = openCat 里看到的卡片数，计数永远对得上。
+       多于 4 张时显示「查看全部 →」链接，跳到分类详情全屏。 */
     const cards = cats.map(cat => {
       const items = byCat[cat] || [];
-      const latest = items[0];
-      /* v59：去掉分类卡片顶部大图（小卡片本身已经显示图，外层不再重复） */
-      const preview = latest ? (this._stripMedia(latest.text || '') || latest.title || '（空）').slice(0,140) : '';
       const count = items.length;
-      const isEmpty = !latest;
-      const date = latest ? (latest.date || '') : '';
-      return `<div class="note-cat-card${isEmpty?' note-cat-empty':''}" onclick="Notes.openCat('${Util.esc(cat)}')">
+      const isEmpty = !items.length;
+      /* 最多展示 4 张 mini card；多于 4 张时显示「查看全部」链接 */
+      const showItems = items.slice(0, 4);
+      const inner = isEmpty
+        ? '<div class="nc-preview" style="color:var(--text-dim)">点上面「保存摘录」会自动归到这里</div>'
+        : '<div class="note-detail-grid nc-mini-grid">' + showItems.map(x=>this._miniCard(x)).join('') + '</div>'
+          + (count > 4
+              ? `<div class="nc-see-all" onclick="event.stopPropagation();Notes.openCat('${Util.esc(cat)}')">查看全部 ${count} 条 →</div>`
+              : (count > 0 ? `<div class="nc-see-all" onclick="event.stopPropagation();Notes.openCat('${Util.esc(cat)}')">查看分类 →</div>` : ''));
+      return `<div class="note-cat-card${isEmpty?' note-cat-empty':''}">
         <div class="nc-head"><span class="nc-title">📁 ${Util.esc(cat)}</span><span class="nc-count">${count}</span></div>
-        <div class="nc-preview">${preview ? Util.esc(preview) : '<span style="color:var(--text-dim)">点上面「保存摘录」会自动归到这里</span>'}</div>
-        <div class="nc-date">${date ? ('最新 · '+Util.esc(date)) : '还没有摘录'}</div>
+        ${inner}
       </div>`;
     }).join('');
-    /* v59：分类卡片已无大图，无需 _paintCatThumbs */
-    /* 「全部摘录」入口：跨分类总计 */
-    const allLatest = list[0];
+    /* v60：「全部摘录」卡片也直接展示 mini cards（≤4 张），多余显示「查看全部」链接 */
     const allCount = list.length;
-    const allPreview = allLatest ? (this._stripMedia(allLatest.text||'') || allLatest.title).slice(0,140) : '';
-    const allCard = `<div class="note-cat-card" onclick="Notes.openCat('__all__')">
+    const isAllEmpty = !allCount;
+    const allShowItems = list.slice(0, 4);
+    const allInner = isAllEmpty
+      ? '<div class="nc-preview" style="color:var(--text-dim)">还没写过摘录</div>'
+      : '<div class="note-detail-grid nc-mini-grid">' + allShowItems.map(x=>this._miniCard(x)).join('') + '</div>'
+        + (allCount > 4 ? `<div class="nc-see-all" onclick="event.stopPropagation();Notes.openCat('__all__')">查看全部 ${allCount} 条 →</div>` : (allCount > 0 ? `<div class="nc-see-all" onclick="event.stopPropagation();Notes.openCat('__all__')">查看全部 →</div>` : ''));
+    const allCard = `<div class="note-cat-card${isAllEmpty?' note-cat-empty':''}">
         <div class="nc-head"><span class="nc-title">📚 全部摘录</span><span class="nc-count">${allCount}</span></div>
-        <div class="nc-preview">${allPreview ? Util.esc(allPreview) : '<span style="color:var(--text-dim)">还没写过摘录</span>'}</div>
-        <div class="nc-date">${allLatest ? ('最新 · '+Util.esc(allLatest.date||'')) : '—'}</div>
+        ${allInner}
       </div>`;
     noteList.innerHTML = `<div class="note-cat-grid">${cards}${allCard}</div>`;
+    /* v60：外层 mini card 内嵌图异步 fill src（与内层 _renderOpenGrid 一致） */
+    Media.paint(noteList);
   },
   /* 把 [img:...] 占位符剥掉，用于纯文本预览 */
   _stripMedia(text){ return String(text||'').replace(/\[img:m_[a-zA-Z0-9_]+\]/g, '').trim(); },
@@ -4487,7 +4505,7 @@ const Notes = {
     const preview = this._stripMedia(x.text) || '';
     const imgIds = this._mediaInText(x.text);
     const thumbs = imgIds.slice(0,2).map(id=>`<img class="note-inline-img" data-media="${id}" alt="">`).join('');
-    return `<div class="note-mini-card" data-note-id="${x.id}" data-sort-id="${x.id}" onclick="Notes.openDetail('${x.id}')">
+    return `<div class="note-mini-card" data-note-id="${x.id}" data-sort-id="${x.id}" onclick="event.stopPropagation();Notes.openDetail('${x.id}')">
       <button class="nmc-del" type="button" onclick="event.stopPropagation();Notes.del('${x.id}')" title="删除这条">✕</button>
       <div class="nmc-title">${Util.esc(title)}</div>
       ${preview?`<div class="nmc-preview">${Util.esc(preview)}</div>`:''}
@@ -4498,7 +4516,8 @@ const Notes = {
   /* v55：分类详情改用全屏页面（点卡片查看完整内容），代替 UI.modal。
      用户从分类全屏 → mini-card 点详情 → ← 回到这一分类。 */
   openCat(cat){
-    const list = cat==='__all__' ? this.list() : this.list().filter(x => x.cat === cat);
+    /* v60：过滤也用 trim 归一化（与 render 的 bucketing 一致） */
+    const list = cat==='__all__' ? this.list() : this.list().filter(x => (x.cat||'').trim() === (cat||'').trim());
     if(!list.length){ return UI.toast(cat==='__all__'?'还没写过摘录':'「'+cat+'」分类下还没有摘录'); }
     const title = cat==='__all__' ? '📚 全部摘录 · '+list.length+' 条' : ('📁 '+cat+' · '+list.length+' 条');
     /* UI.openFull 会自动入栈，下级 openDetail 调 _fsBack 即可回到这一页（含滚动位置） */
@@ -4512,7 +4531,8 @@ const Notes = {
     const grid = document.getElementById('noteMiniGrid');
     if(!grid) return;
     let list = [];
-    if(this._fsMode === 'cat') list = this.list().filter(x => x.cat === this._fsCat);
+    /* v60：与 outer 渲染一致用 trim 归一化分类名 */
+    if(this._fsMode === 'cat') list = this.list().filter(x => (x.cat||'').trim() === (this._fsCat||'').trim());
     else if(this._fsMode === 'all') list = this.list();
     else if(this._fsMode === 'search'){ const q=(noteSearch?.value||'').trim().toLowerCase(); list = this.list().filter(x=>((x.title||'')+(x.text||'')+(x.tags||'')+(x.keywords||'')).toLowerCase().includes(q)); }
     grid.innerHTML = list.map(x=>this._miniCard(x)).join('');
@@ -5845,7 +5865,9 @@ const Cooking = {
     const groups=dishRecipes.reduce((g,x)=>{ const k=(this.splitTag(x.tags)[0]||'未分类'); (g[k]||(g[k]=[])).push(x); return g; },{});
     /* v58：按 v57 灵感小卡模板再升级 —— 横向布局（图片右、文字左共享一行），按钮 ✎ / ✕ 移到卡片右侧列里（不单独一行），不再有 ↑↓；长按拖动排序 */
     /* v59：3列网格卡片，外层只显示图片封面 + 菜名，点 → 全屏看详情；每张卡片右上 + 按钮 = 再来一道（复制到表单）。长按拖动排序保留。 */
-    const recipeHtml = Object.entries(groups).length?Object.entries(groups).map(([tag,rows])=>`<section style="margin-bottom:12px"><h2>${Util.esc(tag)}</h2><div class="dish-grid">${rows.map((x)=>{ const cover = x.photoId ? Util.mediaImg(x.photoId, x.name) : (x.photo ? `<img class="dc-cover" src="${Util.esc(x.photo)}" alt="${Util.esc(x.name)}">` : `<div class="dc-placeholder">${Util.esc((x.name||'?')[0])}</div>`); return `<div class="dish-card" draggable="true" data-sort-id="${x.id}" onclick="Cooking.openDetail('${x.id}')">${cover}<div class="dc-name">${Util.esc(x.name)}</div><button class="dc-addone" type="button" onclick="event.stopPropagation();Cooking.duplicate('${x.id}')" title="再来一道：复制这道菜到表单开始录入新菜">+</button></div>`; }).join('')}</div></section>`).join(''):'';
+    /* v60：x.photoId 时不再走 Util.mediaImg（那会输出 class="thumb"，被全局 54×54 样式锁死，导致图片只在卡片里缩成小方块），
+       改用 class="dc-cover" 让 CSS 的 object-fit:cover 真正沾满整张卡片。点 cover 弹图片大图（event.stopPropagation 避免误触卡片详情）。 */
+    const recipeHtml = Object.entries(groups).length?Object.entries(groups).map(([tag,rows])=>`<section style="margin-bottom:12px"><h2>${Util.esc(tag)}</h2><div class="dish-grid">${rows.map((x)=>{ const cover = x.photoId ? `<img class="dc-cover" data-media="${Util.esc(x.photoId)}" alt="${Util.esc(x.name)}" onclick="event.stopPropagation();Media.openFull('${Util.esc(x.photoId)}')">` : (x.photo ? `<img class="dc-cover" src="${Util.esc(x.photo)}" alt="${Util.esc(x.name)}">` : `<div class="dc-placeholder">${Util.esc((x.name||'?')[0])}</div>`); return `<div class="dish-card" draggable="true" data-sort-id="${x.id}" onclick="Cooking.openDetail('${x.id}')">${cover}<div class="dc-name">${Util.esc(x.name)}</div><button class="dc-addone" type="button" onclick="event.stopPropagation();Cooking.duplicate('${x.id}')" title="再来一道：复制这道菜到表单开始录入新菜">+</button></div>`; }).join('')}</div></section>`).join(''):'';
     const empty = !recipeHtml ? '<div class="empty">先添加几道菜，转盘就能用了</div>' : '';
     dishListEl.innerHTML = recipeHtml + empty;
     DragSort.bind('#dishList [data-sort-id]','dishes',()=>Cooking.render());
@@ -5875,7 +5897,10 @@ const Cooking = {
     /* 全屏图异步 paint（非 mediaId 时 img 立即显示；mediaId 时靠 Media.paint 补 src） */
     setTimeout(()=>Media.paint(document.getElementById('uiFullBody')), 30);
   },
-  /* v59：「再来一道」按钮（卡片上 / 详情视图上）：复制这道菜的名字/标签/步骤到表单，作为新菜录入（不复制图） */
+  /* v60：「再来一道」（卡片 / 详情视图共用）—— 复制这道菜的 name/tags/steps 到顶部表单作为新菜录入（不复制图）。
+     关键修复：不再调 App.go('cooking')（会被 history.pushState 记进栈，下一次 popstate 把页面踢飞）、
+     也不再 scrollIntoView（会把页面滚到顶部，让用户觉得「退回了桌面」）。
+     只做：render 一次 + 立即聚焦菜名 + toast。 */
   duplicate(id){
     const it = this.list().find(x=>x.id===id); if(!it) return;
     /* 取消编辑态 → 保存时会插入新菜 */
@@ -5885,10 +5910,8 @@ const Cooking = {
     if(typeof dishSteps !== 'undefined' && dishSteps) dishSteps.value = it.steps || '';
     if(typeof dishPhoto !== 'undefined' && dishPhoto) dishPhoto.value = '';
     this.render();
-    (document.getElementById('page-cooking')||document.body)?.scrollIntoView?.({behavior:'smooth', block:'start'});
-    setTimeout(()=>{ try{ document.getElementById('dishName')?.focus(); }catch(e){} }, 220);
-    /* 如果在别的页面，回到做菜栏 */
-    try{ if(typeof App !== 'undefined' && App.go) App.go('cooking'); }catch(e){}
+    /* 立即聚焦菜名（不开 setTimeout，避免与 popstate / 焦点事件相互影响） */
+    try{ document.getElementById('dishName')?.focus?.(); }catch(e){}
     UI.toast('已预填：'+(it.name||'这道菜')+'；改完点「保存菜谱」即可');
   },
   /* v55：把转盘菜名升级为正式菜谱（预填到上方表单，方便用户写做法步骤 + 保存） */
