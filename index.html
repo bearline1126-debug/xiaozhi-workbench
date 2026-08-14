@@ -1153,7 +1153,11 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
         <div id="wishBottleArea"></div>
       </div>
       <div id="wishDoneCardsArea"></div>
-      <p style="margin-top:8px;font-size:12px;color:#999;text-align:center">💰 每日最多 10 枚金币 · 打卡/复盘/运动/情绪日记/连续签到都能赚</p>
+      <div class="card">
+        <h2>🪙 金币怎么赚</h2>
+        <p class="hint">每种方式一天只算一次，全部加起来每天最多 <b id="coinDailyCap">10</b> 枚。今天已赚 <b id="coinTodayEarned">0</b> 枚。</p>
+        <div id="coinSourceList" style="margin-top:8px"></div>
+      </div>
     </section><!-- ==== 功能：心仪好物兑换铺 END ==== --><!-- ==== 功能：生活智能分析 START ==== --><section class="page" id="page-lifeAnalysis">
       <div class="page-title">生活智能分析</div><div class="page-sub">把今日必做、心愿行动、运动、份子钱、做菜、英语和连续打卡放在一起看。</div>
       <div class="card" id="lifeCompact"></div>
@@ -2104,7 +2108,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-14-v49';
+const BUILD_VERSION = '2026-08-14-v50';
 const App = {
   current:'home',
   booting:true,
@@ -4271,9 +4275,26 @@ const WishShop = {
     });
     return map;
   },
+  /* v49：把所有金币获取方式列出来，让用户一眼看清怎么赚（数据直接取 Coin.sources，改来源不用改 UI） */
+  renderCoinSources(){
+    const box = document.getElementById('coinSourceList'); if(!box) return;
+    const cap = document.getElementById('coinDailyCap'); if(cap) cap.textContent = Coin.DAILY_CAP;
+    const te = document.getElementById('coinTodayEarned'); if(te) te.textContent = Coin.todayEarned();
+    const t = Util.today();
+    const gotToday = Coin.history().filter(x => x.date === t && x.amount > 0).map(x => x.source);
+    box.innerHTML = Object.keys(Coin.sources).map(k => {
+      const s = Coin.sources[k], got = gotToday.includes(k);
+      return `<div class="item" style="padding:8px 10px">
+        <div class="grow"><div class="title" style="font-size:14px">${s.icon} ${Util.esc(s.name)} <span style="color:#d4a017">+1</span></div>
+        <div class="desc" style="font-size:12px">${Util.esc(s.desc)}</div></div>
+        <span style="font-size:12px;font-weight:700;color:${got?'var(--accent)':'#aaa'};white-space:nowrap">${got?'今天已领 ✅':'待领取'}</span>
+      </div>`;
+    }).join('');
+  },
   render(){
     const total = Coin.total();
     const el = document.getElementById('wishCoinTotal'); if(el) el.innerHTML = total + '<small>枚</small>';
+    this.renderCoinSources();
     const list = this.list();
     const red = document.getElementById('wishRedeemed'); if(red) red.textContent = list.filter(x => x.done).length;
     if(wishShopList){
