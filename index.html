@@ -386,6 +386,19 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .quick-act{font-size:11px;border:0;background:#f0ebd8;color:#5a4a2a;border-radius:8px;padding:3px 7px;cursor:pointer;line-height:1.3}
 .quick-act:hover{background:#e6dfc4}
 .quick-actions{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-start;margin-top:6px;padding-top:6px;border-top:1px dashed #ece6cf;width:100%}
+/* v52：菜篮子框（整体 dishList 容器）折叠/展开 */
+.dish-basket-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.dish-basket-toggle{font-size:12px;padding:4px 10px;min-height:30px}
+.dish-basket-body.collapsed{display:none}
+/* v52：自定义下拉 Combo（替代 input+datalist） */
+.combo-toggle{font-size:14px;border:1px solid var(--line);background:#fff;color:var(--text);border-left:0;border-radius:0 8px 8px 0;padding:6px 8px;cursor:pointer;min-height:38px}
+.combo-toggle:hover{background:#f3f5ef}
+.combo-pop{background:#fff;border:1px solid var(--line);border-radius:10px;padding:4px 0;max-height:260px;overflow:auto;z-index:999;font-family:inherit;box-sizing:border-box}
+.combo-pop.shadow{box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.combo-tip{font-size:11px;color:var(--text-dim);padding:4px 12px;border-bottom:1px dashed var(--line);margin-bottom:4px}
+.combo-item{padding:9px 12px;font-size:14px;cursor:pointer;line-height:1.3;border-bottom:1px solid transparent}
+.combo-item:hover,.combo-item:active{background:#f3f5ef}
+.combo-empty{padding:14px 12px;font-size:12px;color:var(--text-dim);text-align:center}
 .quick-actions .del{margin-left:2px}
 .quick-item{display:flex;flex-direction:column;align-items:stretch;gap:4px;width:100%}
 .quick-item .grow{width:100%;min-width:0}
@@ -975,13 +988,11 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
         <div class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px">
           <div>
             <label style="margin-top:0">标签</label>
-            <input id="noteTags" list="noteTagOptions" placeholder="逗号分隔，如：情绪,边界">
-            <datalist id="noteTagOptions"></datalist>
+            <div style="display:flex;gap:0"><input id="noteTags" placeholder="逗号分隔，如：情绪,边界"><button type="button" class="combo-toggle" onclick="Util.Combo.open('noteTags','note_tags',event)" title="选已有标签">▾</button></div>
           </div>
           <div>
             <label style="margin-top:0">关键词</label>
-            <input id="noteKeywords" list="noteKeywordOptions" placeholder="逗号分隔，可下拉选">
-            <datalist id="noteKeywordOptions"></datalist>
+            <div style="display:flex;gap:0"><input id="noteKeywords" placeholder="逗号分隔，可下拉选"><button type="button" class="combo-toggle" onclick="Util.Combo.open('noteKeywords','note_keywords',event)" title="选已有关键词">▾</button></div>
           </div>
         </div>
         <button class="btn" style="margin-top:10px;width:100%" onclick="Notes.add()">保存摘录</button>
@@ -1055,14 +1066,13 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
       </div>
       <div class="card">
         <input id="dishName" placeholder="菜名">
-        <input id="dishTags" list="dishTagOptions" placeholder="标签，如：快手菜 / 晚饭 / 清淡">
-        <datalist id="dishTagOptions"></datalist>
+        <div style="display:flex;gap:0"><input id="dishTags" placeholder="标签，如：快手菜 / 晚饭 / 清淡"><button type="button" class="combo-toggle" onclick="Util.Combo.open('dishTags','dish_tags',event)" title="选已有标签">▾</button></div>
         <textarea id="dishSteps" placeholder="怎么做：步骤、用料、注意事项、下次改进"></textarea>
         <label>添加图片</label>
         <input id="dishPhoto" type="file" accept="image/*">
         <button class="btn" style="margin-top:10px;width:100%" onclick="Cooking.add()">保存菜谱</button>
       </div>
-      <div class="card"><h2>我的菜</h2><div id="dishList"></div></div>
+      <div class="card"><div class="dish-basket-head"><h2 style="display:inline-block;margin:0">我的菜</h2><button class="btn ghost small dish-basket-toggle" onclick="Cooking.toggleBasket()" title="折叠/展开菜篮子" id="dishBasketToggle">折叠 ▾</button></div><div id="dishList" class="dish-basket-body"></div></div>
     </section><!-- ==== 功能：做菜栏 END ==== --><!-- ==== 功能：运动打卡 START ==== -->    <section class="page" id="page-sport">
       <div class="page-title">运动打卡</div><div class="page-sub">填好身体档案，记录每次运动。</div>
       <div class="card">
@@ -1128,10 +1138,8 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
       </div>
       <div class="card">
         <select id="giftType"><option value="in">收到</option><option value="out">付出</option></select>
-        <div class="row" style="margin-top:8px"><input id="giftPerson" list="giftPersonOptions" placeholder="人名（如：张三，可下拉选常用）"><input id="giftAmount" type="number" placeholder="金额"></div>
-        <datalist id="giftPersonOptions"></datalist>
-        <div class="row" style="margin-top:8px"><input id="giftEvent" list="giftEventOptions" placeholder="事件，如：婚礼/生日/乔迁（可下拉选常用）"><input id="giftDate" type="date"></div>
-        <datalist id="giftEventOptions"></datalist>
+        <div class="row" style="margin-top:8px"><div style="display:flex;gap:0;flex:1"><input id="giftPerson" placeholder="人名（如：张三，可下拉选常用）" style="flex:1;border-radius:8px 0 0 8px"><button type="button" class="combo-toggle" onclick="Util.Combo.open('giftPerson','gift_person',event)" title="选常用人名">▾</button></div><input id="giftAmount" type="number" placeholder="金额"></div>
+        <div class="row" style="margin-top:8px"><div style="display:flex;gap:0;flex:1"><input id="giftEvent" placeholder="事件，如：婚礼/生日/乔迁（可下拉选常用）" style="flex:1;border-radius:8px 0 0 8px"><button type="button" class="combo-toggle" onclick="Util.Combo.open('giftEvent','gift_event',event)" title="选常用事件">▾</button></div><input id="giftDate" type="date"></div>
         <textarea id="giftNote" placeholder="备注"></textarea>
         <button class="btn" id="giftSaveBtn" style="margin-top:10px;width:100%" onclick="Gift.save()">保存记录</button>
         <button class="btn ghost" id="giftCancelEdit" style="margin-top:8px;width:100%;display:none" onclick="Gift.cancelEdit()">取消编辑</button>
@@ -1895,6 +1903,76 @@ const Migrate = {
     Store.set('_homeTopFixed', 1);
   }
 };
+/* v52：自定义下拉 Combo —— 替代 input+datalist，避免某些 Android/iOS 浏览器把候选项混到键盘联想里 */
+Util.Combo = {
+  _pop: null,
+  open(inputId, scope, ev){
+    if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+    this.close();
+    const input = document.getElementById(inputId);
+    if(!input) return;
+    const opts = this._collect(scope);
+    const pop = document.createElement('div');
+    pop.className = 'combo-pop shadow';
+    pop.dataset.comboScope = scope;
+    if(!opts.length){
+      pop.innerHTML = '<div class="combo-empty">还没有候选，先在上面输入一个试试</div>';
+    } else {
+      pop.innerHTML = '<div class="combo-tip">点击下方候选 → 自动填入</div>' +
+        opts.map(o=>`<div class="combo-item" data-val="${Util.esc(o)}">${Util.esc(o)}</div>`).join('');
+    }
+    document.body.appendChild(pop);
+    const r = input.getBoundingClientRect();
+    pop.style.position = 'absolute';
+    pop.style.top = (r.bottom + window.scrollY + 4) + 'px';
+    pop.style.left = (r.left + window.scrollX) + 'px';
+    pop.style.minWidth = r.width + 'px';
+    pop.style.maxWidth = '320px';
+    pop.onclick = (e) => {
+      const it = e.target.closest('.combo-item');
+      if(!it) return;
+      this._pick(input, it.dataset.val);
+      this.close();
+      input.focus();
+    };
+    this._pop = pop;
+    setTimeout(()=>document.addEventListener('click', this._docClose, true), 0);
+  },
+  _docClose(e){
+    if(!Util.Combo._pop) return;
+    if(Util.Combo._pop.contains(e.target)) return;
+    const onBtn = e.target.closest && e.target.closest('.combo-toggle');
+    if(onBtn){ Util.Combo.close(); return; }
+    Util.Combo.close();
+  },
+  close(){
+    if(this._pop){ this._pop.remove(); this._pop = null; }
+    document.removeEventListener('click', this._docClose, true);
+  },
+  _pick(input, v){
+    const cur = input.value.trim();
+    if(!cur){ input.value = v; }
+    else {
+      const existing = cur.split(/[,，/、\s]+/).map(s=>s.trim()).filter(Boolean);
+      if(!existing.includes(v)){
+        if(/[,，/、\s]$/.test(cur)) input.value = cur + v;
+        else input.value = cur + ', ' + v;
+      }
+    }
+    input.dispatchEvent(new Event('input', {bubbles:true}));
+  },
+  _collect(scope){
+    let items = [];
+    if(scope === 'note_tags') items = Notes.list().flatMap(x => Notes.splitTags(x.tags));
+    else if(scope === 'note_keywords') items = Notes.list().flatMap(x => Notes.splitTags(x.keywords));
+    else if(scope === 'dish_tags') items = Cooking.list().flatMap(x => Cooking.splitTag(x.tags));
+    else if(scope === 'gift_person') items = Gift.list().map(x => x.person);
+    else if(scope === 'gift_event') items = Gift.list().map(x => x.event);
+    const unique = [...new Set(items.filter(Boolean))];
+    return Util.byUse(scope, unique).slice(0, 12);
+  }
+};
+
 const UI = {
   toast(msg){ const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(this.timer); this.timer = setTimeout(() => t.classList.remove('on'), 1800); },
   grab(){ return '<button class="grab" data-grab title="按住这里拖动" onclick="event.stopPropagation()">⠿</button>'; },
@@ -2113,7 +2191,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-14-v51';
+const BUILD_VERSION = '2026-08-14-v52';
 const App = {
   current:'home',
   booting:true,
@@ -2433,7 +2511,7 @@ const Home = {
   tileInfo(id){
     const fixed={
       daily:{icon:'🌙',name:'每日记录',go:'daily',value:()=>Success.todayWinCount(),unit:'条',desc:'日记 · 追踪 · 情绪'},
-      english:{icon:'📖',name:'英语积累',go:'english',value:()=>English.doneCount(),unit:'/5',desc:'今日学完得 5 项'},
+      english:{icon:'📖',name:'英语积累',go:'english',value:()=>English.doneCount(),unit:'/5',desc:'今日 5 项'},
       streak:{icon:'🔥',name:'连续打卡',go:null,value:()=>Daily.streak(),unit:'天',desc:'打开并记录就算'},
       chat:{icon:'🫧',name:'零时闲话铺',go:'chat',value:()=>Companion.log().length,unit:'条',desc:'随时陪你闲话'},
       quick:{icon:'📌',name:'灵感速记',go:'quick',value:()=>Quick.list().length,unit:'条',desc:'先记下来'},
@@ -2543,7 +2621,7 @@ const Home = {
     if(id==='tasks') return '<div class="list" id="todayTasks"></div>';
     if(id==='tracker') return '<div id="homeTracker"></div>';
     if(id==='entries') return `<div id="homeEntries"></div><p class="hint" style="margin-top:8px">点 📌 钉到首页，点 🚫 隐藏。</p>`;
-    if(id==='wheel') return `<div class="wheel-mini"><div class="wheel-mini-box"><div class="wheel-mini-pointer"></div><div class="wheel-mini-disk" id="homeWheel"></div><div class="wheel-result-bingo small" id="homeBingo" onclick="App.go('cooking')"></div></div><button class="btn ghost small" id="homeWheelSpin" onclick="Cooking.spin('home')">转一下</button><div class="hint" id="homeSpinResult">—</div></div>`;
+    if(id==='wheel') return `<div class="wheel-mini" onclick="App.go('cooking')" title="点转盘进入做菜栏"><div class="wheel-mini-box" onclick="event.stopPropagation()"><div class="wheel-mini-pointer"></div><div class="wheel-mini-disk" id="homeWheel"></div><div class="wheel-result-bingo small" id="homeBingo" onclick="event.stopPropagation();App.go('cooking')"></div></div><button class="btn ghost small" id="homeWheelSpin" onclick="event.stopPropagation();Cooking.spin('home')">转一下</button><div class="hint" id="homeSpinResult">—</div></div>`;
     if(id==='life') return `<div id="homeLifeSummary"></div>`;
     return '';
   },
@@ -3918,27 +3996,66 @@ const Notes = {
   },
   cancelEdit(){ Store.remove('note_editing'); noteTitle.value=noteText.value=noteTags.value=noteKeywords.value=''; this.render(); UI.toast('已退出编辑'); },
   render(){
-    /* v51：限制 datalist 候选项数（按使用频次排），避免 iOS PWA 下拉候选过多弹出位置异常 */
-    noteTagOptions.innerHTML=this.tagOptions().slice(0,12).map(t=>`<option value="${Util.esc(t)}"></option>`).join('');
-    noteKeywordOptions.innerHTML=this.keywordOptions().slice(0,12).map(t=>`<option value="${Util.esc(t)}"></option>`).join('');
+    /* v52：datalist 已删除，候选下拉改由 Combo.open 触发（直接点 ▾ 按钮） */
     const cancel=document.getElementById('noteCancelEdit');
     if(cancel) cancel.style.display=Store.get('note_editing','')?'block':'none';
     const q=(noteSearch?.value||'').trim().toLowerCase();
     let list=this.list();
     if(q) list=list.filter(x=>((x.title||'')+(x.text||'')+(x.tags||'')+(x.keywords||'')).toLowerCase().includes(q));
     if(!list.length){ noteList.innerHTML='<div class="empty">没有找到摘录</div>'; return; }
-    if(q){ noteList.innerHTML=list.map(x=>this.item(x)).join(''); DragSort.bind('#noteList [data-sort-id]','notes',()=>Notes.render()); return; }
+    /* v52：搜索模式扁平列出；正常模式仍按标签分组（item 已是 Quick 风格卡片） */
+    if(q){ noteList.innerHTML='<div class="list">'+list.map(x=>this.item(x)).join('')+'</div>'; DragSort.bind('#noteList [data-sort-id]','notes',()=>Notes.render()); return; }
+    /* 防重复：分组成员取并集 */
+    const seen=new Set();
+    const dedup=list.filter(x=>{ if(seen.has(x.id)) return false; seen.add(x.id); return true; });
     const groups={};
-    list.forEach(x=>{ const tags=this.splitTags(x.tags); (tags.length?tags:['未分类']).forEach(t=>{ (groups[t] ||= []).push(x); }); });
+    dedup.forEach(x=>{ const tags=this.splitTags(x.tags); (tags.length?tags:['未分类']).forEach(t=>{ (groups[t] ||= []).push(x); }); });
     noteList.innerHTML=Object.entries(groups).map(([tag,rows])=>`<section style="margin-bottom:14px"><h2># ${Util.esc(tag)}</h2><div class="list">${rows.map(x=>this.item(x)).join('')}</div></section>`).join('');
     DragSort.bind('#noteList [data-sort-id]','notes',()=>Notes.render());
   },
+  /* v52：完全照抄 Quick.render 未整理灵感的卡片结构（标题+内容+底部按钮行），
+     去掉了日/愿/池 3 个按钮，保留 ✎ ⧉ × 三个核心按钮 */
   item(x){
-    const meta=[x.keywords?'🔑 '+x.keywords:'', '# '+(x.tags||'未分类')].filter(Boolean).join('　');
-    /* v51：保留 ✎ 编辑 + ⧉ 复制 + ↑↓✕（不再有 日/愿/池 按钮，跟灵感速记未整理灵感列表一致） */
-    return UI.item(x.title||Util.firstSentence(x.text)||x.date, `${x.text}\n${meta}`, `<button class="del" onclick="Notes.edit('${x.id}')" title="编辑">✎</button><button class="del" onclick="Notes.copy('${x.id}')" title="复制内容">⧉</button><button class="del" onclick="Notes.moveId('${x.id}',-1)" title="上移">↑</button><button class="del" onclick="Notes.moveId('${x.id}',1)" title="下移">↓</button><button class="del" onclick="Notes.del('${x.id}')" title="删除">✕</button>`, `draggable="true" data-sort-id="${x.id}"`);
+    const title = x.title || Util.firstSentence(x.text) || x.date || '（无标题）';
+    const desc = x.text || '';
+    const meta = [x.keywords?'🔑 '+x.keywords:'', x.tags?'# '+x.tags:''].filter(Boolean).join('　');
+    return `<div class="item long-press note-item" data-note-id="${x.id}" data-sort-id="${x.id}">
+      <div class="grow" onpointerdown="Notes.tapStart('${x.id}',event)" onpointerup="Notes.tapEnd()" onpointermove="Notes.tapEnd()">
+        <div class="title" style="cursor:text" onclick="Notes.editStart('${x.id}')" title="点文字直接编辑">${Util.esc(title)}</div>
+        ${desc?`<div class="desc">${Util.esc(desc)}</div>`:''}
+        ${meta?`<div class="hint" style="margin-top:3px;font-size:11px;color:var(--text-dim)">${Util.esc(meta)}</div>`:''}
+      </div>
+      <div class="quick-actions">
+        <button class="quick-act" onclick="Notes.editStart('${x.id}')" title="编辑这条摘录">✎</button>
+        <button class="quick-act" onclick="Notes.copy('${x.id}')" title="复制这条摘录">⧉</button>
+        <button class="del" onclick="Notes.del('${x.id}')" title="删除" style="margin-left:auto">✕</button>
+      </div>
+    </div>`;
   },
-  edit(id){ const x=this.list().find(n=>n.id===id); if(!x)return; Store.set('note_editing',id); noteTitle.value=x.title||''; noteText.value=x.text||''; noteTags.value=x.tags||''; noteKeywords.value=x.keywords||''; this.render(); noteTitle.scrollIntoView({behavior:'smooth',block:'center'}); UI.toast('正在编辑这条摘录'); },
+  /* v52：长按全文复制（仿 Quick.tapStart；走 Quick._clip 路径保证真生效） */
+  _holdTimer: null,
+  tapStart(id, e){
+    if(e && e.target && e.target.closest && e.target.closest('button,textarea,input')) return;
+    const it = this.list().find(x=>x.id===id); if(!it) return;
+    const text = (it.title ? it.title + '\n\n' + it.text : it.text);
+    clearTimeout(this._holdTimer);
+    this._holdTimer = setTimeout(()=>Quick._clip(text, '已复制摘录全文'), 450);
+  },
+  tapEnd(){ clearTimeout(this._holdTimer); },
+  /* v52：编辑入口（与 Quick.editStart 行为对齐，跳到顶部表单） */
+  editStart(id){
+    const it = this.list().find(x=>x.id===id); if(!it) return;
+    Store.set('note_editing', id);
+    noteTitle.value = it.title || '';
+    noteText.value = it.text || '';
+    noteTags.value = it.tags || '';
+    noteKeywords.value = it.keywords || '';
+    this.render();
+    noteTitle.scrollIntoView({behavior:'smooth', block:'center'});
+    UI.toast('正在编辑这条摘录');
+  },
+  /* 兼容旧版调用：保留 edit()，现在内部走 editStart */
+  edit(id){ this.editStart(id); },
   moveId(id,d){ const a=this.list(); const i=a.findIndex(x=>x.id===id), j=i+d; if(i<0||j<0||j>=a.length)return; [a[i],a[j]]=[a[j],a[i]]; Store.set('notes',a); this.render(); },
   del(id){ Store.set('notes',this.list().filter(x=>x.id!==id)); this.render(); },
   /* v51：一键复制摘录全文到剪贴板（不走 datalist，用 textarea 兜底） */
@@ -4107,7 +4224,7 @@ const Quick = {
         <div class="quick-actions">
           <button class="quick-act" onclick="Quick.editStart('${x.id}')" title="编辑这条灵感">✎</button>
           <button class="quick-act" onclick="Quick.copy('${x.id}')" title="复制这条灵感">⧉</button>
-          <button class="quick-act" onclick="Quick.toTask('${x.id}')" title="加到明天必做">＋ 日</button>
+          <button class="quick-act" onclick="Quick.toTask('${x.id}')" title="加到明天必做" style="margin-left:auto">＋ 日</button>
           <button class="quick-act" onclick="Quick.toWish('${x.id}')" title="成为心愿/挂行动">↗ 愿</button>
           <button class="quick-act" onclick="Quick.toPool('${x.id}')" title="放入灵感池">📥 池</button>
           <button class="del" onclick="Quick.del('${x.id}')" title="删除">✕</button>
@@ -4127,7 +4244,7 @@ const Quick = {
         <div class="quick-actions">
           <button class="quick-act" onclick="Quick.editPoolStart('${x.id}')" title="编辑">✎</button>
           <button class="quick-act" onclick="Quick.copyPool('${x.id}')" title="复制">⧉</button>
-          <button class="quick-act" onclick="Quick.toUnPool('${x.id}')" title="恢复到未整理灵感" style="color:#779679">↺ 还原</button>
+          <button class="quick-act" onclick="Quick.toUnPool('${x.id}')" title="恢复到未整理灵感" style="color:#779679;margin-left:auto">↺ 还原</button>
           <button class="del" onclick="Quick.delPool('${x.id}')" title="删除">✕</button>
         </div>
       </div>`;
@@ -4522,14 +4639,14 @@ const English = {
     }
     box.innerHTML=`<div class="eng-q-row">${remain.map(q=>this.todayTestCard(q)).join('')}</div>`;
   },
-  /* v51：今日测试 4 题（quote/word/phrase/dialog 各 1 道） */
-  todayTestItems(){
+  /* v52：今日测试只测 word + phrase（v51 的 4 道题改为 2 道，去掉 今日句/今日对话）。
+   用户反馈：v51 加了今日句/今日对话测试不该要；只保留「每日单词」「固定搭配」。
+   SRS 复习里 quote/dialog 仍保留（用户学习时登记的，老规则不动）。 */
+todayTestItems(){
     const t=this.today();
     return [
-      {key:'today-quote',type:'quote',text:t.quote,answer:t.quoteZh,wrong:this.wrongZh(t.quoteZh)},
       {key:'today-word',type:'word',text:t.word,answer:t.wordZh,wrong:this.wrongOption(t.wordZh)},
-      {key:'today-phrase',type:'phrase',text:t.phrase,answer:t.phraseZh,wrong:t.phraseWrong||this.wrongZh(t.phraseZh)},
-      {key:'today-dialog',type:'dialog',text:t.dialog,answer:t.dialogZh,wrong:this.wrongZh(t.dialogZh)}
+      {key:'today-phrase',type:'phrase',text:t.phrase,answer:t.phraseZh,wrong:t.phraseWrong||this.wrongZh(t.phraseZh)}
     ];
   },
   todayTestCard(q){
@@ -5155,7 +5272,12 @@ const Cooking = {
     this.render();
   },
   render(){
-    dishTagOptions.innerHTML=this.tags().slice(0,12).map(t=>`<option value="${Util.esc(t)}"></option>`).join('');
+    /* v52：datalist 已删除；菜篮子整体折叠状态（默认展开） */
+    const basketOpen = Store.get('dish_basket_open', true);
+    const basketBox = document.getElementById('dishList');
+    if(basketBox){ basketBox.classList.toggle('collapsed', !basketOpen); }
+    const toggleBtn = document.getElementById('dishBasketToggle');
+    if(toggleBtn){ toggleBtn.textContent = basketOpen ? '折叠 ▾' : '展开 ▸'; }
     const groups=this.list().reduce((g,x)=>{ const k=(this.splitTag(x.tags)[0]||'未分类'); (g[k]||(g[k]=[])).push(x); return g; },{});
     /* v51 菜品折叠：默认收起只显示菜名 + ▾ 展开按钮 */
     dishList.innerHTML=Object.entries(groups).length?Object.entries(groups).map(([tag,rows])=>`<section style="margin-bottom:12px"><h2>${Util.esc(tag)}</h2><div class="list">${rows.map((x)=>{ const i=this.list().findIndex(y=>y.id===x.id); return `<div class="item dish-item${x._open?' open':''}" draggable="true" data-sort-id="${x.id}">${x.photoId?Util.mediaImg(x.photoId):(x.photo?`<img class="thumb" src="${Util.esc(x.photo)}" alt="">`:'')}<div class="grow"><div class="dish-name">${Util.esc(x.name)}</div>${x.tags?`<div class="dish-meta">${Util.esc(x.tags)}</div>`:''}<div class="dish-steps">${Util.esc(x.steps||'')}</div></div><button class="del dish-toggle" onclick="Cooking.toggleOpen('${x.id}')" title="展开/收起">▾</button><button class="del" onclick="Cooking.move(${i},-1)">↑</button><button class="del" onclick="Cooking.move(${i},1)">↓</button><button class="del" onclick="Cooking.del('${x.id}')">✕</button></div>`; }).join('')}</div></section>`).join(''):'<div class="empty">先添加几道菜，转盘就能用了</div>';
@@ -5170,6 +5292,8 @@ const Cooking = {
   paintWheelList(){ const box=document.getElementById('wheelDishList'); if(!box)return; const list=this.wheel(); box.innerHTML=list.length?list.map((x,i)=>`<span class="pill">${Util.esc(x)} <button class="del" onclick="Cooking.delWheelDish(${i})">✕</button></span>`).join(''):'<div class="empty">可以直接输入想吃的菜名</div>'; },
   /* v51：折叠/展开某道菜（仅本机视图状态，不入库） */
   toggleOpen(id){ const a=this.list(); const it=a.find(x=>x.id===id); if(!it) return; it._open = !it._open; Store.set('dishes', a); this.render(); },
+  /* v52：菜篮子框整体折叠/展开 */
+  toggleBasket(){ const cur=Store.get('dish_basket_open', true); Store.set('dish_basket_open', !cur); this.render(); },
   spin(where){
     const names=[...new Set(this.wheel().concat(this.list().map(x=>x.name)))];
     if(!names.length) return UI.toast('先添加几个转盘菜名');
@@ -5393,13 +5517,7 @@ const Gift = {
   cancelEdit(){ this._editing=null; giftPerson.value=giftAmount.value=giftEvent.value=giftNote.value=''; giftDate.value=''; this.render(); },
   render(){
     Util.sortSelect('giftType','giftType');
-    /* v51：人名 + 事件都按使用频次排序填进 datalist（首次输入后直接出现在下拉里，按频次从高到低排） */
-    const persons=[...new Set(this.list().map(x=>x.person).filter(Boolean))];
-    const pBox=document.getElementById('giftPersonOptions');
-    if(pBox) pBox.innerHTML=Util.byUse('giftPerson',persons).slice(0,12).map(p=>`<option value="${Util.esc(p)}">`).join('');
-    const events=[...new Set(this.list().map(x=>x.event).filter(Boolean))];
-    const evBox=document.getElementById('giftEventOptions');
-    if(evBox) evBox.innerHTML=Util.byUse('giftEvent',events).slice(0,12).map(e=>`<option value="${Util.esc(e)}">`).join(''); const list=this.list(); const sumIn=list.filter(x=>x.type==='in').reduce((s,x)=>s+x.amount,0); const sumOut=list.filter(x=>x.type==='out').reduce((s,x)=>s+x.amount,0); giftIn.textContent='¥'+sumIn; giftOut.textContent='¥'+sumOut; giftNet.textContent='¥'+(sumIn-sumOut); giftCount.textContent=list.length; const cancel=document.getElementById('giftCancelEdit'); if(cancel) cancel.style.display=this._editing?'block':'none'; const saveBtn=document.getElementById('giftSaveBtn'); if(saveBtn) saveBtn.textContent=this._editing?'更新记录':'保存记录'; const q=(giftSearch.value||'').trim(); const rows=q?list.filter(x=>(x.person+x.event+x.note).includes(q)):list; giftList.innerHTML=rows.length?rows.map(x=>UI.item(`${x.type==='in'?'收到':'付出'} · ${x.person} · ¥${x.amount}`,`${x.date} · ${x.event||'未写事件'}\n${x.note||''}`,`<button class="del" onclick="Gift.edit('${x.id}')">✎</button><button class="del" onclick="Gift.duplicate('${x.id}')" title="再记一笔">↻</button><button class="del" onclick="Gift.del('${x.id}')">✕</button>`,`draggable="true" data-sort-id="${x.id}"`)).join(''):'<div class="empty">暂无记录</div>'; DragSort.bind('#giftList [data-sort-id]','gifts',()=>Gift.render()); },
+    /* v52：人名/事件 datalist 已删除，候选下拉改由 Combo.open 触发（按使用频次排） */ const list=this.list(); const sumIn=list.filter(x=>x.type==='in').reduce((s,x)=>s+x.amount,0); const sumOut=list.filter(x=>x.type==='out').reduce((s,x)=>s+x.amount,0); giftIn.textContent='¥'+sumIn; giftOut.textContent='¥'+sumOut; giftNet.textContent='¥'+(sumIn-sumOut); giftCount.textContent=list.length; const cancel=document.getElementById('giftCancelEdit'); if(cancel) cancel.style.display=this._editing?'block':'none'; const saveBtn=document.getElementById('giftSaveBtn'); if(saveBtn) saveBtn.textContent=this._editing?'更新记录':'保存记录'; const q=(giftSearch.value||'').trim(); const rows=q?list.filter(x=>(x.person+x.event+x.note).includes(q)):list; giftList.innerHTML=rows.length?rows.map(x=>UI.item(`${x.type==='in'?'收到':'付出'} · ${x.person} · ¥${x.amount}`,`${x.date} · ${x.event||'未写事件'}\n${x.note||''}`,`<button class="del" onclick="Gift.edit('${x.id}')">✎</button><button class="del" onclick="Gift.duplicate('${x.id}')" title="再记一笔">↻</button><button class="del" onclick="Gift.del('${x.id}')">✕</button>`,`draggable="true" data-sort-id="${x.id}"`)).join(''):'<div class="empty">暂无记录</div>'; DragSort.bind('#giftList [data-sort-id]','gifts',()=>Gift.render()); },
   del(id){ Store.set('gifts',this.list().filter(x=>x.id!==id)); this.render(); }
 };
 /* ==== 功能：份子钱 END ==== */
