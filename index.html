@@ -432,6 +432,11 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .dish-basket-card{border:1px dashed #9bb07f;background:rgba(245,249,239,.55);padding:12px;border-radius:14px}
 .dish-basket-card .dish-basket-head h2{display:inline-block;margin:0;font-size:16px;color:#3a4a3f}
 .dish-basket-count{display:inline-block;background:#9bb07f;color:#fff;font-size:11px;border-radius:999px;padding:2px 8px;margin-left:8px;font-weight:700;vertical-align:middle}
+/* v55：转盘候选在菜篮子里的"伪菜谱"卡片（绿色虚线分隔 + 浅绿底） */
+.dish-basket-wheel{background:rgba(245,249,239,.55);border:1px dashed #b9c8a2}
+.dish-basket-wheel .dish-name{font-size:14px}
+.dish-basket-wheel .btn.ghost{font-size:12px;padding:5px 9px;min-height:30px;border-color:#9bb07f;color:#3a4a3f}
+.dish-basket-wheel .btn.ghost:hover{background:#eef3e2}
 /* v52：自定义下拉 Combo（替代 input+datalist） */
 .combo-toggle{font-size:14px;border:1px solid var(--line);background:#fff;color:var(--text);border-left:0;border-radius:0 8px 8px 0;padding:6px 8px;cursor:pointer;min-height:38px}
 .combo-toggle:hover{background:#f3f5ef}
@@ -458,6 +463,15 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .ui-modal-body{padding:14px 16px;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .ui-modal-body input{font-size:15px}
 .ui-modal-body .btn{font-size:14px;padding:9px 14px}
+/* v55：全屏展示（被 UI.openFull 调用） */
+.ui-fullscreen{position:fixed;inset:0;z-index:9999;background:var(--bg,#f5f1e6);display:none;flex-direction:column;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.ui-fs-head{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg,#f5f1e6);border-bottom:1px solid var(--line);flex:none}
+.ui-fs-head h3{margin:0;flex:1;font-size:16px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ui-fs-back,.ui-fs-x{border:0;background:transparent;font-size:18px;padding:6px 10px;cursor:pointer;color:var(--text);border-radius:8px;line-height:1}
+.ui-fs-back:hover,.ui-fs-x:hover{background:rgba(0,0,0,.06)}
+.ui-fs-back{font-size:14px}
+.ui-fs-body{flex:1;overflow-y:auto;padding:14px 16px;-webkit-overflow-scrolling:touch}
+body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:none}
 /* ==== 视觉灵感分类网格：按分类并排，每格只显示最新一张 ==== */
 .visual-cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:8px}
 .visual-cat{position:relative;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.76);padding:10px;cursor:pointer;display:flex;flex-direction:column;gap:6px;min-height:140px;touch-action:manipulation;transition:transform .15s,box-shadow .15s}
@@ -1970,9 +1984,12 @@ Util.Combo = {
     if(!opts.length){
       pop.innerHTML = '<div class="combo-empty">还没有候选，先在上面输入一个试试</div>';
     } else {
-      /* v53：每条候选右侧加 × 按钮（点击从历史池删除该词） */
+      /* v53：每条候选右侧加 × 按钮（点击从历史池删除该词）。
+         v55 bugfix：combo-item 上原本写了 onclick="event.stopPropagation()"，
+         结果在事件冒泡到 pop.onclick 之前就 stop 了，导致 _pick 从来不执行，
+         看起来「下拉弹窗能开但点了没反应」。只给 × 按钮单独 stopPropagation 即可。 */
       pop.innerHTML = '<div class="combo-tip">点击下方候选 → 自动填入 · 右侧 × 删除</div>' +
-        opts.map(o=>{ const sj=Util.Combo._escJs; const sk=sj(scope); const sv=sj(o); return `<div class="combo-item" data-val="${Util.esc(o)}" onclick="event.stopPropagation()"><span class="combo-item-text">${Util.esc(o)}</span><button type="button" class="combo-item-del" onclick="event.stopPropagation();Util.Combo.remove('${sk}','${sv}',this)" title="从候选池删除这条">×</button></div>`; }).join('');
+        opts.map(o=>{ const sj=Util.Combo._escJs; const sk=sj(scope); const sv=sj(o); return `<div class="combo-item" data-val="${Util.esc(o)}" title="${Util.esc(o)}"><span class="combo-item-text">${Util.esc(o)}</span><button type="button" class="combo-item-del" onclick="event.stopPropagation();Util.Combo.remove('${sk}','${sv}',this)" title="从候选池删除这条">×</button></div>`; }).join('');
     }
     document.body.appendChild(pop);
     const r = input.getBoundingClientRect();
@@ -2072,6 +2089,86 @@ const UI = {
     if(box) box.style.display = 'none';
     document.documentElement.style.overflow = '';
   },
+  /* v55：全屏展示（详情/专辑/分类页用），点 × 或按左上角 ← 返回都能关掉。
+     用法和 UI.modal 一致：openFull(title, html, backLabel?, onBack?)；closeFull() 关闭。
+     实现是动态建一个 fixed 覆盖层，z-index 比普通 modal 高。
+     支持返回栈：openCat → openDetail → 点 ← 会回到 openCat 的同一滚动位置。 */
+  _fsHistory: [],
+  openFull(title, html, backLabel='← 返回', onBack=null){
+    let box = document.getElementById('uiFullBox');
+    if(!box){
+      box = document.createElement('div'); box.id = 'uiFullBox';
+      box.className = 'ui-fullscreen';
+      box.innerHTML = `<div class="ui-fs-head"><button class="ui-fs-back" title="${Util.esc(backLabel)}">${Util.esc(backLabel)}</button><h3 id="uiFullTitle"></h3><button class="ui-fs-x" title="关闭">✕</button></div><div id="uiFullBody" class="ui-fs-body"></div>`;
+      document.body.appendChild(box);
+      box.querySelector('.ui-fs-x').addEventListener('click', ()=>UI.closeFull(true));
+      box.querySelector('.ui-fs-back').addEventListener('click', ()=>UI._fsBack());
+    }
+    /* 入栈：保存当前全屏状态（含滚动位置），← 才能回到这里 */
+    if(box.style.display === 'flex'){
+      const curBody = document.getElementById('uiFullBody');
+      this._fsHistory.push({
+        title: box.querySelector('#uiFullTitle').textContent,
+        html: curBody ? curBody.innerHTML : '',
+        backLabel: box._backLabel || '← 返回',
+        onBack: box._onBack || null,
+        scroll: curBody ? curBody.scrollTop : 0
+      });
+    }
+    box._backLabel = backLabel || '← 返回';
+    box._onBack = onBack;
+    box.querySelector('.ui-fs-back').textContent = box._backLabel;
+    box.querySelector('.ui-fs-back').title = box._backLabel;
+    box.querySelector('#uiFullTitle').textContent = title || '';
+    box.querySelector('#uiFullBody').innerHTML = html || '';
+    box.style.display = 'flex';
+    document.body.classList.add('ui-fs-on');
+    document.documentElement.style.overflow = 'hidden';
+    box.querySelector('#uiFullBody').scrollTop = 0;
+    window.scrollTo({top:0, behavior:'instant'});
+  },
+  closeFull(reset=true){
+    if(reset){
+      /* × 一律关到最外层，清空栈 */
+      const box = document.getElementById('uiFullBox');
+      if(box){
+        box.style.display = 'none';
+        const body = document.getElementById('uiFullBody');
+        if(body) body.innerHTML = '';
+        box._backLabel = null; box._onBack = null;
+      }
+      this._fsHistory = [];
+      document.body.classList.remove('ui-fs-on');
+      document.documentElement.style.overflow = '';
+    } else {
+      this._fsBack();
+    }
+  },
+  _fsBack(){
+    const prev = this._fsHistory.pop();
+    if(!prev){
+      /* 没有上级了，直接 close */
+      this.closeFull(true);
+      return;
+    }
+    if(typeof prev.onBack === 'function'){ try{ prev.onBack(); }catch(e){} }
+    const box = document.getElementById('uiFullBox');
+    if(!box) return;
+    box._backLabel = prev.backLabel;
+    box._onBack = prev.onBack;
+    box.querySelector('.ui-fs-back').textContent = prev.backLabel;
+    box.querySelector('#uiFullTitle').textContent = prev.title;
+    box.querySelector('#uiFullBody').innerHTML = prev.html;
+    box.style.display = 'flex';
+    document.body.classList.add('ui-fs-on');
+    document.documentElement.style.overflow = 'hidden';
+    /* 恢复滚动位置 */
+    requestAnimationFrame(()=>{
+      const body = document.getElementById('uiFullBody');
+      if(body && prev.scroll){ body.scrollTop = prev.scroll; }
+    });
+  },
+  isFullOpen(){ const box = document.getElementById('uiFullBox'); return !!(box && box.style.display !== 'none'); },
   item(title, desc, actions='', attrs=''){
     const handle = /data-sort-id/.test(attrs) ? this.grab() : '';
     return `<div class="item" ${attrs}>${handle}<div class="grow"><div class="title">${Util.esc(title)}</div>${desc ? `<div class="desc">${Util.esc(desc)}</div>` : ''}</div>${actions}</div>`;
@@ -2266,7 +2363,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-14-v54';
+const BUILD_VERSION = '2026-08-14-v55';
 const App = {
   current:'home',
   booting:true,
@@ -4222,33 +4319,36 @@ const Notes = {
       <div class="nmc-foot"><span>${x.cat?'# '+Util.esc(x.cat):''}</span><span>${Util.esc(x.date||'')}</span></div>
     </div>`;
   },
-  /* v54：分类详情 modal（点分类卡片进） */
+  /* v55：分类详情改用全屏页面（点卡片查看完整内容），代替 UI.modal。
+     用户从分类全屏 → mini-card 点详情 → ← 回到这一分类。 */
   openCat(cat){
     const list = cat==='__all__' ? this.list() : this.list().filter(x => x.cat === cat);
     if(!list.length){ return UI.toast(cat==='__all__'?'还没写过摘录':'「'+cat+'」分类下还没有摘录'); }
     const title = cat==='__all__' ? '📚 全部摘录 · '+list.length+' 条' : ('📁 '+cat+' · '+list.length+' 条');
-    UI.modal(title, `<p class="hint" style="margin:0 0 8px">点卡片查看完整内容（含图片）</p><div class="note-detail-grid" id="noteMiniGrid"></div>`);
+    /* UI.openFull 会自动入栈，下级 openDetail 调 _fsBack 即可回到这一页（含滚动位置） */
+    UI.openFull(title, `<p class="hint" style="margin:0 0 8px">点卡片查看完整内容（含图片）。← 返回经验摘录总览。</p><div class="note-detail-grid" id="noteMiniGrid"></div>`, '← 返回经验摘录');
     const grid = document.getElementById('noteMiniGrid');
     if(grid){
       grid.innerHTML = list.map(x=>this._miniCard(x)).join('');
       Media.paint(grid);
     }
   },
-  /* v54：单条详情 modal（点 mini-card 进） */
+  /* v55：单条详情改用全屏（替代之前 UI.modal 弹窗）。
+     用户从 mini-card 点进来，← 自动返回上层（openCat 或搜索结果所在的页面）。 */
   openDetail(id){
     const it = this.list().find(x=>x.id===id); if(!it) return;
     const title = it.title || Util.firstSentence(this._stripMedia(it.text)) || '（无标题）';
     const textHtml = this._renderTextWithMedia(it.text || '');
     const meta = [it.cat?'# '+it.cat:'', it.tags?'🔖 '+it.tags:'', it.keywords?'🔑 '+it.keywords:'', it.date].filter(Boolean).join('　');
-    UI.modal('📝 '+title, `
+    UI.openFull('📝 '+title, `
       <div class="note-detail-text" id="noteDetailText">${textHtml}</div>
       <div class="note-detail-meta">${Util.esc(meta)}</div>
       <div class="note-cat-actions">
         <button class="btn ghost small" onclick="Notes.copy('${id}')">⧉ 复制全文</button>
-        <button class="btn ghost small" onclick="Notes.editStart('${id}');UI.closeModal()">✎ 编辑</button>
-        <button class="btn ghost small" style="margin-left:auto;color:#a33" onclick="Notes.del('${id}');UI.closeModal()">✕ 删除</button>
+        <button class="btn ghost small" onclick="Notes.editStart('${id}');UI.closeFull(true)">✎ 编辑</button>
+        <button class="btn ghost small" style="margin-left:auto;color:#a33" onclick="Notes.del('${id}');UI.closeFull(true)">✕ 删除</button>
       </div>
-    `);
+    `, '← 返回');
     /* 异步填图片 src */
     const root = document.getElementById('noteDetailText');
     if(root) Media.paint(root);
@@ -5499,16 +5599,46 @@ const Cooking = {
     if(basketBox){ basketBox.classList.toggle('collapsed', !basketOpen); }
     const toggleBtn = document.getElementById('dishBasketToggle');
     if(toggleBtn){ toggleBtn.textContent = basketOpen ? '折叠 ▾' : '展开 ▸'; }
+    const dishRecipes = this.list();
+    const wheelNames = this.wheel();
     const basketCount = document.getElementById('dishBasketCount');
-    if(basketCount){ basketCount.textContent = this.list().length + ' 道'; }
-    const groups=this.list().reduce((g,x)=>{ const k=(this.splitTag(x.tags)[0]||'未分类'); (g[k]||(g[k]=[])).push(x); return g; },{});
+    if(basketCount){ basketCount.textContent = (dishRecipes.length + wheelNames.length) + ' 道'; }
     /* v54：dishList 是 id 元素，不存在 let dishList 全局变量，必须用 getElementById 拿（之前 v53 漏改这里导致 ReferenceError，菜篮子永远渲染失败） */
     const dishListEl = document.getElementById('dishList');
     if(!dishListEl) return;
+    const groups=dishRecipes.reduce((g,x)=>{ const k=(this.splitTag(x.tags)[0]||'未分类'); (g[k]||(g[k]=[])).push(x); return g; },{});
     /* v51 菜品折叠：默认收起只显示菜名 + ▾ 展开按钮 */
-    dishListEl.innerHTML=Object.entries(groups).length?Object.entries(groups).map(([tag,rows])=>`<section style="margin-bottom:12px"><h2>${Util.esc(tag)}</h2><div class="list">${rows.map((x)=>{ const i=this.list().findIndex(y=>y.id===x.id); return `<div class="item dish-item${x._open?' open':''}" draggable="true" data-sort-id="${x.id}">${x.photoId?Util.mediaImg(x.photoId):(x.photo?`<img class="thumb" src="${Util.esc(x.photo)}" alt="">`:'')}<div class="grow"><div class="dish-name">${Util.esc(x.name)}</div>${x.tags?`<div class="dish-meta">${Util.esc(x.tags)}</div>`:''}<div class="dish-steps">${Util.esc(x.steps||'')}</div></div><button class="del dish-toggle" onclick="Cooking.toggleOpen('${x.id}')" title="展开/收起">▾</button><button class="del" onclick="Cooking.move(${i},-1)">↑</button><button class="del" onclick="Cooking.move(${i},1)">↓</button><button class="del" onclick="Cooking.del('${x.id}')">✕</button></div>`; }).join('')}</div></section>`).join(''):'<div class="empty">先添加几道菜，转盘就能用了</div>';
+    const recipeHtml = Object.entries(groups).length?Object.entries(groups).map(([tag,rows])=>`<section style="margin-bottom:12px"><h2>${Util.esc(tag)}</h2><div class="list">${rows.map((x)=>{ const i=dishRecipes.findIndex(y=>y.id===x.id); return `<div class="item dish-item${x._open?' open':''}" draggable="true" data-sort-id="${x.id}">${x.photoId?Util.mediaImg(x.photoId):(x.photo?`<img class="thumb" src="${Util.esc(x.photo)}" alt="">`:'')}<div class="grow"><div class="dish-name">${Util.esc(x.name)}</div>${x.tags?`<div class="dish-meta">${Util.esc(x.tags)}</div>`:''}<div class="dish-steps">${Util.esc(x.steps||'')}</div></div><button class="del dish-toggle" onclick="Cooking.toggleOpen('${x.id}')" title="展开/收起">▾</button><button class="del" onclick="Cooking.move(${i},-1)">↑</button><button class="del" onclick="Cooking.move(${i},1)">↓</button><button class="del" onclick="Cooking.del('${x.id}')">✕</button></div>`; }).join('')}</div></section>`).join(''):'';
+    /* v55：菜篮子把转盘菜名也算进来（即使还没填做法步骤，也能看见 + 一键完善）
+       按名字 dedupe（如果在正式菜谱里已有同名菜，不再重复显示） */
+    const recipeNames = new Set(dishRecipes.map(x=>x.name));
+    const wheelOnly = wheelNames.filter(n => !recipeNames.has(n));
+    const wheelHtml = wheelOnly.length ? `<section style="margin-bottom:12px"><h2 style="display:flex;align-items:center;gap:8px">🌀 转盘上的菜<span style="font-size:11px;color:var(--text-dim);font-weight:400">（还没写做法步骤，点「✎ 完善做法」一键转正式菜谱）</span></h2><div class="list">${wheelOnly.map((name,idx)=>{
+      const wheelIdx = wheelNames.indexOf(name);
+      return `<div class="item dish-basket-wheel" data-wheel-name="${Util.esc(name)}">
+        <div class="grow"><div class="dish-name">🌀 ${Util.esc(name)}</div><div class="dish-meta" style="color:#6b7f55">转盘里的候选菜，还没填做法步骤</div></div>
+        <button class="btn ghost small" onclick="Cooking.upgradeFromWheel(${wheelIdx})" title="把这道菜转成正式菜谱，预填名字到上方表单">✎ 完善做法</button>
+        <button class="del" onclick="Cooking.delWheelDish(${wheelIdx})" title="从转盘候选里删除">✕</button>
+      </div>`;
+    }).join('')}</div></section>` : '';
+    const empty = !recipeHtml && !wheelHtml ? '<div class="empty">先添加几道菜，转盘就能用了</div>' : '';
+    dishListEl.innerHTML = recipeHtml + wheelHtml + empty;
     DragSort.bind('#dishList [data-sort-id]','dishes',()=>Cooking.render());
     this.paintWheelList();
+  },
+  /* v55：把转盘菜名升级为正式菜谱（预填到上方表单，方便用户写做法步骤 + 保存） */
+  upgradeFromWheel(wheelIdx){
+    const list = this.wheel();
+    const target = list[wheelIdx];
+    if(!target) return UI.toast('转盘菜名找不到了');
+    const dishName = document.getElementById('dishName');
+    if(!dishName) return UI.toast('做菜栏还没准备好');
+    dishName.value = target;
+    /* 取消编辑状态，滑动到表单 */
+    Store.remove('dish_editing');
+    document.getElementById('dishSteps')?.focus?.();
+    document.getElementById('dishName')?.scrollIntoView?.({behavior:'smooth', block:'center'});
+    UI.toast('名字已预填，去「保存菜谱」上方写做法步骤吧');
   },
   splitTag(tags){ return String(tags||'').split(/[,，/、\s]+/).map(t=>t.trim()).filter(Boolean); },
   move(i,d){ const a=this.list(); const j=i+d; if(j<0||j>=a.length)return; [a[i],a[j]]=[a[j],a[i]]; Store.set('dishes',a); this.render(); },
