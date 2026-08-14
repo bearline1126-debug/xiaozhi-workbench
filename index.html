@@ -269,14 +269,23 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .dish-item .dish-name{font-size:13px;font-weight:600;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* v58：菜篮子小卡 —— 横向布局：左边文字（占主要空间），右边小缩略图，再右边一列动作按钮（✎ / ✕）；
    不要再独立一行放按钮，也不要 ↑↓；长按整张卡片可拖动排序（DragSort.bind） */
-.dish-basket-card-item{flex-direction:row;align-items:center;padding:10px 12px;gap:10px}
-.dish-basket-card-item .grow{flex:1;min-width:0;text-align:left;order:1}
-.dish-basket-card-item .title{font-size:14px;font-weight:700;line-height:1.35;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dish-basket-card-item .dish-meta{font-size:11px;color:var(--text-dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dish-basket-card-item .dish-steps{font-size:11px;color:var(--text);line-height:1.5;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
-.dish-basket-card-item .thumb{width:54px;height:54px;object-fit:cover;border-radius:8px;flex:none;order:2;margin:0;background:#e6e2cc}
-.dish-basket-card-item .dish-actions{display:flex;flex-direction:column;align-items:center;gap:2px;flex:none;order:3}
-.dish-basket-card-item .dish-actions button{font-size:15px;padding:4px 6px;line-height:1;min-height:28px}
+.dish-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:4px 2px}
+.dish-card{position:relative;aspect-ratio:1/1;border-radius:12px;overflow:hidden;cursor:pointer;background:#e6e2cc;box-shadow:0 2px 6px rgba(38,54,40,.08);transition:transform .15s ease}
+.dish-card:active{transform:scale(.97)}
+.dish-card .dc-cover{width:100%;height:100%;object-fit:cover;display:block}
+.dish-card .dc-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;color:rgba(255,255,255,.85);background:linear-gradient(135deg,#86b667,#5a8a4a)}
+.dish-card .dc-name{position:absolute;left:0;right:0;bottom:0;padding:6px 8px;font-size:12px;font-weight:600;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.62));line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.dish-card .dc-addone{position:absolute;top:4px;right:4px;width:28px;height:28px;border-radius:50%;border:0;background:rgba(255,255,255,.92);color:var(--accent);font-size:18px;font-weight:700;line-height:1;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center;padding:0}
+.dish-card .dc-addone:active{background:var(--accent);color:#fff}
+.dish-detail{padding:0}
+.dish-detail .dd-hero{width:100%;max-height:50vh;object-fit:cover;display:block;background:#e6e2cc}
+.dish-detail .dd-noimg{width:100%;height:120px;background:linear-gradient(135deg,#86b667,#5a8a4a);display:flex;align-items:center;justify-content:center;font-size:48px;color:rgba(255,255,255,.85)}
+.dish-detail .dd-body{padding:14px 16px}
+.dish-detail .dd-name{font-size:18px;font-weight:700;margin-bottom:6px;color:var(--text);line-height:1.35}
+.dish-detail .dd-tags{font-size:12px;color:var(--accent);margin-bottom:12px}
+.dish-detail .dd-steps{font-size:14px;line-height:1.7;color:var(--text);white-space:pre-wrap;word-break:break-word;margin-bottom:16px}
+.dish-detail .dd-actions{display:flex;gap:8px;padding-top:8px;border-top:1px dashed var(--line)}
+.dish-detail .dd-actions .btn{flex:1}
 .dish-item .dish-meta,.dish-item .dish-steps{display:none}
 .dish-item.open .dish-name{font-size:15px;white-space:normal}
 .dish-item.open .dish-meta{display:block;font-size:11px;color:var(--text-dim);margin-top:2px}
@@ -422,8 +431,6 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .note-cat-card .nc-preview{font-size:11.5px;color:var(--text);line-height:1.45;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word;white-space:pre-wrap;flex:1}
 .note-cat-card .nc-date{font-size:10px;color:var(--text-dim)}
 /* v58：大分类卡片顶部的图片缩略图（最新一条笔记的首张内嵌图） */
-.note-cat-card .nc-thumb{width:100%;height:96px;overflow:hidden;border-radius:10px;margin-bottom:4px;background:#e6e2cc}
-.note-cat-card .nc-thumb img.note-inline-img,.note-cat-card .nc-thumb img{width:100%;height:100%;object-fit:cover;display:block;border-radius:10px;margin:0;max-width:none;max-height:none}
 .note-cat-card.note-cat-empty{opacity:.85;border-style:dashed;background:rgba(255,253,248,.55)}
 /* v54：分类详情 modal 里的小卡片网格 */
 .note-detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin-top:8px}
@@ -444,14 +451,13 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .note-manage-btn:hover{background:rgba(0,0,0,.05)}
 /* v56：全屏内联编辑表单 */
 .note-edit-in-full input,.note-edit-in-full textarea,.note-edit-in-full select{width:100%;font-size:14px;padding:8px;border:1px solid var(--line);border-radius:8px;box-sizing:border-box;font-family:inherit;background:#fff}
-/* v57：纯编辑全屏（openDetail）样式 —— textarea 占满高度，右下角 🖼 浮动圆形钮 */
-/* v58：openDetail 详情纯编辑全屏 —— 整个全屏就是一个无边、无背景的 textarea，
-   顶端右侧 🖼 按钮是从 UI.openFull 的 rightHtml 参数透传注入的；
-   下面小灰字写「已插入 N 张图」是 note-edit-foot 的 hint。 */
-.note-edit-pure{display:flex;flex-direction:column;height:100%;padding:0;margin:0}
-.note-edit-pure textarea{flex:1;width:100%;border:0;outline:none;background:transparent;font-size:15px;line-height:1.7;padding:14px 16px;resize:none;font-family:inherit;color:var(--text);min-height:0}
-.note-edit-pure textarea::placeholder{color:var(--text-dim)}
-.note-edit-foot{padding:6px 16px 12px;font-size:11px;color:var(--text-dim);text-align:right}
+/* v59：openDetail 详情纯编辑全屏 —— 整个全屏就是一个无边、无背景的 textarea。
+   之前的 .note-edit-pure wrapper 因为 HTML 没真的用上，所以 textarea 没被覆盖到全局边框/背景。
+   现在直接用 ID 选择器 + !important 抵掉全局 input/textarea/select 默认边背景。
+   用 :has() 让 ui-fs-body 在只含 textarea 时去掉 padding，textarea 真正占满全屏。 */
+#noteEditPure{flex:1;width:100%;height:100%;border:0 !important;outline:none;background:transparent !important;font-size:15px;line-height:1.7;padding:14px 16px;resize:none;font-family:inherit;color:var(--text);min-height:0;box-sizing:border-box;display:block}
+#noteEditPure::placeholder{color:var(--text-dim)}
+.ui-fs-body:has(>#noteEditPure){padding:0;display:flex;flex-direction:column}
 .note-edit-in-full textarea{min-height:180px;resize:vertical;line-height:1.6}
 /* v54：内嵌在文字里的图片（小缩略图，可点看大图） */
 .note-inline-img{max-width:140px;max-height:140px;border-radius:8px;margin:4px 4px 4px 0;vertical-align:middle;cursor:zoom-in;border:1px solid var(--line)}
@@ -1170,7 +1176,7 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
         <input id="dishPhoto" type="file" accept="image/*">
         <button class="btn" style="margin-top:10px;width:100%" onclick="Cooking.add()">保存菜谱</button>
       </div>
-      <div class="dish-basket-card"><div class="dish-basket-head"><h2>🧺 菜篮子<span id="dishBasketCount" class="dish-basket-count">0</span></h2><button class="btn ghost small" id="dishAddOneBtn" onclick="Cooking.addOne()" title="清空表单，开始录入下一道菜">+ 再来一道</button><button class="btn ghost small dish-basket-toggle" onclick="Cooking.toggleBasket()" title="折叠/展开菜篮子" id="dishBasketToggle">折叠 ▾</button></div><div id="dishList" class="dish-basket-body"></div></div>
+      <div class="dish-basket-card"><div class="dish-basket-head"><h2>🧺 菜篮子<span id="dishBasketCount" class="dish-basket-count">0</span></h2><button class="btn ghost small dish-basket-toggle" onclick="Cooking.toggleBasket()" title="折叠/展开菜篮子" id="dishBasketToggle">折叠 ▾</button></div><div id="dishList" class="dish-basket-body"></div></div>
     </section><!-- ==== 功能：做菜栏 END ==== --><!-- ==== 功能：运动打卡 START ==== -->    <section class="page" id="page-sport">
       <div class="page-title">运动打卡</div><div class="page-sub">填好身体档案，记录每次运动。</div>
       <div class="card">
@@ -2440,7 +2446,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-14-v58';
+const BUILD_VERSION = '2026-08-14-v59';
 const App = {
   current:'home',
   booting:true,
@@ -4450,22 +4456,18 @@ const Notes = {
     const cards = cats.map(cat => {
       const items = byCat[cat] || [];
       const latest = items[0];
-      /* v58：缩略图：最新一条的第一张图（去掉 [img:..] 后看首个内嵌图） */
-      const latestImgIds = latest ? this._mediaInText(latest.text) : [];
-      const latestImg = latestImgIds[0] ? Util.mediaImg(latestImgIds[0]) : '';
+      /* v59：去掉分类卡片顶部大图（小卡片本身已经显示图，外层不再重复） */
       const preview = latest ? (this._stripMedia(latest.text || '') || latest.title || '（空）').slice(0,140) : '';
       const count = items.length;
       const isEmpty = !latest;
       const date = latest ? (latest.date || '') : '';
       return `<div class="note-cat-card${isEmpty?' note-cat-empty':''}" onclick="Notes.openCat('${Util.esc(cat)}')">
-        ${latestImg ? `<div class="nc-thumb">${latestImg}</div>` : ''}
         <div class="nc-head"><span class="nc-title">📁 ${Util.esc(cat)}</span><span class="nc-count">${count}</span></div>
         <div class="nc-preview">${preview ? Util.esc(preview) : '<span style="color:var(--text-dim)">点上面「保存摘录」会自动归到这里</span>'}</div>
         <div class="nc-date">${date ? ('最新 · '+Util.esc(date)) : '还没有摘录'}</div>
       </div>`;
     }).join('');
-    /* v58：异步把大分类卡片里的图缩略图 fill 上（img 用 Media.paint 补 src） */
-    setTimeout(()=>Notes._paintCatThumbs(), 30);
+    /* v59：分类卡片已无大图，无需 _paintCatThumbs */
     /* 「全部摘录」入口：跨分类总计 */
     const allLatest = list[0];
     const allCount = list.length;
@@ -4476,13 +4478,9 @@ const Notes = {
         <div class="nc-date">${allLatest ? ('最新 · '+Util.esc(allLatest.date||'')) : '—'}</div>
       </div>`;
     noteList.innerHTML = `<div class="note-cat-grid">${cards}${allCard}</div>`;
-    /* v58：异步填充大分类卡片的图片缩略图（img 用 Media.paint） */
-    setTimeout(()=>Notes._paintCatThumbs(), 0);
   },
   /* 把 [img:...] 占位符剥掉，用于纯文本预览 */
   _stripMedia(text){ return String(text||'').replace(/\[img:m_[a-zA-Z0-9_]+\]/g, '').trim(); },
-  /* v58：把大分类卡片里的 [data-media] 占位 img 异步填充 src */
-  _paintCatThumbs(){ Media.paint(document.getElementById('noteList')); },
   /* v54：mini-card 小预览（用在分类详情全屏 和 搜索结果）；v56：右上角删除键默认隐藏，长按卡片浮出 */
   _miniCard(x){
     const title = x.title || Util.firstSentence(this._stripMedia(x.text)) || x.date || '（无标题）';
@@ -4529,9 +4527,9 @@ const Notes = {
   openDetail(id){
     const it = this.list().find(x=>x.id===id); if(!it) return;
     const rightBtn = `<button class="ui-fs-icon-btn" type="button" onclick="document.getElementById('noteEditPureFile').click()" title="插入图片">🖼</button>`;
+    /* v59：去掉文本框下面的「已插入 N 张图」提示，整屏只有 textarea + 隐藏文件输入 */
     UI.openFull('', `
       <textarea id="noteEditPure" placeholder="写下你的经验、原则、观察..."></textarea>
-      <div class="note-edit-foot"><span class="hint" id="noteEditPureCount"></span></div>
       <input type="file" id="noteEditPureFile" accept="image/*" multiple style="display:none" onchange="Notes.insertImages(this,'noteEditPure');Notes._autoSaveEdit()">
     `, '← 返回', null, rightBtn, /*hideTitle*/true);
     const ta = document.getElementById('noteEditPure'); if(!ta) return;
@@ -4541,9 +4539,6 @@ const Notes = {
     ta.addEventListener('input', ()=>{
       clearTimeout(timer);
       timer = setTimeout(()=>Notes._autoSaveEdit(), 600);
-      const ids = (ta.value.match(/\[img:m_[a-zA-Z0-9_]+\]/g) || []).length;
-      const cs = document.getElementById('noteEditPureCount');
-      if(cs) cs.textContent = ids?('已插入 '+ids+' 张图'):'';
     });
     /* 退栈时强制刷一次：UI.openFull 把 onBack 存在 box._onBack */
     const box = document.getElementById('uiFullBox');
@@ -4551,9 +4546,6 @@ const Notes = {
       const oldBack = box._onBack;
       box._onBack = ()=>{ try{ Notes._autoSaveEdit(); }catch(e){} if(typeof oldBack === 'function'){ try{ oldBack(); }catch(e){} } };
     }
-    /* 初始化计数 */
-    const ids = (ta.value.match(/\[img:m_[a-zA-Z0-9_]+\]/g) || []).length;
-    const cs = document.getElementById('noteEditPureCount'); if(cs) cs.textContent = ids?('已插入 '+ids+' 张图'):'';
     setTimeout(()=>ta.focus(), 60);
     /* id 暂存，供 _autoSaveEdit 用 */
     this._fsEditingId = id;
@@ -5852,13 +5844,52 @@ const Cooking = {
     if(!dishListEl) return;
     const groups=dishRecipes.reduce((g,x)=>{ const k=(this.splitTag(x.tags)[0]||'未分类'); (g[k]||(g[k]=[])).push(x); return g; },{});
     /* v58：按 v57 灵感小卡模板再升级 —— 横向布局（图片右、文字左共享一行），按钮 ✎ / ✕ 移到卡片右侧列里（不单独一行），不再有 ↑↓；长按拖动排序 */
-    const recipeHtml = Object.entries(groups).length?Object.entries(groups).map(([tag,rows])=>`<section style="margin-bottom:12px"><h2>${Util.esc(tag)}</h2><div class="list">${rows.map((x)=>{ const i=dishRecipes.findIndex(y=>y.id===x.id); return `<div class="item dish-basket-card-item${x._open?' open':''}" draggable="true" data-sort-id="${x.id}"><div class="grow"><div class="title">${Util.esc(x.name)}</div>${x.tags?`<div class="dish-meta">${Util.esc(x.tags)}</div>`:''}<div class="dish-steps">${Util.esc(x.steps||'')}</div></div>${x.photoId?Util.mediaImg(x.photoId):(x.photo?`<img class="thumb" src="${Util.esc(x.photo)}" alt="">`:'')}<div class="dish-actions"><button class="ui-fs-icon-btn" type="button" onclick="Cooking.edit('${x.id}')" title="编辑这道菜">✎</button><button class="ui-fs-icon-btn" type="button" onclick="Cooking.del('${x.id}')" title="删除">✕</button></div></div>`; }).join('')}</div></section>`).join(''):'';
+    /* v59：3列网格卡片，外层只显示图片封面 + 菜名，点 → 全屏看详情；每张卡片右上 + 按钮 = 再来一道（复制到表单）。长按拖动排序保留。 */
+    const recipeHtml = Object.entries(groups).length?Object.entries(groups).map(([tag,rows])=>`<section style="margin-bottom:12px"><h2>${Util.esc(tag)}</h2><div class="dish-grid">${rows.map((x)=>{ const cover = x.photoId ? Util.mediaImg(x.photoId, x.name) : (x.photo ? `<img class="dc-cover" src="${Util.esc(x.photo)}" alt="${Util.esc(x.name)}">` : `<div class="dc-placeholder">${Util.esc((x.name||'?')[0])}</div>`); return `<div class="dish-card" draggable="true" data-sort-id="${x.id}" onclick="Cooking.openDetail('${x.id}')">${cover}<div class="dc-name">${Util.esc(x.name)}</div><button class="dc-addone" type="button" onclick="event.stopPropagation();Cooking.duplicate('${x.id}')" title="再来一道：复制这道菜到表单开始录入新菜">+</button></div>`; }).join('')}</div></section>`).join(''):'';
     const empty = !recipeHtml ? '<div class="empty">先添加几道菜，转盘就能用了</div>' : '';
     dishListEl.innerHTML = recipeHtml + empty;
     DragSort.bind('#dishList [data-sort-id]','dishes',()=>Cooking.render());
     /* v58：菜篮子图片渲染完异步 fill src（Util.mediaImg 是占位 img，靠 Media.paint 补） */
     Media.paint(dishListEl);
     this.paintWheelList();
+  },
+  /* v59：点击网格卡片 → 全屏看详情（菜名 / 标签 / 步骤 / 图 / 编辑 / 删除） */
+  openDetail(id){
+    const it = this.list().find(x=>x.id===id); if(!it) return;
+    const hero = it.photoId ? Util.mediaImg(it.photoId, it.name) : (it.photo ? `<img class="dd-hero" src="${Util.esc(it.photo)}" alt="${Util.esc(it.name)}">` : '<div class="dd-noimg">🍽</div>');
+    const html = `
+      <div class="dish-detail">
+        ${hero}
+        <div class="dd-body">
+          <div class="dd-name">${Util.esc(it.name)}</div>
+          ${it.tags?`<div class="dd-tags">🏷 ${Util.esc(it.tags)}</div>`:''}
+          <div class="dd-steps">${it.steps ? Util.esc(it.steps) : '<span style="color:var(--text-dim)">（还没写做法）</span>'}</div>
+          <div class="dd-actions">
+            <button class="btn" onclick="Cooking.duplicate('${it.id}');UI.closeFull(true);">+ 再来一道</button>
+            <button class="btn ghost" onclick="Cooking.edit('${it.id}');UI.closeFull(true);">✎ 编辑</button>
+            <button class="btn ghost" style="color:var(--warn)" onclick="UI.closeFull(true);setTimeout(()=>Cooking.del('${it.id}'),120);">✕ 删除</button>
+          </div>
+        </div>
+      </div>`;
+    UI.openFull('🍽 '+it.name, html, '← 返回菜篮子');
+    /* 全屏图异步 paint（非 mediaId 时 img 立即显示；mediaId 时靠 Media.paint 补 src） */
+    setTimeout(()=>Media.paint(document.getElementById('uiFullBody')), 30);
+  },
+  /* v59：「再来一道」按钮（卡片上 / 详情视图上）：复制这道菜的名字/标签/步骤到表单，作为新菜录入（不复制图） */
+  duplicate(id){
+    const it = this.list().find(x=>x.id===id); if(!it) return;
+    /* 取消编辑态 → 保存时会插入新菜 */
+    Store.remove('dish_editing');
+    if(typeof dishName !== 'undefined' && dishName) dishName.value = it.name || '';
+    if(typeof dishTags !== 'undefined' && dishTags) dishTags.value = it.tags || '';
+    if(typeof dishSteps !== 'undefined' && dishSteps) dishSteps.value = it.steps || '';
+    if(typeof dishPhoto !== 'undefined' && dishPhoto) dishPhoto.value = '';
+    this.render();
+    (document.getElementById('page-cooking')||document.body)?.scrollIntoView?.({behavior:'smooth', block:'start'});
+    setTimeout(()=>{ try{ document.getElementById('dishName')?.focus(); }catch(e){} }, 220);
+    /* 如果在别的页面，回到做菜栏 */
+    try{ if(typeof App !== 'undefined' && App.go) App.go('cooking'); }catch(e){}
+    UI.toast('已预填：'+(it.name||'这道菜')+'；改完点「保存菜谱」即可');
   },
   /* v55：把转盘菜名升级为正式菜谱（预填到上方表单，方便用户写做法步骤 + 保存） */
   upgradeFromWheel(wheelIdx){
