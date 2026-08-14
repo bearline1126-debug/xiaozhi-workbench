@@ -402,6 +402,29 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .note-item .quick-actions{justify-content:flex-end;border-top:1px dashed #d8d4be;margin-top:8px;padding-top:8px}
 .note-item .desc{font-size:13px;line-height:1.55}
 .note-item .title{font-size:14px;font-weight:700;line-height:1.4}
+/* v54：经验摘录按分类网格（对标视觉灵感 visual-cat-grid）+ 小卡片预览（line-clamp 2） */
+.note-cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:8px}
+.note-cat-card{position:relative;background:rgba(255,253,248,.92);border:1px solid var(--line);border-radius:14px;padding:10px 11px;display:flex;flex-direction:column;gap:6px;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease;min-height:140px}
+.note-cat-card:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(20,30,18,.1)}
+.note-cat-card .nc-head{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.note-cat-card .nc-title{font-family:var(--title-font);font-size:14px;font-weight:700;display:flex;align-items:center;gap:5px;line-height:1.3}
+.note-cat-card .nc-count{font-size:11px;background:rgba(107,152,79,.14);color:var(--accent);padding:1px 7px;border-radius:999px;font-weight:600}
+.note-cat-card .nc-preview{font-size:11.5px;color:var(--text);line-height:1.45;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word;white-space:pre-wrap;flex:1}
+.note-cat-card .nc-date{font-size:10px;color:var(--text-dim)}
+.note-cat-card.note-cat-empty{opacity:.85;border-style:dashed;background:rgba(255,253,248,.55)}
+/* v54：分类详情 modal 里的小卡片网格 */
+.note-detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:9px;margin-top:8px}
+.note-mini-card{position:relative;background:rgba(255,253,248,.94);border:1px solid var(--line);border-radius:12px;padding:10px 11px;cursor:pointer;display:flex;flex-direction:column;gap:5px;transition:transform .15s ease,box-shadow .15s ease;min-height:90px}
+.note-mini-card:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(20,30,18,.08)}
+.note-mini-card .nmc-title{font-size:13px;font-weight:700;line-height:1.35;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.note-mini-card .nmc-preview{font-size:11.5px;color:var(--text);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap;word-break:break-word}
+.note-mini-card .nmc-foot{display:flex;justify-content:space-between;align-items:center;font-size:10px;color:var(--text-dim);margin-top:auto}
+/* v54：内嵌在文字里的图片（小缩略图，可点看大图） */
+.note-inline-img{max-width:140px;max-height:140px;border-radius:8px;margin:4px 4px 4px 0;vertical-align:middle;cursor:zoom-in;border:1px solid var(--line)}
+.note-detail-text{white-space:pre-wrap;word-break:break-word;font-size:13.5px;line-height:1.7;color:var(--text)}
+.note-detail-text .note-inline-img{margin:6px 6px 6px 0}
+.note-detail-meta{font-size:11.5px;color:var(--text-dim);margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)}
+.note-cat-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
 .dish-basket-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:8px;border-bottom:1px dashed #d8d4be}
 .dish-basket-toggle{font-size:12px;padding:5px 12px;min-height:30px}
 .dish-basket-body.collapsed{display:none}
@@ -1005,8 +1028,11 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
       <div class="card">
         <label>标题</label>
         <input id="noteTitle" placeholder="不写的话，自动用内容的第一句当标题">
+        <label>分类</label>
+        <div class="row"><select id="noteCat" style="flex:1"></select><button class="btn ghost small" onclick="Notes.editCategories()" title="增删改分类">管理分类</button></div>
         <label>内容</label>
-        <textarea id="noteText" placeholder="内容"></textarea>
+        <textarea id="noteText" placeholder="内容。可点下面「🖼 插入图片」在文字之间插入图片"></textarea>
+        <div class="row" style="margin-top:8px"><button class="btn ghost small" type="button" onclick="document.getElementById('noteFile').click()">🖼 插入图片</button><span class="hint" id="noteMediaCount" style="margin-left:auto"></span></div>
         <div class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px">
           <div>
             <label style="margin-top:0">标签</label>
@@ -1024,6 +1050,7 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
         <div class="row"><input id="noteSearch" placeholder="搜索标题、内容、标签、关键词" oninput="Notes.render()"><button class="btn ghost" onclick="Notes.render()">搜索</button></div>
         <div id="noteList" style="margin-top:10px"></div>
       </div>
+      <input type="file" id="noteFile" accept="image/*" multiple style="display:none" onchange="Notes.insertImages(this)">
     </section><!-- ==== 功能：经验摘录 END ==== --><!-- ==== 功能：英语积累 START ==== --><section class="page" id="page-english">
       <div class="page-title">英语积累</div><div class="page-sub">每日一句、每日单词、固定搭配、每日对话、每日写作。离线也能用，内容按天轮换。</div>
       <div class="grid" id="englishCards"></div>
@@ -1928,6 +1955,9 @@ const Migrate = {
 /* v52：自定义下拉 Combo —— 替代 input+datalist，避免某些 Android/iOS 浏览器把候选项混到键盘联想里 */
 Util.Combo = {
   _pop: null,
+  /* v54：把字符串安全塞进 onclick="..." 参数（escape 单/双引号 + 反斜杠）。
+     之前 v53 加 × 按钮时忘了定义此函数，导致 Combo.open 抛 ReferenceError、下拉永远出不来 */
+  _escJs(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;'); },
   open(inputId, scope, ev){
     if(ev){ ev.preventDefault(); ev.stopPropagation(); }
     this.close();
@@ -1942,7 +1972,7 @@ Util.Combo = {
     } else {
       /* v53：每条候选右侧加 × 按钮（点击从历史池删除该词） */
       pop.innerHTML = '<div class="combo-tip">点击下方候选 → 自动填入 · 右侧 × 删除</div>' +
-        opts.map(o=>`<div class="combo-item" data-val="${Util.esc(o)}" onclick="event.stopPropagation()"><span class="combo-item-text">${Util.esc(o)}</span><button type="button" class="combo-item-del" onclick="event.stopPropagation();Util.Combo.remove('${esc_js(scope)}','${esc_js(o)}',this)" title="从候选池删除这条">×</button></div>`).join('');
+        opts.map(o=>{ const sj=Util.Combo._escJs; const sk=sj(scope); const sv=sj(o); return `<div class="combo-item" data-val="${Util.esc(o)}" onclick="event.stopPropagation()"><span class="combo-item-text">${Util.esc(o)}</span><button type="button" class="combo-item-del" onclick="event.stopPropagation();Util.Combo.remove('${sk}','${sv}',this)" title="从候选池删除这条">×</button></div>`; }).join('');
     }
     document.body.appendChild(pop);
     const r = input.getBoundingClientRect();
@@ -2236,7 +2266,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-14-v53';
+const BUILD_VERSION = '2026-08-14-v54';
 const App = {
   current:'home',
   booting:true,
@@ -4005,10 +4035,54 @@ const Self = {
 /* ==== 功能：个人认知库 END ==== */
 /* ==== 功能：经验摘录 START ==== */
 const Notes = {
+  /* v54：固定几个默认分类（参考视觉灵感收藏 defaultCats），用户可增删改 */
+  defaultCats:['成长','学习','工具','情绪','生活'],
+  cats(){ const custom = Store.get('note_cats', null); return Array.isArray(custom) && custom.length ? custom : this.defaultCats.slice(); },
+  saveCats(arr){ const clean = [...new Set((arr||[]).map(x=>String(x||'').trim()).filter(Boolean))]; Store.set('note_cats', clean.length ? clean : this.defaultCats.slice()); },
+  editCategories(){
+    const editing = [...this.cats()];
+    const drawIn = (body)=>{
+      body.querySelector('#ncEditList').innerHTML = editing.map((v,i)=>`<div class="row" style="margin-bottom:6px;align-items:center">
+        <button class="btn ghost small" data-nc-up="${i}" title="上移" ${i===0?'disabled style="opacity:.35"':''}>↑</button>
+        <button class="btn ghost small" data-nc-down="${i}" title="下移" ${i===editing.length-1?'disabled style="opacity:.35"':''}>↓</button>
+        <input data-nc="${i}" value="${Util.esc(v)}" placeholder="分类名" style="flex:1;min-width:0">
+        <button class="del" data-nc-del="${i}" title="删除">✕</button>
+      </div>`).join('');
+      body.querySelectorAll('#ncEditList input').forEach(inp=>{
+        inp.addEventListener('input', e=>{ editing[Number(e.target.dataset.nc)] = e.target.value; });
+      });
+      body.querySelectorAll('[data-nc-del]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{ editing.splice(Number(btn.dataset.ncDel),1); drawIn(body); });
+      });
+      body.querySelectorAll('[data-nc-up]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{ const i=Number(btn.dataset.ncUp); if(i>0){ [editing[i-1],editing[i]]=[editing[i],editing[i-1]]; drawIn(body); } });
+      });
+      body.querySelectorAll('[data-nc-down]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{ const i=Number(btn.dataset.ncDown); if(i<editing.length-1){ [editing[i+1],editing[i]]=[editing[i+1],editing[i]]; drawIn(body); } });
+      });
+    };
+    UI.modal('分类管理', `
+      <p class="hint" style="margin:0 0 8px">改名、用 ↑↓ 调顺序、点「＋」加、点「✕」删。已有摘录的分类不能删（先改到别的分类再删）。</p>
+      <div id="ncEditList"></div>
+      <button class="btn ghost small" id="ncEditAdd" style="margin-top:8px">＋ 加一个分类</button>
+      <div class="row" style="margin-top:14px"><button class="btn" id="ncEditSave">保存</button><button class="btn ghost" id="ncEditCancel">取消</button></div>
+    `);
+    const body = document.querySelector('#uiModalBody');
+    if(!body) return;
+    drawIn(body);
+    body.querySelector('#ncEditAdd').onclick = ()=>{ editing.push(''); drawIn(body); };
+    body.querySelector('#ncEditSave').onclick = ()=>{
+      const usedCats = new Set(this.list().map(x=>x.cat).filter(Boolean));
+      const removed = this.cats().filter(c => !editing.includes(c));
+      const blocked = removed.filter(c => usedCats.has(c));
+      if(blocked.length){ UI.toast('「'+blocked.join('、')+'」下还有摘录，先把它们改到别的分类再删'); return; }
+      this.saveCats(editing); UI.closeModal(); this.render(); UI.toast('分类已更新');
+    };
+    body.querySelector('#ncEditCancel').onclick = ()=> UI.closeModal();
+  },
   list(){ return Store.get('notes',[]); },
   splitTags(tags){ return String(tags||'').split(/[,，/、\s]+/).map(x=>x.trim()).filter(Boolean); },
   tagOptions(){ return Util.byUse('note_tags',[...new Set(this.list().flatMap(x=>this.splitTags(x.tags)).concat(Store.get('note_tags',[])))].filter(Boolean)); },
-  /* 关键词是独立字段，候选来自已用过的关键词 + 老版本迁移过来的标题词 */
   keywordOptions(){ return Util.byUse('note_keywords',[...new Set(this.list().flatMap(x=>this.splitTags(x.keywords)).concat(Store.get('note_keywords',[])))].filter(Boolean)); },
   titleOptions(){ return Util.byUse('note_titles',[...new Set(this.list().map(x=>x.title).concat(Store.get('note_titles',[])))].filter(Boolean)); },
   saveMeta(tags,keywords){
@@ -4017,77 +4091,169 @@ const Notes = {
     this.splitTags(tags).forEach(t=>Util.bump('note_tags',t));
     this.splitTags(keywords).forEach(t=>Util.bump('note_keywords',t));
   },
+  /* v54：上传多张图片，在 noteText 当前光标处插入 [img:m_xxx] 占位符 */
+  async insertImages(input){
+    const files = [...(input.files||[])].filter(f=>f && f.type && f.type.startsWith('image/'));
+    if(!files.length){ input.value=''; return; }
+    for(const f of files){
+      const saved = await Media.save(f, 'life').catch(()=>null);
+      if(!saved){ UI.toast('保存图片失败'); continue; }
+      const ta = document.getElementById('noteText');
+      if(ta){
+        const tag = `[img:${saved.id}]`;
+        const s = ta.selectionStart, e = ta.selectionEnd;
+        const before = ta.value.slice(0, s), after = ta.value.slice(e);
+        ta.value = before + tag + after;
+        ta.selectionStart = ta.selectionEnd = s + tag.length;
+        ta.focus();
+      }
+    }
+    input.value = '';
+    this._updateMediaCount();
+  },
+  _mediaInText(text){ return [...String(text||'').matchAll(/\[img:(m_[a-zA-Z0-9_]+)\]/g)].map(m=>m[1]); },
+  _updateMediaCount(){
+    const span = document.getElementById('noteMediaCount');
+    if(!span) return;
+    const ids = this._mediaInText(noteText?.value);
+    span.textContent = ids.length ? ('已插入 '+ids.length+' 张图') : '';
+  },
+  /* v54：把内容里的 [img:ID] 替换为 <img class="note-inline-img">；其余文字按段渲染（保留换行） */
+  _renderTextWithMedia(text){
+    const esc = Util.esc || (s=>String(s||'').replace(/[<>&"']/g, c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'})[c]));
+    const parts = String(text||'').split(/(\[img:m_[a-zA-Z0-9_]+\])/g);
+    return parts.map(p=>{
+      const m = p.match(/^\[img:(m_[a-zA-Z0-9_]+)\]$/);
+      if(m) return `<img class="note-inline-img" data-media="${m[1]}" alt="图片" onclick="Media.openFull('${m[1]}')">`;
+      return esc(p);
+    }).join('');
+  },
   add(){
     const text=noteText.value.trim();
     const tags=noteTags.value.trim();
     const keywords=noteKeywords.value.trim();
-    /* 标题留空就自动取内容第一句 */
-    const title=noteTitle.value.trim() || Util.firstSentence(text);
-    if(!title&&!text) return UI.toast('至少写点内容');
+    /* v54：新增分类字段；如果留空就用第一个分类 */
+    const cats = this.cats();
+    const cat = noteCat?.value || cats[0];
+    /* 标题留空就自动取内容第一句（剥掉 [img:...]） */
+    const textNoMedia = String(text||'').replace(/\[img:m_[a-zA-Z0-9_]+\]/g,'').trim();
+    const title=noteTitle.value.trim() || Util.firstSentence(textNoMedia);
+    if(!title && !textNoMedia) return UI.toast('至少写点内容');
     this.saveMeta(tags,keywords);
     const editing=Store.get('note_editing','');
     if(editing){
-      Store.set('notes',this.list().map(x=>x.id===editing?{...x,title,text,tags,keywords,updatedAt:new Date().toISOString()}:x));
+      Store.set('notes',this.list().map(x=>x.id===editing?{...x,title,text,tags,keywords,cat,updatedAt:new Date().toISOString()}:x));
       Store.remove('note_editing');
       UI.toast('这条摘录已更新');
     } else {
-      Store.set('notes',[{id:Util.uid(),date:Util.today(),title,text,tags,keywords},...this.list()]);
+      Store.set('notes',[{id:Util.uid(),date:Util.today(),title,text,tags,keywords,cat},...this.list()]);
       UI.toast('摘录已保存');
     }
     /* v49：写经验摘录 +1 金币（Coin.earn 内部已限制每天最多 1 次） */
     Coin.earn('notes','写经验摘录');
     noteTitle.value=noteText.value=noteTags.value=noteKeywords.value='';
+    this._updateMediaCount();
     this.render();
   },
-  cancelEdit(){ Store.remove('note_editing'); noteTitle.value=noteText.value=noteTags.value=noteKeywords.value=''; this.render(); UI.toast('已退出编辑'); },
+  cancelEdit(){ Store.remove('note_editing'); noteTitle.value=noteText.value=noteTags.value=noteKeywords.value=''; this._updateMediaCount(); this.render(); UI.toast('已退出编辑'); },
+  /* v54：刷新表单里的分类下拉（打开页面 / 改完分类 / 编辑某条时调用） */
+  _refreshCatSelect(selected){
+    const sel = document.getElementById('noteCat');
+    if(!sel) return;
+    const cats = this.cats();
+    sel.innerHTML = cats.map(c=>`<option value="${Util.esc(c)}">${Util.esc(c)}</option>`).join('');
+    if(selected){ sel.value = selected; }
+  },
   render(){
-    /* v52：datalist 已删除，候选下拉改由 Combo.open 触发（直接点 ▾ 按钮） */
+    /* v54：先刷新分类下拉（让分类管理后立刻同步） */
+    this._refreshCatSelect(this.list().find(x=>x.id===Store.get('note_editing',''))?.cat);
+    this._updateMediaCount();
     const cancel=document.getElementById('noteCancelEdit');
     if(cancel) cancel.style.display=Store.get('note_editing','')?'block':'none';
     const q=(noteSearch?.value||'').trim().toLowerCase();
     let list=this.list();
     if(q) list=list.filter(x=>((x.title||'')+(x.text||'')+(x.tags||'')+(x.keywords||'')).toLowerCase().includes(q));
-    if(!list.length){ noteList.innerHTML='<div class="empty">没有找到摘录</div>'; return; }
-    /* v52：搜索模式扁平列出；正常模式仍按标签分组（item 已是 Quick 风格卡片） */
-    if(q){ noteList.innerHTML='<div class="list">'+list.map(x=>this.item(x)).join('')+'</div>'; DragSort.bind('#noteList [data-sort-id]','notes',()=>Notes.render()); return; }
-    /* 防重复：分组成员取并集 */
-    const seen=new Set();
-    const dedup=list.filter(x=>{ if(seen.has(x.id)) return false; seen.add(x.id); return true; });
-    const groups={};
-    dedup.forEach(x=>{ const tags=this.splitTags(x.tags); (tags.length?tags:['未分类']).forEach(t=>{ (groups[t] ||= []).push(x); }); });
-    noteList.innerHTML=Object.entries(groups).map(([tag,rows])=>`<section style="margin-bottom:14px"><h2># ${Util.esc(tag)}</h2><div class="list">${rows.map(x=>this.item(x)).join('')}</div></section>`).join('');
-    DragSort.bind('#noteList [data-sort-id]','notes',()=>Notes.render());
+    /* v54：搜索模式 → 扁平网格（mini-card 预览，点击进详情） */
+    if(q){
+      if(!list.length){ noteList.innerHTML='<div class="empty">没有找到摘录</div>'; return; }
+      noteList.innerHTML='<div class="note-detail-grid">'+list.map(x=>this._miniCard(x)).join('')+'</div>';
+      return;
+    }
+    /* v54：正常模式 → 按分类网格（对标视觉灵感的 visual-cat-grid） */
+    const cats = this.cats();
+    const byCat = {};
+    list.forEach(x => { const c = cats.includes(x.cat) ? x.cat : (cats[0]||'未分类'); (byCat[c] = byCat[c] || []).push(x); });
+    const cards = cats.map(cat => {
+      const items = byCat[cat] || [];
+      const latest = items[0];
+      const preview = latest ? (this._stripMedia(latest.text || '') || latest.title || '（空）').slice(0,140) : '';
+      const count = items.length;
+      const isEmpty = !latest;
+      const date = latest ? (latest.date || '') : '';
+      return `<div class="note-cat-card${isEmpty?' note-cat-empty':''}" onclick="Notes.openCat('${Util.esc(cat)}')">
+        <div class="nc-head"><span class="nc-title">📁 ${Util.esc(cat)}</span><span class="nc-count">${count}</span></div>
+        <div class="nc-preview">${preview ? Util.esc(preview) : '<span style="color:var(--text-dim)">点上面「保存摘录」会自动归到这里</span>'}</div>
+        <div class="nc-date">${date ? ('最新 · '+Util.esc(date)) : '还没有摘录'}</div>
+      </div>`;
+    }).join('');
+    /* 「全部摘录」入口：跨分类总计 */
+    const allLatest = list[0];
+    const allCount = list.length;
+    const allPreview = allLatest ? (this._stripMedia(allLatest.text||'') || allLatest.title).slice(0,140) : '';
+    const allCard = `<div class="note-cat-card" onclick="Notes.openCat('__all__')">
+        <div class="nc-head"><span class="nc-title">📚 全部摘录</span><span class="nc-count">${allCount}</span></div>
+        <div class="nc-preview">${allPreview ? Util.esc(allPreview) : '<span style="color:var(--text-dim)">还没写过摘录</span>'}</div>
+        <div class="nc-date">${allLatest ? ('最新 · '+Util.esc(allLatest.date||'')) : '—'}</div>
+      </div>`;
+    noteList.innerHTML = `<div class="note-cat-grid">${cards}${allCard}</div>`;
   },
-  /* v52：完全照抄 Quick.render 未整理灵感的卡片结构（标题+内容+底部按钮行），
-     去掉了日/愿/池 3 个按钮，保留 ✎ ⧉ × 三个核心按钮 */
-  item(x){
-    const title = x.title || Util.firstSentence(x.text) || x.date || '（无标题）';
-    const desc = x.text || '';
-    const meta = [x.keywords?'🔑 '+x.keywords:'', x.tags?'# '+x.tags:''].filter(Boolean).join('　');
-    return `<div class="item long-press note-item" data-note-id="${x.id}" data-sort-id="${x.id}">
-      <div class="grow" onpointerdown="Notes.tapStart('${x.id}',event)" onpointerup="Notes.tapEnd()" onpointermove="Notes.tapEnd()">
-        <div class="title" style="cursor:text" onclick="Notes.editStart('${x.id}')" title="点文字直接编辑">${Util.esc(title)}</div>
-        ${desc?`<div class="desc">${Util.esc(desc)}</div>`:''}
-        ${meta?`<div class="hint" style="margin-top:3px;font-size:11px;color:var(--text-dim)">${Util.esc(meta)}</div>`:''}
-      </div>
-      <div class="quick-actions">
-        <button class="quick-act" onclick="Notes.editStart('${x.id}')" title="编辑这条摘录">✎</button>
-        <button class="quick-act" onclick="Notes.copy('${x.id}')" title="复制这条摘录">⧉</button>
-        <button class="del" onclick="Notes.del('${x.id}')" title="删除" style="margin-left:auto">✕</button>
-      </div>
+  /* 把 [img:...] 占位符剥掉，用于纯文本预览 */
+  _stripMedia(text){ return String(text||'').replace(/\[img:m_[a-zA-Z0-9_]+\]/g, '').trim(); },
+  /* v54：mini-card 小预览（用在分类详情 modal 和搜索结果） */
+  _miniCard(x){
+    const title = x.title || Util.firstSentence(this._stripMedia(x.text)) || x.date || '（无标题）';
+    const preview = this._stripMedia(x.text) || '';
+    const imgIds = this._mediaInText(x.text);
+    const thumbs = imgIds.slice(0,2).map(id=>`<img class="note-inline-img" data-media="${id}" alt="">`).join('');
+    return `<div class="note-mini-card" onclick="Notes.openDetail('${x.id}')">
+      <div class="nmc-title">${Util.esc(title)}</div>
+      ${preview?`<div class="nmc-preview">${Util.esc(preview)}</div>`:''}
+      ${thumbs?`<div style="display:flex;gap:4px;flex-wrap:wrap">${thumbs}</div>`:''}
+      <div class="nmc-foot"><span>${x.cat?'# '+Util.esc(x.cat):''}</span><span>${Util.esc(x.date||'')}</span></div>
     </div>`;
   },
-  /* v52：长按全文复制（仿 Quick.tapStart；走 Quick._clip 路径保证真生效） */
-  _holdTimer: null,
-  tapStart(id, e){
-    if(e && e.target && e.target.closest && e.target.closest('button,textarea,input')) return;
-    const it = this.list().find(x=>x.id===id); if(!it) return;
-    const text = (it.title ? it.title + '\n\n' + it.text : it.text);
-    clearTimeout(this._holdTimer);
-    this._holdTimer = setTimeout(()=>Quick._clip(text, '已复制摘录全文'), 450);
+  /* v54：分类详情 modal（点分类卡片进） */
+  openCat(cat){
+    const list = cat==='__all__' ? this.list() : this.list().filter(x => x.cat === cat);
+    if(!list.length){ return UI.toast(cat==='__all__'?'还没写过摘录':'「'+cat+'」分类下还没有摘录'); }
+    const title = cat==='__all__' ? '📚 全部摘录 · '+list.length+' 条' : ('📁 '+cat+' · '+list.length+' 条');
+    UI.modal(title, `<p class="hint" style="margin:0 0 8px">点卡片查看完整内容（含图片）</p><div class="note-detail-grid" id="noteMiniGrid"></div>`);
+    const grid = document.getElementById('noteMiniGrid');
+    if(grid){
+      grid.innerHTML = list.map(x=>this._miniCard(x)).join('');
+      Media.paint(grid);
+    }
   },
-  tapEnd(){ clearTimeout(this._holdTimer); },
-  /* v52：编辑入口（与 Quick.editStart 行为对齐，跳到顶部表单） */
+  /* v54：单条详情 modal（点 mini-card 进） */
+  openDetail(id){
+    const it = this.list().find(x=>x.id===id); if(!it) return;
+    const title = it.title || Util.firstSentence(this._stripMedia(it.text)) || '（无标题）';
+    const textHtml = this._renderTextWithMedia(it.text || '');
+    const meta = [it.cat?'# '+it.cat:'', it.tags?'🔖 '+it.tags:'', it.keywords?'🔑 '+it.keywords:'', it.date].filter(Boolean).join('　');
+    UI.modal('📝 '+title, `
+      <div class="note-detail-text" id="noteDetailText">${textHtml}</div>
+      <div class="note-detail-meta">${Util.esc(meta)}</div>
+      <div class="note-cat-actions">
+        <button class="btn ghost small" onclick="Notes.copy('${id}')">⧉ 复制全文</button>
+        <button class="btn ghost small" onclick="Notes.editStart('${id}');UI.closeModal()">✎ 编辑</button>
+        <button class="btn ghost small" style="margin-left:auto;color:#a33" onclick="Notes.del('${id}');UI.closeModal()">✕ 删除</button>
+      </div>
+    `);
+    /* 异步填图片 src */
+    const root = document.getElementById('noteDetailText');
+    if(root) Media.paint(root);
+  },
+  /* v54：编辑入口（与 Quick.editStart 行为对齐，跳到顶部表单） */
   editStart(id){
     const it = this.list().find(x=>x.id===id); if(!it) return;
     Store.set('note_editing', id);
@@ -4095,18 +4261,22 @@ const Notes = {
     noteText.value = it.text || '';
     noteTags.value = it.tags || '';
     noteKeywords.value = it.keywords || '';
+    this._refreshCatSelect(it.cat);
+    this._updateMediaCount();
     this.render();
-    noteTitle.scrollIntoView({behavior:'smooth', block:'center'});
+    document.getElementById('page-notes')?.scrollIntoView?.({behavior:'smooth', block:'start'});
+    /* 滚到表单（标题输入框那） */
+    document.getElementById('noteTitle')?.scrollIntoView?.({behavior:'smooth', block:'center'});
     UI.toast('正在编辑这条摘录');
   },
   /* 兼容旧版调用：保留 edit()，现在内部走 editStart */
   edit(id){ this.editStart(id); },
   moveId(id,d){ const a=this.list(); const i=a.findIndex(x=>x.id===id), j=i+d; if(i<0||j<0||j>=a.length)return; [a[i],a[j]]=[a[j],a[i]]; Store.set('notes',a); this.render(); },
-  del(id){ Store.set('notes',this.list().filter(x=>x.id!==id)); this.render(); },
+  del(id){ Store.set('notes',this.list().filter(x=>x.id!==id)); this.render(); UI.toast('已删除'); },
   /* v51：一键复制摘录全文到剪贴板（不走 datalist，用 textarea 兜底） */
   async copy(id){
     const it=this.list().find(x=>x.id===id); if(!it) return;
-    const text=(it.title?(it.title+'\n\n'+it.text):it.text);
+    const text=(it.title?(it.title+'\n\n'+this._stripMedia(it.text)):this._stripMedia(it.text));
     try{
       if(navigator.clipboard && window.isSecureContext !== false && navigator.clipboard.writeText){
         await navigator.clipboard.writeText(text);
@@ -5332,8 +5502,11 @@ const Cooking = {
     const basketCount = document.getElementById('dishBasketCount');
     if(basketCount){ basketCount.textContent = this.list().length + ' 道'; }
     const groups=this.list().reduce((g,x)=>{ const k=(this.splitTag(x.tags)[0]||'未分类'); (g[k]||(g[k]=[])).push(x); return g; },{});
+    /* v54：dishList 是 id 元素，不存在 let dishList 全局变量，必须用 getElementById 拿（之前 v53 漏改这里导致 ReferenceError，菜篮子永远渲染失败） */
+    const dishListEl = document.getElementById('dishList');
+    if(!dishListEl) return;
     /* v51 菜品折叠：默认收起只显示菜名 + ▾ 展开按钮 */
-    dishList.innerHTML=Object.entries(groups).length?Object.entries(groups).map(([tag,rows])=>`<section style="margin-bottom:12px"><h2>${Util.esc(tag)}</h2><div class="list">${rows.map((x)=>{ const i=this.list().findIndex(y=>y.id===x.id); return `<div class="item dish-item${x._open?' open':''}" draggable="true" data-sort-id="${x.id}">${x.photoId?Util.mediaImg(x.photoId):(x.photo?`<img class="thumb" src="${Util.esc(x.photo)}" alt="">`:'')}<div class="grow"><div class="dish-name">${Util.esc(x.name)}</div>${x.tags?`<div class="dish-meta">${Util.esc(x.tags)}</div>`:''}<div class="dish-steps">${Util.esc(x.steps||'')}</div></div><button class="del dish-toggle" onclick="Cooking.toggleOpen('${x.id}')" title="展开/收起">▾</button><button class="del" onclick="Cooking.move(${i},-1)">↑</button><button class="del" onclick="Cooking.move(${i},1)">↓</button><button class="del" onclick="Cooking.del('${x.id}')">✕</button></div>`; }).join('')}</div></section>`).join(''):'<div class="empty">先添加几道菜，转盘就能用了</div>';
+    dishListEl.innerHTML=Object.entries(groups).length?Object.entries(groups).map(([tag,rows])=>`<section style="margin-bottom:12px"><h2>${Util.esc(tag)}</h2><div class="list">${rows.map((x)=>{ const i=this.list().findIndex(y=>y.id===x.id); return `<div class="item dish-item${x._open?' open':''}" draggable="true" data-sort-id="${x.id}">${x.photoId?Util.mediaImg(x.photoId):(x.photo?`<img class="thumb" src="${Util.esc(x.photo)}" alt="">`:'')}<div class="grow"><div class="dish-name">${Util.esc(x.name)}</div>${x.tags?`<div class="dish-meta">${Util.esc(x.tags)}</div>`:''}<div class="dish-steps">${Util.esc(x.steps||'')}</div></div><button class="del dish-toggle" onclick="Cooking.toggleOpen('${x.id}')" title="展开/收起">▾</button><button class="del" onclick="Cooking.move(${i},-1)">↑</button><button class="del" onclick="Cooking.move(${i},1)">↓</button><button class="del" onclick="Cooking.del('${x.id}')">✕</button></div>`; }).join('')}</div></section>`).join(''):'<div class="empty">先添加几道菜，转盘就能用了</div>';
     DragSort.bind('#dishList [data-sort-id]','dishes',()=>Cooking.render());
     this.paintWheelList();
   },
