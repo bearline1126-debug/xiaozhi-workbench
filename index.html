@@ -1183,7 +1183,7 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
         <textarea id="dishSteps" placeholder="怎么做：步骤、用料、注意事项、下次改进"></textarea>
         <label>添加图片</label>
         <input id="dishPhoto" type="file" accept="image/*">
-        <button class="btn" style="margin-top:10px;width:100%" onclick="Cooking.add()">保存菜谱</button>
+        <button type="button" class="btn ghost" id="dishClearBtn" style="margin-top:10px;width:calc(50% - 4px);display:inline-block;margin-right:8px" onclick="Cooking.clearForm()" title="清空当前正在写入的菜名/标签/步骤/图片（不影响菜篮子）">🧹 清空</button><button class="btn" id="dishSaveBtn" style="margin-top:10px;width:calc(50% - 4px);display:inline-block;vertical-align:top" onclick="Cooking.add()">保存</button>
       </div>
       <div class="dish-basket-card"><div class="dish-basket-head"><h2>🧺 菜篮子<span id="dishBasketCount" class="dish-basket-count">0</span></h2><button class="btn ghost small dish-basket-toggle" onclick="Cooking.toggleBasket()" title="折叠/展开菜篮子" id="dishBasketToggle">折叠 ▾</button></div><div id="dishList" class="dish-basket-body"></div></div>
     </section><!-- ==== 功能：做菜栏 END ==== --><!-- ==== 功能：运动打卡 START ==== -->    <section class="page" id="page-sport">
@@ -2455,7 +2455,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-14-v61';
+const BUILD_VERSION = '2026-08-14-v62';
 const App = {
   current:'home',
   booting:true,
@@ -5901,24 +5901,7 @@ const Cooking = {
     /* 全屏图异步 paint（非 mediaId 时 img 立即显示；mediaId 时靠 Media.paint 补 src） */
     setTimeout(()=>Media.paint(document.getElementById('uiFullBody')), 30);
   },
-  /* v60：「再来一道」（卡片 / 详情视图共用）—— 复制这道菜的 name/tags/steps 到顶部表单作为新菜录入（不复制图）。
-     关键修复：不再调 App.go('cooking')（会被 history.pushState 记进栈，下一次 popstate 把页面踢飞）、
-     也不再 scrollIntoView（会把页面滚到顶部，让用户觉得「退回了桌面」）。
-     只做：render 一次 + 立即聚焦菜名 + toast。 */
-  duplicate(id){
-    const it = this.list().find(x=>x.id===id); if(!it) return;
-    /* 取消编辑态 → 保存时会插入新菜 */
-    Store.remove('dish_editing');
-    if(typeof dishName !== 'undefined' && dishName) dishName.value = it.name || '';
-    if(typeof dishTags !== 'undefined' && dishTags) dishTags.value = it.tags || '';
-    if(typeof dishSteps !== 'undefined' && dishSteps) dishSteps.value = it.steps || '';
-    if(typeof dishPhoto !== 'undefined' && dishPhoto) dishPhoto.value = '';
-    this.render();
-    /* 立即聚焦菜名（不开 setTimeout，避免与 popstate / 焦点事件相互影响） */
-    try{ document.getElementById('dishName')?.focus?.(); }catch(e){}
-    UI.toast('已预填：'+(it.name||'这道菜')+'；改完点「保存菜谱」即可');
-  },
-  /* v55：把转盘菜名升级为正式菜谱（预填到上方表单，方便用户写做法步骤 + 保存） */
+  /* v60 旧版 duplicate 已搬到下方 5973 重写为 v62（简化 toast），这里删掉避免重复定义。 */
   upgradeFromWheel(wheelIdx){
     const list = this.wheel();
     const target = list[wheelIdx];
@@ -5935,13 +5918,15 @@ const Cooking = {
   splitTag(tags){ return String(tags||'').split(/[,，/、\s]+/).map(t=>t.trim()).filter(Boolean); },
   /* v57：菜篮子卡片不再有 ↑↓ 按钮，改成长按拖动排序（DragSort.bind）；保留 move() 以防有老链接误点。 */
   move(i,d){ UI.toast('菜篮子已改为长按拖动排序，不再有 ↑↓'); },
-  /* v57 + v58：菜篮子卡片点 ✎ 编辑 → 滚到顶部表单并预填；如果当前已经在编辑这一条则取消编辑 */
+  /* v62：菜篮子卡片点 ✎ 编辑 → 预填原条目到顶部表单进入编辑态。
+     关键修复：不再 scrollIntoView（v60 已为 duplicate 修过，edit 仍残留 → 用户从菜篮子点 ✎ 编辑会被滚到页面顶部，视觉上像"退回桌面"）。
+     也不再弹"正在编辑"的啰嗦 toast —— 如果表单里有内容，**直接覆盖**（用户原话：把内容覆盖过去不就行了）。
+     再次点同一张卡片的 ✎ → 退出编辑（保持"再来一道"行为）。 */
   edit(id){
     const it=this.list().find(x=>x.id===id); if(!it) return;
     const cur = Store.get('dish_editing','');
     if(cur === id){
-      /* 已经在编辑这一条：再次点 ✎ 取消编辑（恢复成"再来一道"状态） */
-      this.addOne();
+      this.clearForm();
       UI.toast('已退出编辑');
       return;
     }
@@ -5949,21 +5934,33 @@ const Cooking = {
     if(typeof dishName !== 'undefined' && dishName) dishName.value = it.name || '';
     if(typeof dishTags !== 'undefined' && dishTags) dishTags.value = it.tags || '';
     if(typeof dishSteps !== 'undefined' && dishSteps) dishSteps.value = it.steps || '';
+    if(typeof dishPhoto !== 'undefined' && dishPhoto) dishPhoto.value = '';
     this.render();
-    (document.getElementById('page-cooking')||document.body)?.scrollIntoView?.({behavior:'smooth', block:'start'});
-    setTimeout(()=>{ try{ document.getElementById('dishName')?.focus(); }catch(e){} }, 220);
-    UI.toast('正在编辑：'+(it.name||'这道菜')+'；改完点「保存菜谱」即可，留空直接回来等存新菜');
+    /* 立即聚焦菜名（v60 验证：去掉 setTimeout + scrollIntoView 焦点事件不会冲突） */
+    try{ document.getElementById('dishName')?.focus?.(); }catch(e){}
+    UI.toast('已载入 '+(it.name||'这道菜')+'，改完点「保存」');
   },
-  /* v58：「再来一道」—— 清空表单 + 退出编辑状态 + 滚到顶部 + 聚焦菜名 */
-  addOne(){
+  /* v62：清空键 —— 清空表单所有字段 + 退出编辑态，但**不动菜篮子**。
+     不再 scrollIntoView（去 v58 残留）。无 toast —— 清空是用户主动操作，无需回响。 */
+  clearForm(){
     Store.remove('dish_editing');
     if(typeof dishName !== 'undefined' && dishName) dishName.value = '';
     if(typeof dishTags !== 'undefined' && dishTags) dishTags.value = '';
     if(typeof dishSteps !== 'undefined' && dishSteps) dishSteps.value = '';
     if(typeof dishPhoto !== 'undefined' && dishPhoto) dishPhoto.value = '';
     this.render();
-    (document.getElementById('page-cooking')||document.body)?.scrollIntoView?.({behavior:'smooth', block:'start'});
-    setTimeout(()=>{ try{ document.getElementById('dishName')?.focus(); }catch(e){} }, 220);
+  },
+  /* v62：「+ 再来一道」—— 复制这道菜的 name/tags/steps 到顶部表单作为新菜录入（不复制图）。
+     v60 已去 App.go/scrollIntoView，v62 进一步简化 toast（不啰嗦"已预填；改完点保存菜谱即可"）。
+     即使正在编辑另一条菜，**直接覆盖**——用户原话："直接把内容覆盖过去不就行了"。 */
+  duplicate(id){
+    const it = this.list().find(x=>x.id===id); if(!it) return;
+    this.clearForm();
+    if(typeof dishName !== 'undefined' && dishName) dishName.value = it.name || '';
+    if(typeof dishTags !== 'undefined' && dishTags) dishTags.value = it.tags || '';
+    if(typeof dishSteps !== 'undefined' && dishSteps) dishSteps.value = it.steps || '';
+    try{ document.getElementById('dishName')?.focus?.(); }catch(e){}
+    UI.toast('已复制 '+(it.name||'这道菜')+' 到表单');
   },
   del(id){ Store.set('dishes',this.list().filter(x=>x.id!==id)); this.render(); },
   addWheelDish(){ const name=wheelDishInput.value.trim(); if(!name)return; Store.set('wheel_dishes',[...new Set(this.wheel().concat(name))]); wheelDishInput.value=''; this.paintWheelList(); UI.toast('已加入转盘'); },
