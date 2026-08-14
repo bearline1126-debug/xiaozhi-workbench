@@ -695,7 +695,7 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
 .book-edge-btn.left-edge{left:-8px}
 .book-edge-btn.right-edge{right:-8px}
 .book-spine{width:3px;background:linear-gradient(180deg,#d4c5a9,#e8dcc8,#d4c5a9);flex-shrink:0;border-radius:1px;box-shadow:0 0 8px rgba(0,0,0,.08),inset 0 0 3px rgba(0,0,0,.06);z-index:2}
-.book-left,.book-right{flex:1;background:#fffdf8;overflow-y:auto;padding:14px 16px;min-height:62vh;box-shadow:0 2px 12px rgba(0,0,0,.06);position:relative}
+.book-left,.book-right{flex:1;background:#fffdf8;overflow-y:auto;padding:14px 16px;min-height:62vh;box-shadow:0 2px 12px rgba(0,0,0,.06);position:relative;font-size:14px;line-height:1.62;font-family:var(--font);color:#3a3a34}
 .book-left{border-radius:12px 0 0 12px;border:1px solid #ece6d8;border-right:none}
 .book-right{border-radius:0 12px 12px 0;border:1px solid #ece6d8;border-left:none}
 /* 翻页动画：真实书本翻页 —— 一页纸绕书脊(中缝)旋转翻走，背面是下一页 */
@@ -716,14 +716,15 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
 .db-cal-dot{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:50%;margin:0 auto;cursor:pointer;transition:background .15s,color .15s}
 .db-cal-dot.today{background:#6b984f;color:#fff;font-weight:700}
 .db-cal-dot.has-data{background:#eaf2e2;color:#5b8c3c;font-weight:600}
-.db-cal-dot.future{color:#cfd6c8;background:transparent;cursor:not-allowed}
+.db-cal-dot.future{color:#cfd6c8;background:transparent}
 .db-cal-dot.sel{background:#6b984f;color:#fff;box-shadow:0 0 0 2px #a8d18d}
 .db-cal-dot.other-month{color:#ccc}
 .db-date{font-size:15px;font-weight:600;color:#6b7d63;margin-bottom:10px;border-bottom:1px dashed #ddd;padding-bottom:8px}
 .db-sec{margin:10px 0}
-.db-sec h3{font-size:13px;color:#8a7a5c;margin:0 0 5px}
+.db-sec h3{font-size:13px;color:#8a7a5c;margin:0 0 5px;font-weight:700}
 .db-list{margin:0;padding-left:16px}
-.db-list li{margin:2px 0;font-size:13px;line-height:1.5}
+.db-list li{margin:2px 0;font-size:14px;line-height:1.62}
+.db-sec p{font-size:14px;line-height:1.62;color:#4a4a44;margin:4px 0}
 .db-empty{font-size:13px;color:#aaa}
 .db-empty.big{text-align:center;color:#bbb;padding:30px 10px;line-height:1.8}
 .db-empty.big.clickable{cursor:pointer;transition:background .15s;border-radius:12px;margin:4px 0}
@@ -744,7 +745,7 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
 .db-sum-week{display:flex;flex-direction:column;gap:8px;max-height:calc(100% - 48px);overflow-y:auto;-webkit-overflow-scrolling:touch}
 .db-sum-day{padding:2px 0}
 .db-sum-day-head{display:flex;align-items:baseline;gap:8px;margin-bottom:4px;padding-bottom:3px;border-bottom:1px dashed #ece6d8}
-.db-sum-day-date{font-size:17px;font-weight:700;color:#5a6e52;font-family:var(--title-font)}
+.db-sum-day-date{font-size:17px;font-weight:700;color:#5a6e52}
 .db-sum-day-wd{font-size:11px;color:#8a7a5c}
 .db-sum-items{margin:0;padding-left:0;list-style:none}
 .db-sum-items li{font-size:12px;line-height:1.5;padding:1.5px 0;display:flex;align-items:center;gap:7px;color:#55574f}
@@ -2454,7 +2455,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-14-v60';
+const BUILD_VERSION = '2026-08-14-v61';
 const App = {
   current:'home',
   booting:true,
@@ -3281,8 +3282,8 @@ const DiaryBook = {
     this._flipDir=0; this.updateDatePick(); this.initSwipe(); this.renderSpread(this.cur);
   },
   go(date, flipDir){
-    if(date > this._today()){ date=this._today(); UI.toast('最远只能到今天。'); }
-    /* 让 date 吸附到合法的左页（周一/三/五/日；周日左页的右页就是本周汇总），像实体书一样成对 */
+    /* 让 date 吸附到合法的左页（周一/三/五/日；周日左页的右页就是本周汇总），像实体书一样成对。
+       允许跳到未来日期（未来页是空白页，不显示补记按钮）。 */
     this.cur = this._leftOf(date);
     this._flipDir=flipDir || 0;
     this.updateDatePick();
@@ -3307,10 +3308,9 @@ const DiaryBook = {
     this.renderSpread(this.cur);
   },
   next(){
-    /* 实体书 2 页翻：合法左页间距 +2，唯独 Sun→Mon 是 +1（周日对开页右页是汇总，下一对开页才是 Mon|Tue） */
+    /* 实体书 2 页翻：合法左页间距 +2，唯独 Sun→Mon 是 +1（周日对开页右页是汇总，下一对开页才是 Mon|Tue）。
+       允许翻到未来日期 —— 未来的页是空白页，不会触发补记提示。 */
     const newLeft = this._isSunday(this.cur) ? Util.dateAdd(this.cur,1) : Util.dateAdd(this.cur,2);
-    if(this._isSunday(newLeft)){ if(newLeft > this._today()) return this._atEnd(); }
-    else { if(Util.dateAdd(newLeft,1) > this._today()) return this._atEnd(); }
     this._flipDir=1;
     this.cur=newLeft;
     this.updateDatePick();
@@ -3318,7 +3318,7 @@ const DiaryBook = {
   },
   _today(){ return Util.today(); },
   _atEnd(){ UI.toast('最远能写到今天，往后的日历还没翻开。'); },
-  updateDatePick(){ const dp=document.getElementById('dbDatePick'); if(dp){ dp.value=this.cur; dp.max=this._today(); } },
+  updateDatePick(){ const dp=document.getElementById('dbDatePick'); if(dp){ dp.value=this.cur; dp.max=Util.dateAdd(this._today(),365); } },
   initSwipe(){
     const sp=document.getElementById('bookSpread'); if(!sp || sp._swipeBound) return; sp._swipeBound=true;
     let sx=0, sy=0, st=0, dx=0, dy=0, active=false, locked=false;
@@ -3350,7 +3350,11 @@ const DiaryBook = {
     return `<div class="db-sec"><h3>${title}</h3><ul class="db-list">${items.map(x=>`<li>${x}</li>`).join('')}</ul></div>`;
   },
   pageHtml(d, date){
-    if(!d.has) return `<div class="db-empty big clickable" onclick="DiaryBook.goDaily('${date}')">这一天还没有记录。<br><span style="color:#6b984f;font-weight:600">点击这里 → 去补记每日记录</span></div>`;
+    const isFuture = date > Util.today();
+    if(!d.has){
+      if(isFuture) return `<div class="db-empty big">这是未来的日子，日历还没翻开。</div>`;
+      return `<div class="db-empty big clickable" onclick="DiaryBook.goDaily('${date}')">这一天还没有记录。<br><span style="color:#6b984f;font-weight:600">点击这里 → 去补记每日记录</span></div>`;
+    }
     const out=[];
     if(d.winLines.length) out.push(this.section('感恩日记', d.winLines.map(x=>Util.esc(x))));
     if(d.images.length) out.push(`<div class="db-sec"><h3>感恩瞬间</h3><div class="img-grid">${d.images.map(id=>`<img data-media="${id}" alt="" onclick="Media.openFull('${id}')">`).join('')}</div></div>`);
@@ -3386,7 +3390,7 @@ const DiaryBook = {
       const isSel=ds===selDate;
       const isFuture=ds>today;
       cls='db-cal-dot'+(isToday?' today':'')+(dd.has&&!isToday?' has-data':'')+(isSel?' sel':'')+(isFuture?' future':'');
-      const h=isFuture?'':`onclick="DiaryBook.go('${ds}')"`;
+      const h=`onclick="DiaryBook.go('${ds}')"`;
       html+=`<div class="${cls}" ${h}>${d}</div>`;
     }
     const total=startDow+daysInMonth;
