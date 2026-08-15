@@ -369,6 +369,14 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .eng-q-word{font-size:18px;font-weight:700;text-align:center;padding:8px;background:rgba(107,152,79,.08);border-radius:12px;font-family:var(--title-font)}
 .eng-q-options{display:flex;flex-direction:column;gap:6px;margin-top:8px;align-items:center}
 .eng-q-opt{background:rgba(255,255,255,.7);border:2px solid var(--line);border-radius:12px;padding:10px 14px;font-size:14px;text-align:center;color:var(--text);transition:all .15s;width:100%;max-width:220px}
+/* v74：英语「听力资源 / 播客」卡片 */
+.res-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.res-tile{display:flex;flex-direction:column;gap:2px;background:rgba(255,253,248,.92);border:1px solid var(--line);border-radius:14px;padding:10px 12px;text-decoration:none;color:inherit;transition:transform .15s ease,box-shadow .15s ease}
+.res-tile:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(20,30,18,.1)}
+.res-ico{font-size:18px;line-height:1.2}
+.res-name{font-size:13px;font-weight:700;color:var(--text)}
+.res-desc{font-size:11px;color:var(--text-dim);line-height:1.4}
+@media (max-width:480px){ .res-grid{grid-template-columns:1fr} }
 .eng-q-opt:active{transform:scale(.97);border-color:var(--accent)}
 .eng-q-back{animation:flipIn .3s ease}
 @keyframes flipIn{from{opacity:0;transform:rotateY(90deg)}to{opacity:1;transform:rotateY(0)}}
@@ -1162,6 +1170,22 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
         <button class="btn" style="margin-top:10px;width:100%" onclick="English.reveal()">查看参考翻译</button>
         <button class="btn ghost" style="margin-top:8px;width:100%" onclick="English.aiAnalyze()">🤖 让 AI 分析我的翻译</button>
         <div class="ai-box" id="englishResult"></div>
+      </div>
+      <div class="card">
+        <h2>🎧 听力资源 / 播客</h2>
+        <p class="hint" style="margin-bottom:10px">点开即在新标签页收听（均为免费英语学习播客与平台）。</p>
+        <div class="res-grid">
+          <a class="res-tile" href="https://www.bbc.co.uk/learningenglish/english/features/6-minute-english" target="_blank" rel="noopener"><span class="res-ico">📻</span><span class="res-name">BBC 6 Minute English</span><span class="res-desc">6 分钟一期，日常话题 + 地道表达</span></a>
+          <a class="res-tile" href="https://learningenglish.voanews.com/" target="_blank" rel="noopener"><span class="res-ico">🗞️</span><span class="res-name">VOA Learning English</span><span class="res-desc">慢速新闻英语，适合打基础</span></a>
+          <a class="res-tile" href="https://www.bbc.co.uk/learningenglish/english/features/the-english-we-speak" target="_blank" rel="noopener"><span class="res-ico">💬</span><span class="res-name">The English We Speak</span><span class="res-desc">每期一个鲜活口语短语</span></a>
+          <a class="res-tile" href="https://www.eslpod.com/" target="_blank" rel="noopener"><span class="res-ico">🎙️</span><span class="res-name">ESL Pod</span><span class="res-desc">慢速讲解 + 情景对话，经典教材</span></a>
+          <a class="res-tile" href="https://culips.com/" target="_blank" rel="noopener"><span class="res-ico">🌐</span><span class="res-name">Culips ESL Podcast</span><span class="res-desc">生活化会话，俚语与自然表达</span></a>
+          <a class="res-tile" href="https://www.allearsenglish.com/" target="_blank" rel="noopener"><span class="res-ico">👂</span><span class="res-name">All Ears English</span><span class="res-desc">美式口语与 CONNECTION 式学习</span></a>
+          <a class="res-tile" href="https://teacherluke.co.uk/" target="_blank" rel="noopener"><span class="res-ico">🎓</span><span class="res-name">Luke's English Podcast</span><span class="res-desc">英式幽默，长情陪伴型播客</span></a>
+          <a class="res-tile" href="https://www.ted.com/talks" target="_blank" rel="noopener"><span class="res-ico">🎤</span><span class="res-name">TED Talks</span><span class="res-desc">真实演讲，练听力也练思维</span></a>
+          <a class="res-tile" href="https://www.englishclass101.com/" target="_blank" rel="noopener"><span class="res-ico">📚</span><span class="res-name">EnglishClass101</span><span class="res-desc">分级别系统课 + 音频</span></a>
+          <a class="res-tile" href="https://open.spotify.com/search/english%20learning%20podcast" target="_blank" rel="noopener"><span class="res-ico">🔎</span><span class="res-name">Spotify 英语播客</span><span class="res-desc">一键搜更多英文播客</span></a>
+        </div>
       </div>
     </section><!-- ==== 功能：英语积累 END ==== --><!-- ==== 功能：视觉灵感 START ==== --><section class="page" id="page-visual">
       <div class="page-title">视觉灵感</div>
@@ -2495,7 +2519,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-15-v73';
+const BUILD_VERSION = '2026-08-15-v74';
 const App = {
   current:'home',
   booting:true,
@@ -5448,7 +5472,13 @@ const English = {
   content:[
     {quote:'Get busy living or get busy dying.',quoteZh:'要么忙着活，要么忙着死。',word:'profound',wordZh:'深刻的；意义深远的',example:'Her words had a profound effect on how I see failure.',phrase:'be supposed to do sth.',phraseZh:'应该做某事',phraseEx:'You are supposed to hand in your homework by Friday.',phraseWrong:'被禁止做某事',dialog:'A: How is your paper going?\nB: Slowly, but I finally found the main argument.',dialogZh:'A：你的论文进展如何？\nB：慢是慢了点，但我总算找到了核心论点。',writing:'我今天完成了一个很小但重要的步骤。',answer:'I completed a small but important step today.'},
     {quote:'No act of kindness, no matter how small, is ever wasted.',quoteZh:'任何善意，不论多小，都不会被浪费。',word:'resilient',wordZh:'有韧性的；能恢复的',example:'Children are remarkably resilient when they feel safe.',phrase:'make sense',phraseZh:'讲得通；有意义',phraseEx:'His explanation finally makes sense to me now.',phraseWrong:'毫无意义',dialog:'A: Could you explain that in simpler words?\nB: Sure. The idea is that habits reduce decision fatigue.',dialogZh:'A：能用更简单的话解释一下吗？\nB：当然。核心想法是：习惯能减少决策疲劳。',writing:'我正在学习用更简单的话解释复杂问题。',answer:'I am learning to explain complex ideas in simpler words.'},
-    {quote:'Clarity comes from action, not thought.',quoteZh:'清晰来自行动，而不只是思考。',word:'deliberate',wordZh:'深思熟虑的；刻意的',example:'He took a deliberate step back to rethink the plan.',phrase:'focus on',phraseZh:'专注于',phraseEx:'I need to focus on what matters most right now.',phraseWrong:'忽略；不关注',dialog:'A: What is your priority today?\nB: I only have three: write, walk, and rest.',dialogZh:'A：你今天的优先级是什么？\nB：我只有三件：写、散步、休息。',writing:'今天我只专注三件最重要的事情。',answer:'Today I will focus only on the three most important things.'}
+    {quote:'Clarity comes from action, not thought.',quoteZh:'清晰来自行动，而不只是思考。',word:'deliberate',wordZh:'深思熟虑的；刻意的',example:'He took a deliberate step back to rethink the plan.',phrase:'focus on',phraseZh:'专注于',phraseEx:'I need to focus on what matters most right now.',phraseWrong:'忽略；不关注',dialog:'A: What is your priority today?\nB: I only have three: write, walk, and rest.',dialogZh:'A：你今天的优先级是什么？\nB：我只有三件：写、散步、休息。',writing:'今天我只专注三件最重要的事情。',answer:'Today I will focus only on the three most important things.'},
+    {quote:'Small steps taken daily beat grand plans made once a year.',quoteZh:'每天迈出小步，胜过一年只定一次宏大计划。',word:'consistent',wordZh:'始终如一的；持续的',example:'He stayed consistent with his reading habit all semester.',phrase:'stick to',phraseZh:'坚持（做某事）',phraseEx:'Stick to your plan even when progress feels slow.',phraseWrong:'轻易放弃；半途而废',dialog:'A: How do you keep a habit alive?\nB: I keep it tiny so I never skip it.\nA: That sounds too easy.\nB: Easy is exactly why it works.',dialogZh:'A：你怎么让一个习惯坚持下去？\nB：我把它缩到很小，小到从不会跳过。\nA：听起来太简单了。\nB：简单，正是它管用的原因。',writing:'我坚持每天做一件小事，哪怕只有五分钟。',answer:'I keep doing one small thing every day, even if it is just five minutes.'},
+    {quote:'Curiosity turns ordinary days into quiet adventures.',quoteZh:'好奇心能把平凡的日子变成安静的冒险。',word:'curious',wordZh:'好奇的；有求知欲的',example:'She is curious about how languages shape the way we think.',phrase:'look into',phraseZh:'调查；了解；研究',phraseEx:'I will look into that question when I get home.',phraseWrong:'忽略；不予理会',dialog:'A: Why do you read so widely?\nB: Because I stay curious about the world.\nA: That explains your calm mind.\nB: Learning keeps me steady.',dialogZh:'A：你为什么读得这么杂？\nB：因为我对世界保持好奇。\nA：这就解释了你为什么心态平和。\nB：学习让我踏实。',writing:'我对一个一直好奇的问题做了一点小小的探索。',answer:'I did a small bit of exploration into a question I have always been curious about.'},
+    {quote:'Courage is not the absence of fear but action despite it.',quoteZh:'勇气不是没有恐惧，而是带着恐惧依然行动。',word:'courageous',wordZh:'勇敢的；有胆量的',example:'It was courageous of her to speak up in the meeting.',phrase:'speak up',phraseZh:'大胆说出；发声',phraseEx:'Do not be afraid to speak up when something feels wrong.',phraseWrong:'保持沉默；不表态',dialog:'A: I was scared to share my idea.\nB: Yet you did it anyway, that is brave.\nA: I felt my hands shaking.\nB: Courage rarely feels calm.',dialogZh:'A：我不敢分享自己的想法。\nB：可你还是说了，那很勇敢。\nA：我当时手都在抖。\nB：勇气很少是平静的。',writing:'今天我做了一件让我害怕但正确的事。',answer:'Today I did something that scared me but was the right thing to do.'},
+    {quote:'Doing less but better is the real productivity.',quoteZh:'做得少一点、好一点，才是真正的生产力。',word:'efficient',wordZh:'高效的；效率高的',example:'An efficient routine saves your energy for what matters.',phrase:'cut down on',phraseZh:'削减；减少',phraseEx:'Try to cut down on screen time before bed.',phraseWrong:'大量增加；扩充',dialog:'A: Why finish early today?\nB: So I protect my evening for rest.\nA: That is efficient living.\nB: Busy is not the same as productive.',dialogZh:'A：今天怎么这么早收工？\nB：这样我晚上就能留给休息。\nA：这才叫高效生活。\nB：忙不等于有产出。',writing:'我去掉了一件其实没必要做的事。',answer:'I removed one thing that was not actually necessary.'},
+    {quote:'What is essential is invisible to the busy eye.',quoteZh:'真正重要的东西，匆忙的眼睛看不见。',word:'essential',wordZh:'必要的；核心的',example:'Sleep is essential to clear thinking and good mood.',phrase:'pay attention to',phraseZh:'注意；留意',phraseEx:'Pay attention to how you feel after each meal.',phraseWrong:'视而不见；忽略',dialog:'A: I feel overwhelmed by my list.\nB: Keep only what is essential.\nA: That is hard to admit.\nB: But it frees your mind.',dialogZh:'A：我的清单让我喘不过气。\nB：只留真正必要的。\nA：这很难承认。\nB：但它能解放你的脑子。',writing:'我分清了今天真正重要和可以放下的事。',answer:'I told apart what truly matters today from what I can let go.'},
+    {quote:'Persistence quietly wins where talent hesitates.',quoteZh:'在天赋犹豫的地方，坚持悄悄取胜。',word:'persistent',wordZh:'坚持不懈的；执着的',example:'Be persistent with your craft even when progress is slow.',phrase:'keep at',phraseZh:'坚持做（某事）',phraseEx:'Keep at your writing and it will improve over time.',phraseWrong:'轻易放弃；半途而废',dialog:'A: I keep failing this part.\nB: Then keep at it, that is how mastery forms.\nA: I hope you are right.\nB: Show up again tomorrow.',dialogZh:'A：这部分我总做不好。\nB：那就继续练，精通是这么来的。\nA：希望你说得对。\nB：明天再来就好。',writing:'面对卡住的事，我又试了一次，没有放弃。',answer:'Facing something stuck, I tried once more instead of giving up.'}
   ],
   /* 学会库：通过测试的单词/搭配 */
   mastered(){ return Store.get('english_mastered',[]); },
@@ -5487,10 +5517,21 @@ const English = {
     if(legacy && legacy._date === date && legacy.word && legacy.quote) return legacy;
     return this.content[new Date().getDate() % this.content.length];
   },
+  /* v74：每日自动生成 —— 进英语页时若今天还没有 AI 内容、且今天还没触发过、且已配 AI key，
+     则在后台静默生成当日 5 项（本地种子先显示，生成完自动替换）。一天只触发一次。 */
+  maybeAutoRefresh(){
+    const date = Util.today();
+    if(Store.get('english_today_remote:' + date)) return;   /* 今天已有 AI 内容 */
+    if(Store.get('english_autogen:' + date)) return;        /* 今天已尝试过 */
+    if(!Store.getSecret('ai')) return;                      /* 没配 key，用本地种子 */
+    Store.set('english_autogen:' + date, true);
+    this.refreshToday({silent:true}).catch(()=>{});
+  },
   /* v73：AI 重新生成今日 5 项内容 —— 写到 english_today_remote:<date> 缓存，
-     失败 toast、并保留旧缓存/本地种子不动。 */
-  async refreshToday(){
-    const btn = document.getElementById('englishRefreshBtn');
+     失败 toast、并保留旧缓存/本地种子不动。opts.silent=true 时（每日自动）不改动按钮文字、不弹 toast。 */
+  async refreshToday(opts={}){
+    const silent = !!opts.silent;
+    const btn = silent ? null : document.getElementById('englishRefreshBtn');
     if(btn){ btn.disabled = true; btn.textContent = '⏳ AI 生成中…'; }
     const date = Util.today();
     const prompt = `请按下面严格 JSON 格式生成今日英语学习 5 项内容（quote/word/phrase/dialog/writing 五块）。
@@ -5515,14 +5556,15 @@ const English = {
       Store.set('english_today_remote:' + date, parsed);
       Store.set('english_today_remote', parsed); /* 兼容旧键 */
       this.render();
-      UI.toast('已生成今日 5 项 ✨');
+      if(!silent) UI.toast('已生成今日 5 项 ✨');
     }catch(e){
-      UI.toast('生成失败：' + (e && e.message || e));
+      if(!silent) UI.toast('生成失败：' + (e && e.message || e));
     }finally{
       if(btn){ btn.disabled = false; btn.textContent = '🔄 换今日 5 项（AI 生成）'; }
     }
   },
   render(){
+    this.maybeAutoRefresh(); /* v74：进页面时若当天没有 AI 内容则后台自动生成 */
     const d=this.today();
     /* v73：显示内容来源（AI 生成 vs 本地种子） */
     const sourceHint = document.getElementById('englishSourceHint');
