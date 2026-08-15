@@ -363,6 +363,8 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 /* 英语测试卡片 */
 .eng-quiz-card{perspective:800px;min-height:160px;flex:1;min-width:0}
 .eng-q-row{display:flex;gap:10px;align-items:stretch}
+.eng-q-row.eng-q-single{display:block}
+.eng-q-row.eng-q-single .eng-quiz-card{max-width:420px;margin:0 auto;width:100%}
 .eng-quiz-card h2{font-size:14px;margin-bottom:6px}
 .eng-q-word{font-size:18px;font-weight:700;text-align:center;padding:8px;background:rgba(107,152,79,.08);border-radius:12px;font-family:var(--title-font)}
 .eng-q-options{display:flex;flex-direction:column;gap:6px;margin-top:8px;align-items:center}
@@ -1148,6 +1150,10 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
       <input type="file" id="noteFile" accept="image/*" multiple style="display:none" onchange="Notes.insertImages(this,'noteText')">
     </section><!-- ==== 功能：经验摘录 END ==== --><!-- ==== 功能：英语积累 START ==== --><section class="page" id="page-english">
       <div class="page-title">英语积累</div><div class="page-sub">每日一句、每日单词、固定搭配、每日对话、每日写作。离线也能用，内容按天轮换。</div>
+      <div class="row" style="margin-bottom:10px;align-items:center;gap:8px;flex-wrap:wrap">
+        <button class="btn ghost small" id="englishRefreshBtn" onclick="English.refreshToday()" title="让 AI 重新生成今日 5 项内容">🔄 换今日 5 项（AI 生成）</button>
+        <span class="hint" id="englishSourceHint" style="margin-left:4px"></span>
+      </div>
       <div class="grid" id="englishCards"></div>
       <div id="englishQuiz" style="margin-top:10px"></div>
       <div class="card">
@@ -2489,7 +2495,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-15-v72';
+const BUILD_VERSION = '2026-08-15-v73';
 const App = {
   current:'home',
   booting:true,
@@ -5470,9 +5476,61 @@ const English = {
   dueItems(){ const t=Util.today(); return Object.values(this.srs()).filter(x=>!x.mastered && x.due<=t); },
   /* 连对次数 -> 下次间隔天数（3/7/14）；连对满 4 次即掌握 */
   nextInterval(reps){ return ({1:3,2:7,3:14})[reps] || 14; },
-  today(){ return this.content[new Date().getDate()%this.content.length]; },
+  /* v73：今日内容 —— 优先取 AI 生成的当日缓存（english_today_remote:<date>），fallback 到本地种子
+     缓存命中即直接返回（同步），callers 全部保持同步；如果今天还没生成过，点「🔄 换今日 5 项」AI 生成。 */
+  today(){
+    const date = Util.today();
+    const cached = Store.get('english_today_remote:' + date, null);
+    if(cached && cached.word && cached.quote) return cached;
+    /* 兼容旧版可能存的非当日缓存：仅当 _date 字段匹配今日才用 */
+    const legacy = Store.get('english_today_remote', null);
+    if(legacy && legacy._date === date && legacy.word && legacy.quote) return legacy;
+    return this.content[new Date().getDate() % this.content.length];
+  },
+  /* v73：AI 重新生成今日 5 项内容 —— 写到 english_today_remote:<date> 缓存，
+     失败 toast、并保留旧缓存/本地种子不动。 */
+  async refreshToday(){
+    const btn = document.getElementById('englishRefreshBtn');
+    if(btn){ btn.disabled = true; btn.textContent = '⏳ AI 生成中…'; }
+    const date = Util.today();
+    const prompt = `请按下面严格 JSON 格式生成今日英语学习 5 项内容（quote/word/phrase/dialog/writing 五块）。
+要求：
+- quote：一句英文励志/哲理短句，不超过 30 词。
+- quoteZh：quote 的中文翻译。
+- word：一个中级英文单词（CEFR B1-C1 水平），wordZh 是其中文释义。
+- example：使用该单词的一个英文例句，不超过 20 词。
+- phrase：一个常用英文动词/介词搭配（例如 look forward to / give up / take charge of），phraseZh 是其中文意思，phraseEx 是使用该搭配的英文例句（<20词）。
+- dialog：A: 一句 / B: 一句 / A: 再一句 / B: 再一句，4 句简短对话；dialogZh 是逐句中文翻译。
+- writing：一个中文写作题目（<20字），要求学员翻译成英文；answer 是题目可接受的英文参考翻译（1-2 句）。
+只输出一个 JSON 对象，不要任何额外文字、不要 markdown 代码块包裹。`;
+    try{
+      const txt = await AI.ask(prompt, { threadKey: 'english_daily_gen', system: '你是一个英语教学素材助手，只输出严格 JSON。' });
+      const m = String(txt||'').match(/\{[\s\S]*\}/);
+      if(!m) throw new Error('AI 没返回 JSON');
+      const parsed = JSON.parse(m[0]);
+      if(!parsed.quote || !parsed.word || !parsed.phrase || !parsed.dialog || !parsed.writing) throw new Error('字段不全');
+      parsed._date = date;
+      parsed._source = 'ai';
+      parsed._ts = Date.now();
+      Store.set('english_today_remote:' + date, parsed);
+      Store.set('english_today_remote', parsed); /* 兼容旧键 */
+      this.render();
+      UI.toast('已生成今日 5 项 ✨');
+    }catch(e){
+      UI.toast('生成失败：' + (e && e.message || e));
+    }finally{
+      if(btn){ btn.disabled = false; btn.textContent = '🔄 换今日 5 项（AI 生成）'; }
+    }
+  },
   render(){
     const d=this.today();
+    /* v73：显示内容来源（AI 生成 vs 本地种子） */
+    const sourceHint = document.getElementById('englishSourceHint');
+    if(sourceHint){
+      const isAi = d._source === 'ai';
+      sourceHint.textContent = isAi ? `📡 今日内容来源：AI 生成（${(d._ts?new Date(d._ts).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}):'') }）` : '🌱 今日内容来源：本地种子';
+      sourceHint.style.color = isAi ? 'var(--accent)' : 'var(--text-dim)';
+    }
     const doneList=Store.getDaily('english_done',[]);
     const doneFn=name=>doneList.includes(name);
     /* v53：4 张卡片字号/小字/按钮位置全部统一（主内容 14px、中文释义 13px、辅助例句 12px） */
@@ -5499,12 +5557,14 @@ const English = {
       box.innerHTML=`<div class="card" style="text-align:center;padding:24px"><div style="font-size:36px;margin-bottom:8px">🎉</div><div style="color:var(--accent);font-weight:700">今日测试已完成！已自动入账金币</div><div class="hint" style="margin-top:6px">明天再来挑战新题</div></div>`;
       return;
     }
+    /* v73：复习卡片一次只显示 1 张（不再一口气把所有 due 都放出来），
+       答完一张自动出下一张；全部 due 完成后才进入今日测试 */
     const due=this.dueItems();
     if(due.length){
-      box.innerHTML=`<div class="eng-q-row">${due.map(q=>this.quizCard(q)).join('')}</div>`;
+      box.innerHTML=`<div class="eng-q-row eng-q-single">${this.quizCard(due[0])}</div><div class="hint" style="margin-top:8px;text-align:center">还有 ${due.length-1} 张复习，做完一张自动出下一张</div>`;
       return;
     }
-    /* v51：复习完了 → 进入今日测试（4 道今天学习的题） */
+    /* 复习完了 → 进入今日测试（一次只出一道：今日词 + 今日搭配 各出一张） */
     const todays=this.todayTestItems();
     const done=Store.get('english_today_test:'+Util.today(),{});
     const remain=todays.filter(q => !(done[q.key]&&done[q.key].isCorrect));
@@ -5514,7 +5574,7 @@ const English = {
       box.innerHTML=`<div class="card" style="text-align:center;padding:24px"><div style="font-size:36px;margin-bottom:8px">🎉</div><div style="color:var(--accent);font-weight:700">今日测试已完成！已自动入账金币</div><div class="hint" style="margin-top:6px">明天再来挑战新题</div></div>`;
       return;
     }
-    box.innerHTML=`<div class="eng-q-row">${remain.map(q=>this.todayTestCard(q)).join('')}</div>`;
+    box.innerHTML=`<div class="eng-q-row eng-q-single">${this.todayTestCard(remain[0])}</div><div class="hint" style="margin-top:8px;text-align:center">今日测试 ${remain.length==2?'共 2 题':''}，答完自动出下一题</div>`;
   },
   /* v52：今日测试只测 word + phrase（v51 的 4 道题改为 2 道，去掉 今日句/今日对话）。
    用户反馈：v51 加了今日句/今日对话测试不该要；只保留「每日单词」「固定搭配」。
@@ -5599,14 +5659,18 @@ todayTestItems(){
   },
   renderQuizFresh(key, isCorrect){
     const q=this.srsGet(key); if(!q){ this.renderQuiz(); return; }
-    if(q.mastered || q.due > Util.today()){
-      const due=this.dueItems();
-      if(!due.length){ this.renderQuiz(); return; }
-      const box=document.getElementById('englishQuiz'); if(box) box.innerHTML=`<div class="eng-q-row">${due.map(x=>this.quizCard(x)).join('')}</div>`;
+    /* v73：答完一张就重新走 renderQuiz 走流程：
+       - 若还有 due → 渲染下一张复习卡
+       - 若 due 全部搞完 → 自动切到今日测试（一次也只显示 1 张） */
+    const due=this.dueItems();
+    if(!due.length){
+      /* 复习全部完成，进入今日测试 */
+      this.renderQuiz();
       return;
     }
-    const shown=this.dueItems().map(x=> x.key===key ? {...x, _res:{isCorrect}} : x);
-    const box=document.getElementById('englishQuiz'); if(box) box.innerHTML=`<div class="eng-q-row">${shown.map(x=>this.quizCard(x)).join('')}</div>`;
+    const box=document.getElementById('englishQuiz');
+    if(!box) return;
+    box.innerHTML=`<div class="eng-q-row eng-q-single">${this.quizCard(due[0])}</div><div class="hint" style="margin-top:8px;text-align:center">还有 ${due.length-1} 张复习，做完一张自动出下一张</div>`;
   },
   reveal(){ englishResult.textContent='参考翻译：\n'+this.today().answer+'\n\n你的答案：\n'+(englishAnswer.value||'还没写'); },
   /* AI 分析我的翻译（v49） */
