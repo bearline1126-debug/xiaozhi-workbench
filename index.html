@@ -280,6 +280,9 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .dish-detail{padding:0}
 .dish-detail .dd-hero{width:100%;max-height:50vh;object-fit:cover;display:block;background:#e6e2cc}
 .dish-detail .dd-noimg{width:100%;height:120px;background:linear-gradient(135deg,#86b667,#5a8a4a);display:flex;align-items:center;justify-content:center;font-size:48px;color:rgba(255,255,255,.85)}
+/* v63：多图网格 —— 详情页一次展示所有图（点击放大） */
+.dish-detail .dd-gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
+.dish-detail .dd-gallery .dd-img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:10px;display:block;background:#e6e2cc}
 .dish-detail .dd-body{padding:14px 16px}
 .dish-detail .dd-name{font-size:18px;font-weight:700;margin-bottom:6px;color:var(--text);line-height:1.35}
 .dish-detail .dd-tags{font-size:12px;color:var(--accent);margin-bottom:12px}
@@ -1108,7 +1111,7 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
         <button class="btn ghost" style="margin-top:8px;width:100%;display:none" id="noteCancelEdit" onclick="Notes.cancelEdit()">取消编辑，写一条新的</button>
       </div>
       <div class="card">
-        <div class="row"><input id="noteSearch" placeholder="搜索标题、内容、标签、关键词" oninput="Notes.render()"><button class="btn ghost" onclick="Notes.render()">搜索</button></div>
+        <div class="row"><input id="noteSearch" placeholder="搜索标题、内容、标签、关键词" oninput="Notes.render()" style="flex:1;min-width:0"><button class="btn ghost" onclick="Notes.render()" style="flex:0 0 auto;padding:7px 14px;font-size:13px">搜索</button></div>
         <div id="noteList" style="margin-top:10px"></div>
       </div>
       <input type="file" id="noteFile" accept="image/*" multiple style="display:none" onchange="Notes.insertImages(this,'noteText')">
@@ -1182,7 +1185,7 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
         <div style="display:flex;gap:0"><input id="dishTags" placeholder="标签，如：快手菜 / 晚饭 / 清淡" style="flex:1;border-radius:8px 0 0 8px"><button type="button" class="combo-toggle" onclick="Util.Combo.open('dishTags','dish_tags',event)" title="选已有标签">▾</button></div>
         <textarea id="dishSteps" placeholder="怎么做：步骤、用料、注意事项、下次改进"></textarea>
         <label>添加图片</label>
-        <input id="dishPhoto" type="file" accept="image/*">
+        <input id="dishPhoto" type="file" accept="image/*" multiple>
         <button type="button" class="btn ghost" id="dishClearBtn" style="margin-top:10px;width:calc(50% - 4px);display:inline-block;margin-right:8px" onclick="Cooking.clearForm()" title="清空当前正在写入的菜名/标签/步骤/图片（不影响菜篮子）">🧹 清空</button><button class="btn" id="dishSaveBtn" style="margin-top:10px;width:calc(50% - 4px);display:inline-block;vertical-align:top" onclick="Cooking.add()">保存</button>
       </div>
       <div class="dish-basket-card"><div class="dish-basket-head"><h2>🧺 菜篮子<span id="dishBasketCount" class="dish-basket-count">0</span></h2><button class="btn ghost small dish-basket-toggle" onclick="Cooking.toggleBasket()" title="折叠/展开菜篮子" id="dishBasketToggle">折叠 ▾</button></div><div id="dishList" class="dish-basket-body"></div></div>
@@ -2455,7 +2458,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-14-v62';
+const BUILD_VERSION = '2026-08-14-v63';
 const App = {
   current:'home',
   booting:true,
@@ -2518,7 +2521,17 @@ const App = {
     StorageGuard.request();
     document.getElementById('nav').innerHTML = this.visibleRoutes().map(r=>`<button data-id="${r.id}" onclick="App.go('${r.id}')"><span class="ico">${r.icon}</span>${r.name}</button>`).join('');
     this.bindSwipe();
-    window.addEventListener('popstate', e => this.go(e.state?.page || 'home', {push:false}));
+    window.addEventListener('popstate', e => {
+      /* v63：UI 全屏用独立 history 栈（pushState {uiFs:N}）。
+         1) 关闭全屏期间（UI._silentFsClose=true）由 UI 自行回溯，App 不能抢跳页面；
+         2) 普通 uiFs 占位 history 的返回，交给 UI._fsBack 处理，App 不接管；
+         3) 兜底：当 e.state 为 null（首屏/默认页没 pushState，state 栈底是 null）时，用 location.hash 还原当前页，
+            避免错误地跳回首页桌面 —— 这就是之前「点编辑跳桌面，要返回才能编辑」的根因。 */
+      if(UI._silentFsClose) return;
+      if(e.state && typeof e.state.uiFs === 'number') return;
+      const id = (e.state && e.state.page) ? e.state.page : (location.hash.replace('#','') || 'home');
+      this.go(id, {push:false});
+    });
     Lock.check();
     Migrate.local();
     Migrate.homeTop();
@@ -4550,7 +4563,7 @@ const Notes = {
      标题 / 分类 / 标签 / 保存 / 取消 / ✕ 都没有：默认自动保存、退栈即保存。 */
   openDetail(id){
     const it = this.list().find(x=>x.id===id); if(!it) return;
-    const rightBtn = `<button class="ui-fs-icon-btn" type="button" onclick="document.getElementById('noteEditPureFile').click()" title="插入图片">🖼</button>`;
+    const rightBtn = `<button class="ui-fs-icon-btn" type="button" onclick="Notes.copyFullFromEdit()" title="复制全文">📋</button><button class="ui-fs-icon-btn" type="button" onclick="document.getElementById('noteEditPureFile').click()" title="插入图片">🖼</button>`;
     /* v59：去掉文本框下面的「已插入 N 张图」提示，整屏只有 textarea + 隐藏文件输入 */
     UI.openFull('', `
       <textarea id="noteEditPure" placeholder="写下你的经验、原则、观察..."></textarea>
@@ -4573,6 +4586,20 @@ const Notes = {
     setTimeout(()=>ta.focus(), 60);
     /* id 暂存，供 _autoSaveEdit 用 */
     this._fsEditingId = id;
+  },
+  /* v63：全屏编辑态「复制全文」符号按钮（📋）—— 复制当前 textarea 全部文本（含 [img:m_xxx] 图片标记） */
+  copyFullFromEdit(){
+    const ta = document.getElementById('noteEditPure');
+    const text = ta ? ta.value : '';
+    if(!text){ UI.toast('内容为空，没什么可复制'); return; }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(()=>UI.toast('已复制全文 ✓'), ()=>this._clipCopy(text));
+    } else { this._clipCopy(text); }
+  },
+  _clipCopy(text){
+    try{
+      const ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0'; ta.style.top='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); UI.toast('已复制全文 ✓');
+    }catch(e){ UI.toast('复制失败，请手动长按选择'); }
   },
   /* v57：详情全屏自动保存 —— 用上次记录到的 _fsEditingId，把 text 写回 notes */
   _autoSaveEdit(){
@@ -5827,24 +5854,28 @@ const Outfit = {
 const Cooking = {
   rotation:0,
   list(){ return Store.get('dishes',[]); },
+  /* v63：photoId 可能是数组（多图）或旧版单字符串，这里统一归一成数组，避免 render/openDetail 各种 `x.photoId` 类型判断 */
+  photoIds(x){ const p = x && x.photoId; return Array.isArray(p) ? p : (p ? [p] : []); },
   wheel(){ return Store.get('wheel_dishes',[]); },
   tags(){ return Util.byUse('dish_tags',[...new Set(this.list().flatMap(x=>String(x.tags||'').split(/[,，/、\s]+/).map(t=>t.trim()).filter(Boolean)))]); },
   async add(){
     const name=dishName.value.trim();
     if(!name)return;
-    const file=dishPhoto.files[0];
-    const saved = file ? await Media.save(file, 'life').catch(()=>null) : null;
+    /* v63：支持一次选多张图 —— 并行保存，photoId 存成数组（向后兼容旧单字符串） */
+    const files = dishPhoto.files && dishPhoto.files.length ? [...dishPhoto.files] : [];
+    const saved = files.length ? await Promise.all(files.map(f=>Media.save(f,'life').catch(()=>null))) : [];
+    const newIds = saved.filter(Boolean).map(s=>s.id);
     this.splitTag(dishTags.value).forEach(t=>Util.bump('dish_tags',t));
     const editing = Store.get('dish_editing','');
     const list = this.list();
     if(editing && list.find(x=>x.id===editing)){
-      /* v58：编辑模式下覆盖原条目（保留 photoId，新上传才覆盖） */
-      const newId = saved?.id || (list.find(x=>x.id===editing)?.photoId || '');
-      Store.set('dishes', list.map(x=>x.id===editing?{...x,name,tags:dishTags.value.trim(),steps:dishSteps.value.trim(),photoId:newId}:x));
+      /* v58+v63：编辑模式覆盖原条目；多图 —— 只有新上传了图才覆盖原 photoId，没选图就保留原数组 */
+      const photoId = newIds.length ? newIds : (list.find(x=>x.id===editing)?.photoId || '');
+      Store.set('dishes', list.map(x=>x.id===editing?{...x,name,tags:dishTags.value.trim(),steps:dishSteps.value.trim(),photoId}:x));
       Store.remove('dish_editing');
       UI.toast('已更新：'+name);
     } else {
-      Store.set('dishes',[{id:Util.uid(),name,tags:dishTags.value.trim(),steps:dishSteps.value.trim(),photoId:saved?.id||'',photo:''},...list]);
+      Store.set('dishes',[{id:Util.uid(),name,tags:dishTags.value.trim(),steps:dishSteps.value.trim(),photoId:newIds,photo:''},...list]);
       Store.set('wheel_dishes',[...new Set(this.wheel().concat(name))]);
       Coin.checkCookingNew();
       UI.toast('已添加：'+name);
@@ -5871,7 +5902,7 @@ const Cooking = {
     /* v59：3列网格卡片，外层只显示图片封面 + 菜名，点 → 全屏看详情；每张卡片右上 + 按钮 = 再来一道（复制到表单）。长按拖动排序保留。 */
     /* v60：x.photoId 时不再走 Util.mediaImg（那会输出 class="thumb"，被全局 54×54 样式锁死，导致图片只在卡片里缩成小方块），
        改用 class="dc-cover" 让 CSS 的 object-fit:cover 真正沾满整张卡片。点 cover 弹图片大图（event.stopPropagation 避免误触卡片详情）。 */
-    const recipeHtml = Object.entries(groups).length?Object.entries(groups).map(([tag,rows])=>`<section style="margin-bottom:12px"><h2>${Util.esc(tag)}</h2><div class="dish-grid">${rows.map((x)=>{ const cover = x.photoId ? `<img class="dc-cover" data-media="${Util.esc(x.photoId)}" alt="${Util.esc(x.name)}" onclick="event.stopPropagation();Media.openFull('${Util.esc(x.photoId)}')">` : (x.photo ? `<img class="dc-cover" src="${Util.esc(x.photo)}" alt="${Util.esc(x.name)}">` : `<div class="dc-placeholder">${Util.esc((x.name||'?')[0])}</div>`); return `<div class="dish-card" draggable="true" data-sort-id="${x.id}" onclick="Cooking.openDetail('${x.id}')">${cover}<div class="dc-name">${Util.esc(x.name)}</div><button class="dc-addone" type="button" onclick="event.stopPropagation();Cooking.duplicate('${x.id}')" title="再来一道：复制这道菜到表单开始录入新菜">+</button></div>`; }).join('')}</div></section>`).join(''):'';
+    const recipeHtml = Object.entries(groups).length?Object.entries(groups).map(([tag,rows])=>`<section style="margin-bottom:12px"><h2>${Util.esc(tag)}</h2><div class="dish-grid">${rows.map((x)=>{ const ids=this.photoIds(x); const cover = ids.length ? `<img class="dc-cover" data-media="${Util.esc(ids[0])}" alt="${Util.esc(x.name)}" onclick="event.stopPropagation();Media.openFull('${Util.esc(ids[0])}')">` : (x.photo ? `<img class="dc-cover" src="${Util.esc(x.photo)}" alt="${Util.esc(x.name)}">` : `<div class="dc-placeholder">${Util.esc((x.name||'?')[0])}</div>`); return `<div class="dish-card" draggable="true" data-sort-id="${x.id}" onclick="Cooking.openDetail('${x.id}')">${cover}<div class="dc-name">${Util.esc(x.name)}</div><button class="dc-addone" type="button" onclick="event.stopPropagation();Cooking.duplicate('${x.id}')" title="再来一道：复制这道菜到表单开始录入新菜">+</button></div>`; }).join('')}</div></section>`).join(''):'';
     const empty = !recipeHtml ? '<div class="empty">先添加几道菜，转盘就能用了</div>' : '';
     dishListEl.innerHTML = recipeHtml + empty;
     DragSort.bind('#dishList [data-sort-id]','dishes',()=>Cooking.render());
@@ -5882,7 +5913,8 @@ const Cooking = {
   /* v59：点击网格卡片 → 全屏看详情（菜名 / 标签 / 步骤 / 图 / 编辑 / 删除） */
   openDetail(id){
     const it = this.list().find(x=>x.id===id); if(!it) return;
-    const hero = it.photoId ? Util.mediaImg(it.photoId, it.name) : (it.photo ? `<img class="dd-hero" src="${Util.esc(it.photo)}" alt="${Util.esc(it.name)}">` : '<div class="dd-noimg">🍽</div>');
+    const ids = this.photoIds(it);
+    const hero = ids.length ? `<div class="dd-gallery">${ids.map(id=>`<img class="dd-img" data-media="${Util.esc(id)}" alt="${Util.esc(it.name)}" onclick="event.stopPropagation();Media.openFull('${Util.esc(id)}')">`).join('')}</div>` : (it.photo ? `<img class="dd-hero" src="${Util.esc(it.photo)}" alt="${Util.esc(it.name)}">` : '<div class="dd-noimg">🍽</div>');
     const html = `
       <div class="dish-detail">
         ${hero}
