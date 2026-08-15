@@ -981,6 +981,7 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
         <textarea id="moodText" placeholder="什么时候、什么地方、和谁在一起、发生了什么、我的感受。可以写很长。"></textarea>
         <button class="btn" style="margin-top:10px;width:100%" onclick="Mood.save()">保存并关联到追踪表</button>
         <button class="btn ghost" style="margin-top:8px;width:100%" onclick="Mood.aiAnalyze()">AI 复盘情绪回路</button>
+        <button class="btn ghost" style="margin-top:8px;width:100%" onclick="Mood.chain()">🧠 我的思维链总览（跨天）</button>
         <div class="ai-box" id="moodAi"></div>
       </div>
       <div class="card">
@@ -2460,7 +2461,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-15-v64';
+const BUILD_VERSION = '2026-08-15-v65';
 const App = {
   current:'home',
   booting:true,
@@ -3787,7 +3788,18 @@ const Mood = {
   del(id){ Store.set('moods', this.list().filter(x=>x.id!==id)); this.render(); },
   todayCount(){ return this.list().filter(x=>x.date===Util.today()).length; },
   async aiAnalyze(){ const text=moodText.value.trim(); if(!text) return UI.toast('先写一段日记'); moodAi.textContent='分析中...'; try{ moodAi.textContent=await AI.ask('请像情绪教练一样复盘这篇情绪日记，把「事件 → 解读 → 情绪 → 行为 → 结果」的回路讲清楚。分点输出，每点一两句：\n1 察觉到是什么情绪？（先给情绪命名，列 2-3 个词，如「被忽视、委屈、有点恼火」，别只说不开心/开心）\n2 事件：刚才到底发生了什么？（客观还原一句话，不加评价）\n3 我怎么解读这件事的？（我当时给自己讲了什么故事、贴了什么标签，如「他不在乎我」「我又搞砸了」）\n4 这个解读带来了什么情绪？强度几分（1-10）\n5 情绪反过来又影响了我的解读：这个情绪让我更容易往哪个方向想？它放大或缩小了哪些念头？（点明「解读→情绪→再解读」这个相互喂养的回路）\n6 事件+解读+情绪共同导致了什么行为？（我做了/没做什么、说了/没说什么）\n7 这些行为带来了什么结果？短期结果是什么，这个结果又怎么喂回了下一轮的解读（循环还是被打破）\n8 我可以学到什么（一句话）\n9 一个现在就能做的 1 分钟小动作，用来打断这个回路\n日记原文：\n'+text); }catch(e){ moodAi.textContent=e.message; } },
-  collect(days=30){ const from=Util.dateAdd(Util.today(),-days); return this.list().filter(x=>x.date>=from); }
+  collect(days=30){ const from=Util.dateAdd(Util.today(),-days); return this.list().filter(x=>x.date>=from); },
+  async chain(){
+    const all=this.list();
+    if(!all.length) return UI.toast('还没有情绪日记，先写几篇再来总览');
+    const recent=this.collect(120);
+    const corpus=recent.map(x=>'['+x.date+' '+x.time+' '+x.symbol+'] '+x.text).join('\n---\n');
+    UI.openFull('🧠 我的思维链总览', '<div class="ai-box" id="moodChainBox" style="white-space:pre-wrap;line-height:1.7">正在汇总你最近 '+recent.length+' 篇情绪日记，梳理固化回路…</div>', '返回', null, '', false);
+    const box=document.getElementById('moodChainBox');
+    try{
+      box.textContent=await AI.ask('下面是某人最近一段时间写下的所有情绪日记（按时间倒序，最新在前）。请像一个长期的情绪教练，做一份「思维链总览」：\n1 总体观察：这段时间的情绪主色调是什么（用 2-4 个词）\n2 反复出现的「解读模式」：他/她在哪些类型的事上，稳定地用同一套解读、贴同一类标签？（列出 2-3 个高频模式，每个配一句典型内心独白）\n3 这些解读稳定触发了哪些情绪（强度 1-10）\n4 这些「解读→情绪」又稳定导致了哪些行为（反复在做 / 没做的是什么）\n5 行为带来什么结果，结果怎样喂回下一轮解读（指出还在循环的主回路）\n6 如果只能先打断一条回路，先打断哪一条？为什么\n7 一句每天可用的「自我提醒句」，帮他在情绪起来时暂停一下，看清自己的解读\n要求：只基于下面提供的日记内容，不要编造；某类信息不足就直接写「样本不足」。\n日记：\n'+corpus);
+    }catch(e){ box.textContent=e.message; }
+  }
 };
 /* ==== 功能：情绪日记 END ==== */
 /* ==== 功能：每日记录（感恩日记 + 追踪表 + 情绪日记 三合一） START ==== */
