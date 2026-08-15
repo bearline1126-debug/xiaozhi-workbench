@@ -473,6 +473,18 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .self-cat-card .nc-head .nc-count{font-size:10px}
 .self-cat-preview{display:flex;flex-direction:column;gap:2px;overflow:hidden}
 .self-mini-line{font-size:11px;line-height:1.4;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* v71：个人认知库分类详情页用经验摘录同款 mini-card 网格
+   · auto-fill + minmax(100px,1fr)：能排 3 个就排 3 个，排不下自然回落 2 列（文字长度自动撑开）
+   · 长按卡片 → 加 .editing → 浮出右上角红色 ✕
+   · 长按之后拖动 → 调换顺序（DragSort.bind） */
+.self-mini-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:10px}
+.self-mini-card{position:relative;background:rgba(255,253,248,.94);border:1px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer;display:flex;align-items:flex-start;gap:6px;transition:transform .15s ease,box-shadow .15s ease;min-height:54px}
+.self-mini-card:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(20,30,18,.08)}
+.self-mini-card .smc-text{font-size:13px;line-height:1.5;color:var(--text);word-break:break-word;white-space:pre-wrap;flex:1;padding-right:14px}
+.self-mini-card .smc-del{position:absolute;top:3px;right:3px;display:none;width:22px;height:22px;line-height:20px;text-align:center;border:0;border-radius:50%;background:rgba(180,40,40,.92);color:#fff;font-size:13px;cursor:pointer;padding:0;z-index:3}
+.self-mini-card.editing .smc-del{display:block}
+.self-mini-card.editing{box-shadow:0 0 0 2px rgba(180,40,40,.45)}
+.self-mini-empty{padding:24px 0;color:var(--text-dim);text-align:center;font-size:13px}
 /* v56：全屏内联编辑表单 */
 .note-edit-in-full input,.note-edit-in-full textarea,.note-edit-in-full select{width:100%;font-size:14px;padding:8px;border:1px solid var(--line);border-radius:8px;box-sizing:border-box;font-family:inherit;background:#fff}
 /* v59：openDetail 详情纯编辑全屏 —— 整个全屏就是一个无边、无背景的 textarea。
@@ -2477,7 +2489,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-15-v70';
+const BUILD_VERSION = '2026-08-15-v71';
 const App = {
   current:'home',
   booting:true,
@@ -4418,7 +4430,27 @@ const Review = {
 const Self = {
   defaults(){ return [{key:'strengths',label:'100 个优点'},{key:'likes',label:'喜欢清单'},{key:'dislikes',label:'不喜欢清单'},{key:'keywords',label:'关键词'},{key:'bounds',label:'边界'},{key:'control',label:'能控制'},{key:'nocontrol',label:'不能控制'}]; },
   categories(){ const saved=Store.get('self_categories'); if(saved) return saved; Store.set('self_categories', this.defaults()); return this.defaults(); },
-  add(){ const text=selfInput.value.trim(); if(!text)return; const k=selfType.value; Store.set('self_'+k,[text,...Store.get('self_'+k,[])]); selfInput.value=''; this.render(); },
+  /* v71：取某分类下的条目 —— 旧数据是字符串数组，自动无损迁移为 {id,text}[]；
+     这样 mini-card 才有唯一 id 可给 DragSort.bind 当 sort-id 使用 */
+  _items(key){
+    const raw = Store.get('self_'+key, []);
+    if(!Array.isArray(raw) || !raw.length) return raw;
+    if(typeof raw[0] === 'string'){
+      const migrated = raw.map(t => ({id:'s_'+Util.uid(), text:t}));
+      Store.set('self_'+key, migrated);
+      return migrated;
+    }
+    /* 已迁移但偶有缺 id 的历史条目（外层旧调用 / 直接 write 进 store）—— 顺手补齐 */
+    let needSave = false;
+    const filled = raw.map(x => {
+      if(typeof x === 'string'){ needSave = true; return {id:'s_'+Util.uid(), text:x}; }
+      if(x && !x.id){ needSave = true; return {id:'s_'+Util.uid(), text:String(x.text||'')}; }
+      return x;
+    });
+    if(needSave) Store.set('self_'+key, filled);
+    return filled;
+  },
+  add(){ const text=selfInput.value.trim(); if(!text)return; const k=selfType.value; const items=this._items(k); Store.set('self_'+k,[{id:'s_'+Util.uid(),text},...items]); selfInput.value=''; this.render(); },
   /* v70：管理分类（与经验摘录同逻辑）—— 改名 / ↑↓ 调序 / ＋ 加 / ✕ 删；删除分类同时清空其下内容 */
   editCategories(){
     const editing = this.categories().map(c=>({key:c.key, label:c.label}));
@@ -4459,8 +4491,9 @@ const Self = {
     const cats=this.categories();
     selfType.innerHTML=cats.map(x=>`<option value="${x.key}">${Util.esc(x.label)}</option>`).join('');
     selfBoards.innerHTML=`<div class="self-cat-grid">`+cats.map(({key:k,label})=>{
-      const items=Store.get('self_'+k,[]); const n=items.length;
-      const preview = items.slice(0,3).map(x=>`<div class="self-mini-line">${Util.esc(x)}</div>`).join('') || '<div class="empty" style="padding:4px 0">还没有内容</div>';
+      const items=this._items(k); const n=items.length;
+      /* v71：预览取 text 字段（迁就对象数组形态） */
+      const preview = items.slice(0,3).map(x=>`<div class="self-mini-line">${Util.esc(x.text||'')}</div>`).join('') || '<div class="empty" style="padding:4px 0">还没有内容</div>';
       return `<div class="self-cat-card" onclick="Self.openCat('${k}')">
         <div class="nc-head"><span class="nc-title">📁 ${Util.esc(label)}</span><span class="nc-count">${n}</span></div>
         <div class="self-cat-preview">${preview}</div>
@@ -4468,21 +4501,40 @@ const Self = {
       </div>`;
     }).join('')+`</div>`;
   },
-  /* 点分类卡片 → 全屏查看 / 编辑该分类下所有条目 */
+  /* v71：分类详情页用经验摘录同款 mini-card 网格，能排 3 个就排 3 个，排不下回落 2 列；
+     长按卡片 → 浮出右上角红色 ✕ + 拖动排序（DragSort.bind）；不再保留 ↑↓ 按钮 */
   openCat(key){
     const cat=this.categories().find(c=>c.key===key); if(!cat) return;
-    const html=`<div class="row" style="margin-bottom:8px"><input id="selfItemInput" placeholder="写一条，回车添加" onkeydown="if(event.key==='Enter')Self.addItem('${key}')"><button class="btn" onclick="Self.addItem('${key}')">添加</button></div><div id="selfItemList" class="pill-row"></div>`;
+    const html=`<div class="row" style="margin-bottom:8px"><input id="selfItemInput" placeholder="写一条，回车添加" onkeydown="if(event.key==='Enter')Self.addItem('${key}')"><button class="btn" onclick="Self.addItem('${key}')">添加</button></div>
+<div id="selfItemGrid" class="self-mini-grid"></div>`;
     UI.openFull('📁 '+cat.label, html, '返回', ()=>{ this.render(); }, '', true);
     setTimeout(()=>this.renderItems(key), 0);
   },
-  addItem(key){ const ta=document.getElementById('selfItemInput'); if(!ta) return; const text=ta.value.trim(); if(!text) return; Store.set('self_'+key,[text,...Store.get('self_'+key,[])]); ta.value=''; this.renderItems(key); },
+  addItem(key){ const ta=document.getElementById('selfItemInput'); if(!ta) return; const text=ta.value.trim(); if(!text) return; const items=this._items(key); Store.set('self_'+key,[{id:'s_'+Util.uid(),text},...items]); ta.value=''; this.renderItems(key); },
   renderItems(key){
-    const el=document.getElementById('selfItemList'); if(!el) return;
-    const arr=Store.get('self_'+key,[]);
-    el.innerHTML=arr.length?arr.map((x,i)=>`<span class="pill">${Util.esc(x)} <button class="del" onclick="Self.move('${key}',${i},-1)">↑</button><button class="del" onclick="Self.move('${key}',${i},1)">↓</button><button class="del" onclick="Self.del('${key}',${i})">✕</button></span>`).join(''):'<div class="empty">还没有内容</div>';
+    const el=document.getElementById('selfItemGrid'); if(!el) return;
+    const items=this._items(key);
+    if(!items.length){
+      el.innerHTML='<div class="self-mini-empty">还没有内容，写一条看看吧</div>';
+      return;
+    }
+    el.innerHTML=items.map(x=>`<div class="self-mini-card" data-self-id="${x.id}">
+      <button class="smc-del" type="button" onclick="event.stopPropagation();Self.del('${key}','${x.id}')" title="删除这条">✕</button>
+      <div class="smc-text">${Util.esc(x.text||'')}</div>
+    </div>`).join('');
+    /* v71：长按拖动排序 —— DragSort 会按 storeKey 重排，写回 Store，再刷新 grid */
+    DragSort.bind('#selfItemGrid [data-self-id]', 'self_'+key, ()=>this.renderItems(key));
   },
-  move(k,i,d){ const a=Store.get('self_'+k,[]); const j=i+d; if(j<0||j>=a.length)return; [a[i],a[j]]=[a[j],a[i]]; Store.set('self_'+k,a); const el=document.getElementById('selfItemList'); if(el) this.renderItems(k); else this.render(); },
-  del(k,i){ const a=Store.get('self_'+k,[]); a.splice(i,1); Store.set('self_'+k,a); const el=document.getElementById('selfItemList'); if(el) this.renderItems(k); else this.render(); }
+  /* v71：删条目（按 id 找位置，支持稳定单条删除；旧 move() 已废弃不再暴露 ↑↓） */
+  del(k,id){
+    const items=this._items(k);
+    const idx = items.findIndex(x => String(x.id) === String(id));
+    if(idx<0) return;
+    items.splice(idx,1);
+    Store.set('self_'+k, items);
+    const el=document.getElementById('selfItemGrid');
+    if(el) this.renderItems(k); else this.render();
+  }
 };
 /* ==== 功能：个人认知库 END ==== */
 /* ==== 功能：经验摘录 START ==== */
