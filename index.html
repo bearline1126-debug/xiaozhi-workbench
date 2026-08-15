@@ -523,10 +523,15 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .ui-fs-back{font-size:14px}
 /* v58：头部右侧容器 / 单图标按钮样式（取代原本的 ✕ 关闭键） */
 .ui-fs-right{display:flex;align-items:center;gap:6px;flex:none}
-.ui-fs-icon-btn{border:0;background:transparent;font-size:20px;padding:6px 10px;cursor:pointer;color:var(--text);border-radius:8px;line-height:1}
-@media (hover:hover){ .ui-fs-icon-btn:hover{background:rgba(0,0,0,.06)} }
-/* v64：触屏点按后 :hover/:focus 会残留导致按钮一直灰（像被按住）。强制 active/focus 透明、无轮廓，避免"点完不变回来"。 */
-.ui-fs-icon-btn:active,.ui-fs-icon-btn:focus{background:transparent;outline:none;-webkit-tap-highlight-color:transparent}
+.ui-fs-icon-btn{border:0;background:transparent;font-size:20px;padding:6px 10px;cursor:pointer;color:var(--text);border-radius:8px;line-height:1;display:inline-flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
+/* v66：解决「点完没反馈」（v64 把 hover 限制到 @media hover:hover 后，触屏/移动浏览器看不到任何点按反馈）。
+   1) :active 给所有人：按下瞬间变深 + scale 缩小，所有设备都能感觉到「我点到了」；
+   2) @media hover:hover 仅给鼠标设备加 hover 灰底（防止 iOS tap-and-hold 残留灰底）；
+   3) .is-flash 关键帧动画：JS 在 onclick 末尾给 btn 加 .is-flash，0.42s 后移除 —— 这是「点完变暗再恢复」的核心视觉。 */
+.ui-fs-icon-btn:active{background:rgba(0,0,0,.18);transform:scale(.92)}
+@media (hover:hover){ .ui-fs-icon-btn:hover{background:rgba(0,0,0,.08)} }
+@keyframes fsIconFlash{0%{background:rgba(0,0,0,.04);transform:scale(1)}25%{background:rgba(0,0,0,.24);transform:scale(.88)}100%{background:transparent;transform:scale(1)}}
+.ui-fs-icon-btn.is-flash{animation:fsIconFlash .42s ease}
 .ui-fs-body{flex:1;overflow-y:auto;padding:14px 16px;-webkit-overflow-scrolling:touch}
 body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:none}
 /* ==== 视觉灵感分类网格：按分类并排，每格只显示最新一张 ==== */
@@ -2461,7 +2466,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-15-v65';
+const BUILD_VERSION = '2026-08-15-v66';
 const App = {
   current:'home',
   booting:true,
@@ -2528,11 +2533,12 @@ const App = {
       /* v63：UI 全屏用独立 history 栈（pushState {uiFs:N}）。
          1) 关闭全屏期间（UI._silentFsClose=true）由 UI 自行回溯，App 不能抢跳页面；
          2) 普通 uiFs 占位 history 的返回，交给 UI._fsBack 处理，App 不接管；
-         3) 兜底：当 e.state 为 null（首屏/默认页没 pushState，state 栈底是 null）时，用 location.hash 还原当前页，
-            避免错误地跳回首页桌面 —— 这就是之前「点编辑跳桌面，要返回才能编辑」的根因。 */
+         3) v66 兜底：当 e.state 为 null（冷启动首屏/默认页没 pushState）时，不再强制 fallback 到 home —— 
+            保留 App.current，避免 UI 关闭后被错误地跳回首页桌面。这就是之前反复「点编辑跳桌面」的真正根因。 */
       if(UI._silentFsClose) return;
       if(e.state && typeof e.state.uiFs === 'number') return;
-      const id = (e.state && e.state.page) ? e.state.page : (location.hash.replace('#','') || 'home');
+      const id = (e.state && e.state.page) ? e.state.page : (location.hash.replace('#','') || '');
+      if(!id || id === this.current) return;  /* v66：null/同页都跳过，宁可不动也不抢跳 */
       this.go(id, {push:false});
     });
     Lock.check();
@@ -4601,9 +4607,14 @@ const Notes = {
     /* id 暂存，供 _autoSaveEdit 用 */
     this._fsEditingId = id;
   },
-  /* v63：全屏编辑态「复制全文」符号按钮（📋）—— 复制当前 textarea 全部文本（含 [img:m_xxx] 图片标记） */
+  /* v63：全屏编辑态「复制全文」符号按钮（📋）—— 复制当前 textarea 全部文本（含 [img:m_xxx] 图片标记）。
+   v66：btn 加 .is-flash 关键帧动画（点完立刻深→恢复 0.42s），保证触屏/鼠标都能看到点按反馈。 */
   copyFullFromEdit(btn){
-    if(btn && btn.blur) try{ btn.blur(); }catch(e){}
+    /* v66：点按反馈立刻触发 —— 不论 hover 是否媒体查询生效，所有设备都能看到「变暗→恢复」动画 */
+    if(btn){
+      btn.classList.remove('is-flash'); void btn.offsetWidth; btn.classList.add('is-flash');
+      setTimeout(()=>{ try{ btn.classList.remove('is-flash'); btn.blur(); }catch(e){} }, 460);
+    }
     const ta = document.getElementById('noteEditPure');
     const text = ta ? ta.value : '';
     if(!text){ UI.toast('内容为空，没什么可复制'); return; }
@@ -5938,8 +5949,8 @@ const Cooking = {
           ${it.tags?`<div class="dd-tags">🏷 ${Util.esc(it.tags)}</div>`:''}
           <div class="dd-steps">${it.steps ? Util.esc(it.steps) : '<span style="color:var(--text-dim)">（还没写做法）</span>'}</div>
           <div class="dd-actions">
-            <button class="btn" onclick="Cooking.duplicate('${it.id}');UI.closeFull(true);App.go('cooking',{push:false});">+ 再来一道</button>
-            <button class="btn ghost" onclick="Cooking.edit('${it.id}');UI.closeFull(true);App.go('cooking',{push:false});">✎ 编辑</button>
+            <button class="btn" onclick="Cooking.duplicateAndClose('${it.id}')">+ 再来一道</button>
+            <button class="btn ghost" onclick="Cooking.editAndClose('${it.id}')">✎ 编辑</button>
             <button class="btn ghost" style="color:var(--warn)" onclick="UI.closeFull(true);setTimeout(()=>Cooking.del('${it.id}'),120);">✕ 删除</button>
           </div>
         </div>
@@ -5983,9 +5994,25 @@ const Cooking = {
     if(typeof dishSteps !== 'undefined' && dishSteps) dishSteps.value = it.steps || '';
     if(typeof dishPhoto !== 'undefined' && dishPhoto) dishPhoto.value = '';
     this.render();
-    /* 立即聚焦菜名（v60 验证：去掉 setTimeout + scrollIntoView 焦点事件不会冲突） */
-    try{ document.getElementById('dishName')?.focus?.(); }catch(e){}
+    /* v66：移除非"主页面内交互"情况下的 focus —— 详情全屏关闭后焦点的元素不在视野，
+       反而会引发 iOS Safari 「点选区上推」的副作用，让用户以为是「跳桌面」。
+       全屏关闭后焦点由 detail 内 → 表单 input（异步），主动写在 editAndClose 里。 */
     UI.toast('已载入 '+(it.name||'这道菜')+'，改完点「保存」');
+  },
+  /* v66：从菜品详情 UI 全屏点 ✎ / + 号后的统一收口 —— 先做业务（edit/duplicate），
+     再 closeFull(true)（同步循环 history.back 直至 uiFs 占位全部 pop 完），
+     **重点**：closeFull 内 history.back 会触发 popstate 异步派发，但其内部 _silentFsClose 已经重置回 false，
+     即便有兜底逻辑也可能把 App 切去别的页面。等 60ms 让 microtask 跑完，再显式 App.go('cooking',{push:false})
+     锁回做菜栏 —— **两步 + 异步覆盖**，彻底消除「点编辑跳桌面」的竞态。 */
+  editAndClose(id){
+    this.edit(id);
+    UI.closeFull(true);
+    setTimeout(()=>{ try{ App.go('cooking',{push:false}); document.getElementById('dishName')?.focus?.(); }catch(e){} }, 60);
+  },
+  duplicateAndClose(id){
+    this.duplicate(id);
+    UI.closeFull(true);
+    setTimeout(()=>{ try{ App.go('cooking',{push:false}); document.getElementById('dishName')?.focus?.(); }catch(e){} }, 60);
   },
   /* v62：清空键 —— 清空表单所有字段 + 退出编辑态，但**不动菜篮子**。
      不再 scrollIntoView（去 v58 残留）。无 toast —— 清空是用户主动操作，无需回响。 */
