@@ -1079,11 +1079,14 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
         <button class="btn ghost small" onclick="DiaryBook.toggleArchive()">📅 日记存放处</button>
       </div>
       <div id="dbArchiveBox" style="display:none;margin-top:8px"></div>
-      <div class="card" id="dbKeywordsCard" style="margin-top:14px;padding:12px">
-        <h2 style="margin:0 0 4px;font-size:15px">🔖 最近 30 天做了些啥</h2>
-        <p class="hint" style="margin:0 0 8px">AI 提炼的关键词，字越大=做的天数越多。点词看涉及哪几天。</p>
-        <div id="dbKeywordsBody"></div>
-        <button class="btn ghost small" style="margin-top:8px;width:100%" onclick="DiaryBook.refreshKeywords()">↻ 重新提炼（用 AI）</button>
+      <div class="card" id="dbWinsCard" style="margin-top:14px;padding:12px">
+        <h2 style="margin:0 0 4px;font-size:15px">🔥 持续性小赢</h2>
+        <p class="hint" style="margin:0 0 8px">AI 从「感恩日记 + 每日必做完成项」里<b>只</b>萃取真正做成的小赢（排除转发文献等非成功事件），<b>永久</b>存入成功库；出现 ≥2 天 = 持续小赢。不会重复分析已统计过的素材。</p>
+        <div id="dbWinsBody"></div>
+        <div class="row" style="margin-top:8px;gap:8px">
+          <button class="btn ghost small" style="flex:1" onclick="Wins.analyze()">↻ 分析新素材（用 AI）</button>
+          <button class="btn ghost small" style="flex:1" onclick="Wins.openLibrary()">📚 成功库</button>
+        </div>
       </div>
     </section><!-- ==== 功能：日记本 END ==== --><!-- ==== 功能：个人认知库 START ==== --><section class="page" id="page-self">
       <div class="page-title">个人认知库</div><div class="page-sub">优点、喜欢/不喜欢、关键词、边界，以及能控制和不能控制的事情。</div>
@@ -2466,7 +2469,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-15-v67';
+const BUILD_VERSION = '2026-08-15-v68';
 const App = {
   current:'home',
   booting:true,
@@ -3498,20 +3501,10 @@ const DiaryBook = {
     if(pick) pick.value=curLeft;
     /* 汇总页视觉上与日记页区分（更轻的纸色 + 更紧的字距），减少"翻页撞墙"感 */
     right.classList.toggle('summary', isSunday);
-    /* 进入日记本时刷新 AI 词云 */
-    this._renderKeywordsIfEmpty();
+    /* 进入日记本时渲染持续性小赢（已分析过则不再重复） */
+    Wins.renderIfEmpty();
   },
-  async _renderKeywordsIfEmpty(){
-    const box = document.getElementById('dbKeywordsBody');
-    if(!box) return;
-    if(box.dataset.loaded === '1') return;
-    box.dataset.loaded = '1';
-    const cached = Store.get('keywords_30d', null);
-    if(cached){ box.innerHTML = this.keywordsHtml(cached.kws); return; }
-    box.innerHTML = '<div class="hint">提炼中（首次约 10 秒）…</div>';
-    const kws = await this.generateKeywords();
-    box.innerHTML = this.keywordsHtml(kws);
-  },
+  _renderKeywordsIfEmpty(){ Wins.renderIfEmpty(); },
   /* 日记存放处：按年份归档显示所有有记录的日期 */
   archiveHtml(){
     const keys = Store.keyList().filter(k => k.startsWith('success:'));
@@ -3534,79 +3527,140 @@ const DiaryBook = {
     box.style.display = open ? 'none' : '';
     if(!open) box.innerHTML = this.archiveHtml();
   },
-  /* AI 提炼最近做了些啥 → 关键词词云（按天数定大小） */
-  async generateKeywords(){
-    const days = Util.rangeDays(30);
-    const corpus = days.map(d => {
-      const s = Store.get(Success.key(d), {});
-      const t = Store.get(Tracker.dayKey(d), {});
-      const text = [s.wins, Success.norm(s.tomorrow).map(x=>x.text).join('、'), t.line, (Store.get('moods',[]).find(m=>m.date===d)||{}).text||''].filter(Boolean).join(' / ');
-      return {date:d, text};
-    }).filter(x => x.text);
-    if(!corpus.length) return [];
-    const fallback = this._localKeywords(corpus);
-    const cached = Store.get('keywords_30d', null);
-    if(cached && Date.now() - cached.at < 1000*60*60*12) return cached.kws;
+  /* v68：原「最近30天做了些啥」关键词云已重构为下方 Wins 模块（持续性小赢），以下保留兼容外壳 */
+  async generateKeywords(){ return Wins.collect(); },
+  keywordsHtml(){ return Wins.render(); },
+  async refreshKeywords(){ await Wins.analyze(); },
+  showKeywordDays(word){ Wins.showDays(word); },
+}
+/* ==== 功能：日记本 END ==== */
+
+/* v68：持续性小赢（取代原「最近30天做了些啥」关键词云）
+   1) 改名「持续性小赢」；只统计「我做成/做到」的正向小赢，排除"分享文献"这类非成功事件。
+   2) 永久成功库 wins_library：所有小赢都存下来，不会因 30 天滚动窗口而丢失。
+   3) 素材来源：感恩日记(success:date.wins) + 每日必做已完成项(task_done:date)。
+   4) 增量分析：wins_cursor 记录上次分析到的日期；每次只把 cursor 之后的新素材发给 AI，避免重复统计。
+   5) 持续性：本地按归一化短语分组，出现 ≥2 个不同日期 = 持续性小赢（字越大=持续天数越多）。 */
+const Wins = {
+  KEY_LIB:'wins_library',
+  KEY_CURSOR:'wins_cursor',
+  library(){ return Store.get(this.KEY_LIB, []); },
+  cursor(){ return Store.get(this.KEY_CURSOR, null); },
+  /* 取「自 cursor（不含）起到今天（含）」之间的新素材；cursor 为空则首扫最近 180 天 */
+  newMaterial(){
+    const cur = this.cursor();
+    const end = Util.today();
+    const start = cur ? Util.dateAdd(cur, 1) : Util.dateAdd(end, -180);
+    const out = [];
+    let d = start;
+    while(d <= end){
+      const s = Store.get('success:'+d, null);
+      if(s && s.wins){
+        Util.lines(s.wins).forEach(line=>{ const t=line.trim(); if(t) out.push({date:d, text:t, source:'感恩'}); });
+      }
+      const tasks = Success.tasksFor(d);
+      const done = Store.get('task_done:'+d, []);
+      if(tasks && done){
+        tasks.forEach((tk,i)=>{ if(done.includes(i) && tk.text && tk.text.trim()) out.push({date:d, text:tk.text.trim(), source:'必做'}); });
+      }
+      d = Util.dateAdd(d, 1);
+    }
+    /* 首扫素材可能很多，超过 250 行只取最近部分（避免一次 AI 过长） */
+    return out.length > 250 ? out.slice(-250) : out;
+  },
+  norm(text){ return String(text||'').toLowerCase().replace(/[\s\p{P}]+/gu, ''); },
+  async analyze(){
+    const box = document.getElementById('dbWinsBody'); if(!box) return;
+    const mat = this.newMaterial();
+    if(!mat.length){
+      const cur = this.cursor();
+      UI.toast(cur ? '没有新素材，已是最新（'+cur+'）' : '还没有感恩日记 / 必做记录');
+      return;
+    }
+    box.innerHTML = '<div class="hint">AI 正在萃取新素材的小赢（约 10 秒）…</div>';
     try{
-      const prompt = `请从下面这些日记/记录里提炼「最近做的事」的关键词，返回 JSON 数组，5-12 个词；每个词带 days（出现天数，整数，去重后）、dates（涉及的具体日期列表，yyyy-MM-dd）。要的是跨天连续做的零碎事，不要"健康""感恩"这种通用词。\n数据：\n` + corpus.map(c=>c.date+'：'+c.text.slice(0,200)).join('\n');
-      const out = await AI.ask(prompt + '\n\n只返回 JSON，不要其他内容，不要 markdown 代码块。');
+      const prompt = '你是一个「小赢萃取器」。下面是我的记录素材，每条带日期和来源（感恩=感恩日记里写下的成就/学到/做对的事；必做=每日必做里已完成的事项）。\n请只挑出真正的「小赢」——我做成、做到、学会、坚持下来的正向事件。\n排除：单纯转发/分享文献、计划但没做、纯粹负面情绪宣泄、纯客观流水账、与"我做成"无关的内容。\n对每条小赢，用「动词+宾语」的简短短语改写（如"搭建了工作台""读完一章""坚持冥想"），不超过 12 字。\n只返回 JSON 数组，每项 {date:"yyyy-MM-dd", text:"改写后的短语", source:"感恩"或"必做"}。不要其他内容，不要 markdown 代码块。\n素材：\n' + mat.map(m=>m.date+' ['+m.source+'] '+m.text.slice(0,120)).join('\n');
+      const out = await AI.ask(prompt);
       const m = String(out).match(/\[[\s\S]*\]/);
-      if(m){
-        const arr = JSON.parse(m[0]);
-        if(Array.isArray(arr)) {
-          const kws = arr.map(x => ({word:String(x.word||'').slice(0,12), days:Number(x.days)||1, dates:Array.isArray(x.dates)?x.dates.filter(d=>/^\d{4}-\d{2}-\d{2}$/.test(d)):[]}));
-          Store.set('keywords_30d', {at:Date.now(), kws});
-          return kws;
-        }
-      }
-    }catch(e){ /* 静默回退到本地 */ }
-    return fallback;
+      let arr = [];
+      if(m){ try{ arr = JSON.parse(m[0]); }catch(e){ arr = []; } }
+      if(!Array.isArray(arr)) arr = [];
+      const lib = this.library();
+      const seen = new Set(lib.map(x=>x.date+'|'+this.norm(x.text)));
+      let added = 0;
+      arr.forEach(x=>{
+        const date = String(x.date||'').slice(0,10);
+        const text = String(x.text||'').trim().slice(0,24);
+        if(!date || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !text) return;
+        const key = date+'|'+this.norm(text);
+        if(seen.has(key)) return;
+        seen.add(key);
+        lib.push({date, text, source: x.source==='必做'?'必做':'感恩'});
+        added++;
+      });
+      Store.set(this.KEY_LIB, lib);
+      Store.set(this.KEY_CURSOR, Util.today());
+      UI.toast('已萃取 '+added+' 条小赢，成功库共 '+lib.length+' 条');
+      this.render(box);
+    }catch(e){
+      box.innerHTML = '<div class="empty">分析失败：'+Util.esc(e.message||String(e))+'</div>';
+    }
   },
-  _localKeywords(corpus){
-    const stop = new Set(['今天','昨天','明天','今日','一个','一些','没有','什么','怎么','我们','你们','他们','这个','那个','因为','所以','可以','应该','需要','已经','还是','不是','可能','比较','大概','其实','感觉','觉得','开始','继续','完成','做了','做完','写好','写了','读到','看了','想想','以后','现在','时间','一些']);
-    const freq = {};
-    corpus.forEach(c => {
-      const text = String(c.text).replace(/[\s\d\p{P}]+/gu, '');
-      const seen = new Set();
-      for(let i=0; i<text.length-1; i++){
-        for(let len=2; len<=5 && i+len<=text.length; len++){
-          const w = text.slice(i, i+len);
-          if(stop.has(w)) continue;
-          seen.add(w);
-        }
-      }
-      seen.forEach(w => { freq[w] = freq[w] || {word:w, days:0, dates:new Set()}; freq[w].days++; freq[w].dates.add(c.date); });
+  sustained(){
+    const lib = this.library();
+    const groups = {};
+    lib.forEach(x=>{
+      const k = this.norm(x.text);
+      if(!k) return;
+      if(!groups[k]) groups[k] = {text:x.text, dates:new Set(), sources:new Set()};
+      groups[k].dates.add(x.date);
+      groups[k].sources.add(x.source);
     });
-    return Object.values(freq).filter(x => x.dates.size >= 2).sort((a,b)=>b.dates.size - a.dates.size).slice(0, 18).map(x=>({word:x.word, days:x.dates.size, dates:[...x.dates].sort()}));
+    return Object.values(groups).map(g=>({text:g.text, days:g.dates.size, dates:[...g.dates].sort(), sources:[...g.sources]})).filter(g=>g.days>=2).sort((a,b)=>b.days-a.days);
   },
-  keywordsHtml(kws){
-    if(!kws || !kws.length) return '<div class="empty">最近 30 天还没提炼出关键词</div>';
-    const max = Math.max(...kws.map(k=>k.days));
-    return kws.map(k => {
-      const size = 12 + Math.round((k.days/Math.max(max,1)) * 16);
-      return `<span class="db-keyword" style="font-size:${size}px" onclick="DiaryBook.showKeywordDays('${Util.esc(k.word).replace(/'/g,"\\'")}')" title="点开看涉及的天数">${Util.esc(k.word)}<sup>${k.days}</sup></span>`;
+  render(box){
+    box = box || document.getElementById('dbWinsBody'); if(!box) return;
+    const sus = this.sustained();
+    if(!sus.length){
+      const lib = this.library();
+      box.innerHTML = lib.length
+        ? '<div class="empty">目前都是一次性小赢，还没出现「持续 ≥2 天」的。继续累积，重复做成的事会在这里浮现。</div>'
+        : '<div class="empty">还没有成功库。点下方「分析新素材」从感恩日记/必做里萃取小赢。</div>';
+      return;
+    }
+    const max = Math.max(...sus.map(s=>s.days));
+    box.innerHTML = sus.map(s=>{
+      const size = 13 + Math.round((s.days/Math.max(max,1))*16);
+      return `<span class="db-keyword" style="font-size:${size}px" onclick="Wins.showDays('${Util.esc(s.text).replace(/'/g,"\\'")}')" title="${s.days} 天 · 点开看涉及天数">${Util.esc(s.text)}<sup>${s.days}</sup></span>`;
     }).join('<span class="db-keyword-sep"> </span>');
   },
-  async refreshKeywords(){
-    const box = document.getElementById('dbKeywordsBody');
-    if(!box) return;
-    box.innerHTML = '<div class="hint">AI 正在提炼最近 30 天…（首次可能要 10 秒）</div>';
-    Store.remove('keywords_30d');
-    delete box.dataset.loaded;
-    const kws = await this.generateKeywords();
-    box.innerHTML = this.keywordsHtml(kws);
+  renderIfEmpty(){
+    const box = document.getElementById('dbWinsBody'); if(!box) return;
+    if(box.dataset.loaded==='1') return;
+    box.dataset.loaded='1';
+    this.render(box);
   },
-  showKeywordDays(word){
-    const cached = Store.get('keywords_30d', null);
-    const kws = cached ? cached.kws : [];
-    const item = kws.find(k => k.word === word);
-    const dates = item ? item.dates : [];
+  showDays(text){
+    const k = this.norm(text);
+    const dates = [...new Set(this.library().filter(x=>this.norm(x.text)===k).map(x=>x.date))].sort();
     const html = dates.length
-      ? `<p class="hint">「${Util.esc(word)}」出现在 ${dates.length} 天：</p><div class="db-day-grid">${dates.map(d=>`<button class="pill" onclick="UI.closeModal();DiaryBook.go('${d}')">${d.slice(5)}</button>`).join('')}</div>`
+      ? `<p class="hint">「${Util.esc(text)}」出现在 ${dates.length} 天：</p><div class="db-day-grid">${dates.map(d=>`<button class="pill" onclick="UI.closeModal();DiaryBook.go('${d}')">${d.slice(5)}</button>`).join('')}</div>`
       : '<div class="empty">没找到对应日期</div>';
-    UI.modal(`「${word}」涉及的天数`, html);
+    UI.modal(`「${text}」涉及的日子`, html);
   },
-}
+  openLibrary(){
+    const lib = this.library();
+    if(!lib.length){ UI.toast('成功库还是空的，先分析素材'); return; }
+    const byDate = {};
+    lib.forEach(x=>{ (byDate[x.date]=byDate[x.date]||[]).push(x); });
+    const dates = Object.keys(byDate).sort().reverse();
+    const html = `<p class="hint">成功库共 ${lib.length} 条（永久保存，不会因超过 30 天而丢失）。</p>` +
+      dates.map(d=>`<div class="db-sec" style="margin-bottom:8px"><h3 style="font-size:14px">${d} <span class="muted" style="font-weight:400;font-size:12px">${byDate[d].length} 条</span></h3><ul class="db-list">${byDate[d].map(x=>`<li>${Util.esc(x.text)} <span class="muted" style="font-size:11px">· ${x.source}</span></li>`).join('')}</ul></div>`).join('');
+    UI.modal('📚 成功库', html);
+  },
+  /* 兼容外壳：旧 DiaryBook 方法可能调用 */
+  async collect(){ this.renderIfEmpty(); return this.sustained(); },
+};
 /* ==== 功能：日记本 END ==== */
 /* ==== 功能：追踪表 START ==== */
 const Tracker = {
@@ -4585,7 +4639,7 @@ const Notes = {
      标题 / 分类 / 标签 / 保存 / 取消 / ✕ 都没有：默认自动保存、退栈即保存。 */
   openDetail(id){
     const it = this.list().find(x=>x.id===id); if(!it) return;
-    const rightBtn = `<button class="ui-fs-icon-btn" type="button" onclick="Notes.undoEdit(this)" title="撤销">↶</button><button class="ui-fs-icon-btn" type="button" onclick="Notes.redoEdit(this)" title="重做">↷</button><button class="ui-fs-icon-btn" type="button" onclick="Notes.copyFullFromEdit(this)" title="复制全文">📋</button><button class="ui-fs-icon-btn" type="button" onclick="this.blur();document.getElementById('noteEditPureFile').click()" title="插入图片">🖼</button>`;
+    const rightBtn = `<button class="ui-fs-icon-btn" type="button" onclick="Notes.copyFullFromEdit(this)" title="复制全文">📋</button><button class="ui-fs-icon-btn" type="button" onclick="this.blur();document.getElementById('noteEditPureFile').click()" title="插入图片">🖼</button><button class="ui-fs-icon-btn" type="button" onclick="Notes.undoEdit(this)" title="撤销">↶</button><button class="ui-fs-icon-btn" type="button" onclick="Notes.redoEdit(this)" title="重做">↷</button>`;
     /* v59：去掉文本框下面的「已插入 N 张图」提示，整屏只有 textarea + 隐藏文件输入 */
     UI.openFull('', `
       <textarea id="noteEditPure" placeholder="写下你的经验、原则、观察..."></textarea>
