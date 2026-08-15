@@ -2466,7 +2466,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-15-v66';
+const BUILD_VERSION = '2026-08-15-v67';
 const App = {
   current:'home',
   booting:true,
@@ -4419,6 +4419,8 @@ const Notes = {
         ta.value = before + tag + after;
         ta.selectionStart = ta.selectionEnd = s + tag.length;
         ta.focus();
+        /* v67：图片插入也是一次可撤销的操作 */
+        this._pushUndoNow();
       }
     }
     input.value = '';
@@ -4583,7 +4585,7 @@ const Notes = {
      标题 / 分类 / 标签 / 保存 / 取消 / ✕ 都没有：默认自动保存、退栈即保存。 */
   openDetail(id){
     const it = this.list().find(x=>x.id===id); if(!it) return;
-    const rightBtn = `<button class="ui-fs-icon-btn" type="button" onclick="Notes.copyFullFromEdit(this)" title="复制全文">📋</button><button class="ui-fs-icon-btn" type="button" onclick="this.blur();document.getElementById('noteEditPureFile').click()" title="插入图片">🖼</button>`;
+    const rightBtn = `<button class="ui-fs-icon-btn" type="button" onclick="Notes.undoEdit(this)" title="撤销">↶</button><button class="ui-fs-icon-btn" type="button" onclick="Notes.redoEdit(this)" title="重做">↷</button><button class="ui-fs-icon-btn" type="button" onclick="Notes.copyFullFromEdit(this)" title="复制全文">📋</button><button class="ui-fs-icon-btn" type="button" onclick="this.blur();document.getElementById('noteEditPureFile').click()" title="插入图片">🖼</button>`;
     /* v59：去掉文本框下面的「已插入 N 张图」提示，整屏只有 textarea + 隐藏文件输入 */
     UI.openFull('', `
       <textarea id="noteEditPure" placeholder="写下你的经验、原则、观察..."></textarea>
@@ -4591,6 +4593,8 @@ const Notes = {
     `, '← 返回', null, rightBtn, /*hideTitle*/true);
     const ta = document.getElementById('noteEditPure'); if(!ta) return;
     ta.value = it.text || '';
+    /* v67：初始化本次编辑的撤销/重做历史栈（基于已载入内容作为基线） */
+    this._initUndo(ta);
     /* 自动保存：失焦 600ms / 退栈时保存 */
     let timer = null;
     ta.addEventListener('input', ()=>{
@@ -4626,6 +4630,42 @@ const Notes = {
     try{
       const ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0'; ta.style.top='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); UI.toast('已复制全文 ✓');
     }catch(e){ UI.toast('复制失败，请手动长按选择'); }
+  },
+  /* v67：编辑面板撤销/重做 —— 轻量历史栈，基于 textarea 内容快照（每次 input 去抖入栈；图片插入调用 _pushUndoNow 入栈）。
+     基线 = 打开时载入的内容；撤销回到该基线为止，重做恢复到最新。还原后自动保存。 */
+  _initUndo(ta){
+    this._hist = [ta.value]; this._hp = 0;
+    const self = this;
+    ta.addEventListener('input', ()=>{
+      clearTimeout(self._histTimer);
+      self._histTimer = setTimeout(()=>self._pushUndoNow(), 400);
+    });
+  },
+  _pushUndoNow(){
+    if(!this._hist) return;
+    const ta = document.getElementById('noteEditPure'); if(!ta) return;
+    const v = ta.value;
+    if(this._hist[this._hp] === v) return;
+    this._hist = this._hist.slice(0, this._hp + 1);
+    this._hist.push(v);
+    if(this._hist.length > 200) this._hist.shift();
+    this._hp = this._hist.length - 1;
+  },
+  undoEdit(btn){
+    if(btn){ btn.classList.remove('is-flash'); void btn.offsetWidth; btn.classList.add('is-flash'); setTimeout(()=>{ try{btn.classList.remove('is-flash'); btn.blur();}catch(e){} }, 460); }
+    if(!this._hist || this._hp <= 0){ UI.toast('没有可撤销的操作'); return; }
+    clearTimeout(this._histTimer);
+    this._hp--;
+    const ta = document.getElementById('noteEditPure');
+    if(ta){ ta.value = this._hist[this._hp]; ta.focus(); this._autoSaveEdit(); }
+  },
+  redoEdit(btn){
+    if(btn){ btn.classList.remove('is-flash'); void btn.offsetWidth; btn.classList.add('is-flash'); setTimeout(()=>{ try{btn.classList.remove('is-flash'); btn.blur();}catch(e){} }, 460); }
+    if(!this._hist || this._hp >= this._hist.length - 1){ UI.toast('没有可重做的操作'); return; }
+    clearTimeout(this._histTimer);
+    this._hp++;
+    const ta = document.getElementById('noteEditPure');
+    if(ta){ ta.value = this._hist[this._hp]; ta.focus(); this._autoSaveEdit(); }
   },
   /* v57：详情全屏自动保存 —— 用上次记录到的 _fsEditingId，把 text 写回 notes */
   _autoSaveEdit(){
