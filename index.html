@@ -465,6 +465,14 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 /* v56：管理分类按钮缩小 */
 .note-manage-btn{font-size:12px;padding:4px 10px;min-height:28px;border:1px solid var(--line);background:transparent;border-radius:8px;cursor:pointer;color:var(--text)}
 .note-manage-btn:hover{background:rgba(0,0,0,.05)}
+/* v70：个人认知库分类卡片改为 3 列紧凑网格（与经验摘录内容卡片同逻辑） */
+.self-cat-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:12px}
+.self-cat-card{background:rgba(255,253,248,.92);border:1px solid var(--line);border-radius:14px;padding:9px 10px;display:flex;flex-direction:column;gap:5px;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease;min-height:96px}
+.self-cat-card:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(20,30,18,.1)}
+.self-cat-card .nc-head .nc-title{font-size:13px}
+.self-cat-card .nc-head .nc-count{font-size:10px}
+.self-cat-preview{display:flex;flex-direction:column;gap:2px;overflow:hidden}
+.self-mini-line{font-size:11px;line-height:1.4;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* v56：全屏内联编辑表单 */
 .note-edit-in-full input,.note-edit-in-full textarea,.note-edit-in-full select{width:100%;font-size:14px;padding:8px;border:1px solid var(--line);border-radius:8px;box-sizing:border-box;font-family:inherit;background:#fff}
 /* v59：openDetail 详情纯编辑全屏 —— 整个全屏就是一个无边、无背景的 textarea。
@@ -1097,16 +1105,11 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
       <div class="page-title">个人认知库</div><div class="page-sub">优点、喜欢/不喜欢、关键词、边界，以及能控制和不能控制的事情。</div>
       <div class="card">
         <h2>快速添加</h2>
-        <select id="selfType"></select>
+        <div class="row"><select id="selfType" style="flex:1"></select><button class="note-manage-btn" onclick="Self.editCategories()" title="增删改分类">管理分类</button></div>
         <div class="row" style="margin-top:8px">
           <input id="selfInput" placeholder="写一条">
           <button class="btn" onclick="Self.add()">添加</button>
         </div>
-      </div>
-      <div class="card">
-        <h2>自定义清单</h2>
-        <div class="row"><input id="selfCategoryName" placeholder="新增清单名，如：能量来源"><button class="btn" onclick="Self.addCategory()">添加</button></div>
-        <div class="pill-row" id="selfCategoryList" style="margin-top:10px"></div>
       </div>
       <div id="selfBoards"></div>
     </section><!-- ==== 功能：个人认知库 END ==== --><!-- ==== 功能：经验摘录 START ==== --><section class="page" id="page-notes">
@@ -2474,7 +2477,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-15-v69';
+const BUILD_VERSION = '2026-08-15-v70';
 const App = {
   current:'home',
   booting:true,
@@ -4416,21 +4419,70 @@ const Self = {
   defaults(){ return [{key:'strengths',label:'100 个优点'},{key:'likes',label:'喜欢清单'},{key:'dislikes',label:'不喜欢清单'},{key:'keywords',label:'关键词'},{key:'bounds',label:'边界'},{key:'control',label:'能控制'},{key:'nocontrol',label:'不能控制'}]; },
   categories(){ const saved=Store.get('self_categories'); if(saved) return saved; Store.set('self_categories', this.defaults()); return this.defaults(); },
   add(){ const text=selfInput.value.trim(); if(!text)return; const k=selfType.value; Store.set('self_'+k,[text,...Store.get('self_'+k,[])]); selfInput.value=''; this.render(); },
-  addCategory(){ const label=selfCategoryName.value.trim(); if(!label)return; const a=this.categories().concat({key:'custom_'+Util.uid(),label}); Store.set('self_categories',a); selfCategoryName.value=''; this.render(); },
-  delCategory(k){ Store.set('self_categories', this.categories().filter(x=>x.key!==k)); this.render(); },
+  /* v70：管理分类（与经验摘录同逻辑）—— 改名 / ↑↓ 调序 / ＋ 加 / ✕ 删；删除分类同时清空其下内容 */
+  editCategories(){
+    const editing = this.categories().map(c=>({key:c.key, label:c.label}));
+    const drawIn = (body)=>{
+      body.querySelector('#scEditList').innerHTML = editing.map((v,i)=>`<div class="row" style="margin-bottom:6px;align-items:center">
+        <button class="btn ghost small" data-sc-up="${i}" title="上移" ${i===0?'disabled style="opacity:.35"':''}>↑</button>
+        <button class="btn ghost small" data-sc-down="${i}" title="下移" ${i===editing.length-1?'disabled style="opacity:.35"':''}>↓</button>
+        <input data-sc="${i}" value="${Util.esc(v.label)}" placeholder="分类名" style="flex:1;min-width:0">
+        <button class="del" data-sc-del="${i}" title="删除">✕</button>
+      </div>`).join('');
+      body.querySelectorAll('#scEditList input').forEach(inp=>{ inp.addEventListener('input', e=>{ const i=Number(e.target.dataset.sc); editing[i]={key:editing[i].key, label:e.target.value}; }); });
+      body.querySelectorAll('[data-sc-del]').forEach(btn=>{ btn.addEventListener('click', ()=>{ editing.splice(Number(btn.dataset.scDel),1); drawIn(body); }); });
+      body.querySelectorAll('[data-sc-up]').forEach(btn=>{ btn.addEventListener('click', ()=>{ const i=Number(btn.dataset.scUp); if(i>0){ [editing[i-1],editing[i]]=[editing[i],editing[i-1]]; drawIn(body); } }); });
+      body.querySelectorAll('[data-sc-down]').forEach(btn=>{ btn.addEventListener('click', ()=>{ const i=Number(btn.dataset.scDown); if(i<editing.length-1){ [editing[i+1],editing[i]]=[editing[i+1],editing[i]]; drawIn(body); } }); });
+    };
+    UI.modal('分类管理', `
+      <p class="hint" style="margin:0 0 8px">改名、用 ↑↓ 调顺序、点「＋」加、点「✕」删。删除分类会同时清空该分类下的内容。</p>
+      <div id="scEditList"></div>
+      <button class="btn ghost small" id="scEditAdd" style="margin-top:8px">＋ 加一个分类</button>
+      <div class="row" style="margin-top:14px"><button class="btn" id="scEditSave">保存</button><button class="btn ghost" id="scEditCancel">取消</button></div>
+    `);
+    setTimeout(()=>{
+      const body = document.querySelector('#uiModalBody');
+      if(!body) return;
+      drawIn(body);
+      body.querySelector('#scEditAdd').onclick = ()=>{ editing.push({key:'custom_'+Util.uid(), label:''}); drawIn(body); };
+      body.querySelector('#scEditCancel').onclick = ()=> UI.closeModal();
+      body.querySelector('#scEditSave').onclick = ()=>{
+        const cleaned = editing.map(c=>({key:c.key, label:(c.label||'').trim()})).filter(c=>c.label);
+        const keep = new Set(cleaned.map(c=>c.key));
+        this.categories().forEach(c=>{ if(!keep.has(c.key)) Store.remove('self_'+c.key); });
+        Store.set('self_categories', cleaned);
+        this.render(); UI.closeModal(); UI.toast('分类已更新');
+      };
+    }, 0);
+  },
   render(){
     const cats=this.categories();
     selfType.innerHTML=cats.map(x=>`<option value="${x.key}">${Util.esc(x.label)}</option>`).join('');
-    selfCategoryList.innerHTML=cats.map(x=>`<span class="pill" draggable="true" data-self-cat="${x.key}">${Util.esc(x.label)} <button class="del" onclick="Self.delCategory('${x.key}')">✕</button></span>`).join('');
-    selfBoards.innerHTML=cats.map(({key:k,label})=>`<div class="card"><h2>${Util.esc(label)}</h2><div class="pill-row">${Store.get('self_'+k,[]).map((x,i)=>`<span class="pill" draggable="true" data-self-key="${k}" data-self-index="${i}">${Util.esc(x)} <button class="del" onclick="Self.move('${k}',${i},-1)">↑</button><button class="del" onclick="Self.move('${k}',${i},1)">↓</button><button class="del" onclick="Self.del('${k}',${i})">✕</button></span>`).join('')||'<div class="empty">还没有内容</div>'}</div></div>`).join('');
-    this.bindDrag();
+    selfBoards.innerHTML=`<div class="self-cat-grid">`+cats.map(({key:k,label})=>{
+      const items=Store.get('self_'+k,[]); const n=items.length;
+      const preview = items.slice(0,3).map(x=>`<div class="self-mini-line">${Util.esc(x)}</div>`).join('') || '<div class="empty" style="padding:4px 0">还没有内容</div>';
+      return `<div class="self-cat-card" onclick="Self.openCat('${k}')">
+        <div class="nc-head"><span class="nc-title">📁 ${Util.esc(label)}</span><span class="nc-count">${n}</span></div>
+        <div class="self-cat-preview">${preview}</div>
+        ${n>3?`<div class="nc-see-all">查看全部 ${n} 条 →</div>`:''}
+      </div>`;
+    }).join('')+`</div>`;
   },
-  bindDrag(){
-    let fromCat=''; document.querySelectorAll('[data-self-cat]').forEach(el=>{ el.addEventListener('dragstart',()=>fromCat=el.dataset.selfCat); el.addEventListener('dragover',e=>e.preventDefault()); el.addEventListener('drop',e=>{ e.preventDefault(); const to=el.dataset.selfCat, a=this.categories(); const fi=a.findIndex(x=>x.key===fromCat), ti=a.findIndex(x=>x.key===to); if(fi<0||ti<0)return; const [m]=a.splice(fi,1); a.splice(ti,0,m); Store.set('self_categories',a); this.render(); }); });
-    let from=null; document.querySelectorAll('[data-self-key]').forEach(el=>{ el.addEventListener('dragstart',()=>from={key:el.dataset.selfKey,index:Number(el.dataset.selfIndex)}); el.addEventListener('dragover',e=>e.preventDefault()); el.addEventListener('drop',e=>{ e.preventDefault(); if(!from||from.key!==el.dataset.selfKey)return; const a=Store.get('self_'+from.key,[]), ti=Number(el.dataset.selfIndex); const [m]=a.splice(from.index,1); a.splice(ti,0,m); Store.set('self_'+from.key,a); this.render(); }); });
+  /* 点分类卡片 → 全屏查看 / 编辑该分类下所有条目 */
+  openCat(key){
+    const cat=this.categories().find(c=>c.key===key); if(!cat) return;
+    const html=`<div class="row" style="margin-bottom:8px"><input id="selfItemInput" placeholder="写一条，回车添加" onkeydown="if(event.key==='Enter')Self.addItem('${key}')"><button class="btn" onclick="Self.addItem('${key}')">添加</button></div><div id="selfItemList" class="pill-row"></div>`;
+    UI.openFull('📁 '+cat.label, html, '返回', ()=>{ this.render(); }, '', true);
+    setTimeout(()=>this.renderItems(key), 0);
   },
-  move(k,i,d){ const a=Store.get('self_'+k,[]); const j=i+d; if(j<0||j>=a.length)return; [a[i],a[j]]=[a[j],a[i]]; Store.set('self_'+k,a); this.render(); },
-  del(k,i){ const a=Store.get('self_'+k,[]); a.splice(i,1); Store.set('self_'+k,a); this.render(); }
+  addItem(key){ const ta=document.getElementById('selfItemInput'); if(!ta) return; const text=ta.value.trim(); if(!text) return; Store.set('self_'+key,[text,...Store.get('self_'+key,[])]); ta.value=''; this.renderItems(key); },
+  renderItems(key){
+    const el=document.getElementById('selfItemList'); if(!el) return;
+    const arr=Store.get('self_'+key,[]);
+    el.innerHTML=arr.length?arr.map((x,i)=>`<span class="pill">${Util.esc(x)} <button class="del" onclick="Self.move('${key}',${i},-1)">↑</button><button class="del" onclick="Self.move('${key}',${i},1)">↓</button><button class="del" onclick="Self.del('${key}',${i})">✕</button></span>`).join(''):'<div class="empty">还没有内容</div>';
+  },
+  move(k,i,d){ const a=Store.get('self_'+k,[]); const j=i+d; if(j<0||j>=a.length)return; [a[i],a[j]]=[a[j],a[i]]; Store.set('self_'+k,a); const el=document.getElementById('selfItemList'); if(el) this.renderItems(k); else this.render(); },
+  del(k,i){ const a=Store.get('self_'+k,[]); a.splice(i,1); Store.set('self_'+k,a); const el=document.getElementById('selfItemList'); if(el) this.renderItems(k); else this.render(); }
 };
 /* ==== 功能：个人认知库 END ==== */
 /* ==== 功能：经验摘录 START ==== */
