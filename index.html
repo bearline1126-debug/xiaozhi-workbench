@@ -309,6 +309,11 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .modal-body{padding:16px;overflow:auto;font-size:14px;line-height:1.6}
 .db-day-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .db-day-grid .pill{cursor:pointer}
+/* v69：小赢墙词云 */
+.db-keyword{cursor:pointer;line-height:1.5;white-space:nowrap;vertical-align:middle;transition:opacity .15s;margin:2px 1px;display:inline-block}
+.db-keyword:active{opacity:.55}
+.db-keyword sup{font-size:9px;color:var(--text-dim);font-weight:400;margin-left:1px}
+.db-win-big{font-weight:800;color:var(--accent)}
 .bottom-nav{
   position:fixed;left:0;right:0;bottom:0;z-index:38;
   display:grid;grid-template-columns:repeat(4,1fr);
@@ -1080,11 +1085,11 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
       </div>
       <div id="dbArchiveBox" style="display:none;margin-top:8px"></div>
       <div class="card" id="dbWinsCard" style="margin-top:14px;padding:12px">
-        <h2 style="margin:0 0 4px;font-size:15px">🔥 持续性小赢</h2>
-        <p class="hint" style="margin:0 0 8px">AI 从「感恩日记 + 每日必做完成项」里<b>只</b>萃取真正做成的小赢（排除转发文献等非成功事件），<b>永久</b>存入成功库；出现 ≥2 天 = 持续小赢。不会重复分析已统计过的素材。</p>
+        <h2 style="margin:0 0 4px;font-size:15px">🔥 我的小赢</h2>
+        <p class="hint" style="margin:0 0 8px">做成的小事都在这里。🏆＝大赢（已完成的主线任务）。点词看是哪天。</p>
         <div id="dbWinsBody"></div>
         <div class="row" style="margin-top:8px;gap:8px">
-          <button class="btn ghost small" style="flex:1" onclick="Wins.analyze()">↻ 分析新素材（用 AI）</button>
+          <button class="btn ghost small" style="flex:1" onclick="Wins.analyze()">↻ 分析新素材</button>
           <button class="btn ghost small" style="flex:1" onclick="Wins.openLibrary()">📚 成功库</button>
         </div>
       </div>
@@ -2469,7 +2474,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-15-v68';
+const BUILD_VERSION = '2026-08-15-v69';
 const App = {
   current:'home',
   booting:true,
@@ -3535,12 +3540,14 @@ const DiaryBook = {
 }
 /* ==== 功能：日记本 END ==== */
 
-/* v68：持续性小赢（取代原「最近30天做了些啥」关键词云）
-   1) 改名「持续性小赢」；只统计「我做成/做到」的正向小赢，排除"分享文献"这类非成功事件。
-   2) 永久成功库 wins_library：所有小赢都存下来，不会因 30 天滚动窗口而丢失。
-   3) 素材来源：感恩日记(success:date.wins) + 每日必做已完成项(task_done:date)。
-   4) 增量分析：wins_cursor 记录上次分析到的日期；每次只把 cursor 之后的新素材发给 AI，避免重复统计。
-   5) 持续性：本地按归一化短语分组，出现 ≥2 个不同日期 = 持续性小赢（字越大=持续天数越多）。 */
+/* v69：我的小赢（取代 v68「持续性小赢」）
+   判断逻辑重审（v69）：
+   1) 重点在「小赢」而非「持续性」——只要做成、且有实际产出/结果的事都算小赢（如搭建工作台→有工作台、写文献→有文献、打赢官司→有结果）；
+      不再要求"≥2 天"才显示，单次真实小赢也直接上墙。
+   2) 大赢：已完成的主线任务（count>=goal，打满卡）＝大赢，放进来并放大字（🏆）；未完成绝不放进。
+   3) 永久成功库 wins_library：所有小赢/大赢都存下来，不会因 30 天滚动窗口丢失。
+   4) 素材来源：感恩日记(success:date.wins) + 每日必做已完成项(task_done:date) + 主线任务(mainquests 完成者)。
+   5) 增量分析：wins_cursor 记录上次分析到的日期；每次只把 cursor 之后的新素材发给 AI，避免重复统计。 */
 const Wins = {
   KEY_LIB:'wins_library',
   KEY_CURSOR:'wins_cursor',
@@ -3569,69 +3576,115 @@ const Wins = {
     return out.length > 250 ? out.slice(-250) : out;
   },
   norm(text){ return String(text||'').toLowerCase().replace(/[\s\p{P}]+/gu, ''); },
+  /* 已完成的主线任务＝大赢：只有 count>=goal（打满卡）才算，未完成不放进 */
+  completedQuests(){
+    const quests = Store.get('mainquests', []);
+    const events = Store.get('quest_events', []);
+    const out = [];
+    quests.forEach(q=>{
+      if(q.count >= q.goal){
+        const evs = events.filter(e=>e.questId===q.id).sort((a,b)=> a.date<b.date?-1:a.date>b.date?1:(a.ts||0)-(b.ts||0));
+        const compDate = evs.length>=q.goal ? evs[q.goal-1].date : (evs.length?evs[evs.length-1].date:Util.today());
+        out.push({id:q.id, name:q.name, date:compDate});
+      }
+    });
+    return out;
+  },
   async analyze(){
     const box = document.getElementById('dbWinsBody'); if(!box) return;
     const mat = this.newMaterial();
-    if(!mat.length){
+    const mqs = this.completedQuests();
+    if(!mat.length && !mqs.length){
       const cur = this.cursor();
-      UI.toast(cur ? '没有新素材，已是最新（'+cur+'）' : '还没有感恩日记 / 必做记录');
+      UI.toast(cur ? '没有新素材，已是最新（'+cur+'）' : '还没有感恩日记 / 必做 / 主线任务记录');
       return;
     }
-    box.innerHTML = '<div class="hint">AI 正在萃取新素材的小赢（约 10 秒）…</div>';
-    try{
-      const prompt = '你是一个「小赢萃取器」。下面是我的记录素材，每条带日期和来源（感恩=感恩日记里写下的成就/学到/做对的事；必做=每日必做里已完成的事项）。\n请只挑出真正的「小赢」——我做成、做到、学会、坚持下来的正向事件。\n排除：单纯转发/分享文献、计划但没做、纯粹负面情绪宣泄、纯客观流水账、与"我做成"无关的内容。\n对每条小赢，用「动词+宾语」的简短短语改写（如"搭建了工作台""读完一章""坚持冥想"），不超过 12 字。\n只返回 JSON 数组，每项 {date:"yyyy-MM-dd", text:"改写后的短语", source:"感恩"或"必做"}。不要其他内容，不要 markdown 代码块。\n素材：\n' + mat.map(m=>m.date+' ['+m.source+'] '+m.text.slice(0,120)).join('\n');
-      const out = await AI.ask(prompt);
-      const m = String(out).match(/\[[\s\S]*\]/);
-      let arr = [];
-      if(m){ try{ arr = JSON.parse(m[0]); }catch(e){ arr = []; } }
-      if(!Array.isArray(arr)) arr = [];
-      const lib = this.library();
-      const seen = new Set(lib.map(x=>x.date+'|'+this.norm(x.text)));
-      let added = 0;
-      arr.forEach(x=>{
-        const date = String(x.date||'').slice(0,10);
-        const text = String(x.text||'').trim().slice(0,24);
-        if(!date || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !text) return;
-        const key = date+'|'+this.norm(text);
-        if(seen.has(key)) return;
-        seen.add(key);
-        lib.push({date, text, source: x.source==='必做'?'必做':'感恩'});
-        added++;
-      });
-      Store.set(this.KEY_LIB, lib);
-      Store.set(this.KEY_CURSOR, Util.today());
-      UI.toast('已萃取 '+added+' 条小赢，成功库共 '+lib.length+' 条');
-      this.render(box);
-    }catch(e){
-      box.innerHTML = '<div class="empty">分析失败：'+Util.esc(e.message||String(e))+'</div>';
+    if(mat.length) box.innerHTML = '<div class="hint">正在萃取小赢（约 10 秒）…</div>';
+    let addedSmall = 0;
+    if(mat.length){
+      try{
+        const prompt = '你是一个「小赢萃取器」。下面是我的记录素材，每条带日期和来源（感恩=感恩日记里写下的成就/学到/做对的事；必做=每日必做里已完成的事项）。\n请只挑出真正的「小赢」——我做成、做到、学会、坚持下来、并且**有实际产出或结果**的正向事件（例：搭建了工作台→有工作台产出；写完一篇文献→有文献产出；打赢了官司→有了结果）。\n排除：单纯转发/分享文献（没有自己的产出）、计划但没做、纯情绪宣泄、纯客观流水账、与"我做成/有产出"无关的内容。\n对每条小赢，用「动词+宾语」的简短短语改写（如"搭建了工作台""写完一篇文献""打赢了官司"），不超过 12 字。\n只返回 JSON 数组，每项 {date:"yyyy-MM-dd", text:"改写后的短语", source:"感恩"或"必做"}。不要其他内容，不要 markdown 代码块。\n素材：\n' + mat.map(m=>m.date+' ['+m.source+'] '+m.text.slice(0,120)).join('\n');
+        const out = await AI.ask(prompt);
+        const m = String(out).match(/\[[\s\S]*\]/);
+        let arr = [];
+        if(m){ try{ arr = JSON.parse(m[0]); }catch(e){ arr = []; } }
+        if(!Array.isArray(arr)) arr = [];
+        const lib = this.library();
+        const seen = new Set(lib.map(x=>x.date+'|'+this.norm(x.text)));
+        arr.forEach(x=>{
+          const date = String(x.date||'').slice(0,10);
+          const text = String(x.text||'').trim().slice(0,24);
+          if(!date || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !text) return;
+          const key = date+'|'+this.norm(text);
+          if(seen.has(key)) return;
+          seen.add(key);
+          lib.push({date, text, source: x.source==='必做'?'必做':'感恩', type:'small'});
+          addedSmall++;
+        });
+        Store.set(this.KEY_LIB, lib);
+        Store.set(this.KEY_CURSOR, Util.today());
+      }catch(e){
+        box.innerHTML = '<div class="empty">分析失败：'+Util.esc(e.message||String(e))+'</div>';
+        return;
+      }
     }
+    const addedBig = this.addBigWins(mqs);
+    if(addedSmall===0 && addedBig===0){
+      UI.toast('没有新素材，已是最新');
+      this.render(box);
+      return;
+    }
+    UI.toast('新增 '+addedSmall+' 条小赢、'+addedBig+' 条大赢；成功库共 '+this.library().length+' 条');
+    this.render(box);
   },
-  sustained(){
+  /* 把成功库按归一化短语分组；保留天数、来源、是否大赢 */
+  groups(){
     const lib = this.library();
-    const groups = {};
+    const g = {};
     lib.forEach(x=>{
       const k = this.norm(x.text);
       if(!k) return;
-      if(!groups[k]) groups[k] = {text:x.text, dates:new Set(), sources:new Set()};
-      groups[k].dates.add(x.date);
-      groups[k].sources.add(x.source);
+      if(!g[k]) g[k] = {text:x.text, dates:new Set(), sources:new Set(), types:new Set()};
+      g[k].dates.add(x.date);
+      g[k].sources.add(x.source);
+      g[k].types.add(x.type||'small');
     });
-    return Object.values(groups).map(g=>({text:g.text, days:g.dates.size, dates:[...g.dates].sort(), sources:[...g.sources]})).filter(g=>g.days>=2).sort((a,b)=>b.days-a.days);
+    return Object.values(g).map(o=>({
+      text:o.text, days:o.dates.size, dates:[...o.dates].sort(),
+      sources:[...o.sources], big:o.types.has('big'), small:o.types.has('small')
+    })).sort((a,b)=> (b.big?1:0)-(a.big?1:0) || (b.days-a.days) || (a.text<b.text?-1:1));
+  },
+  /* 兼容外壳：旧名 sustained 仅保留接口 */
+  sustained(){ return this.groups(); },
+  /* 把已完成的主线任务作为「大赢」加入成功库（按 questId 去重，每个任务只记一次） */
+  addBigWins(mqs){
+    const lib = this.library();
+    const seen = new Set(lib.filter(x=>x.mqId).map(x=>x.mqId));
+    let added = 0;
+    mqs.forEach(q=>{
+      if(seen.has(q.id)) return;
+      seen.add(q.id);
+      lib.push({date:q.date, text:q.name, source:'主线', type:'big', mqId:q.id});
+      added++;
+    });
+    if(added) Store.set(this.KEY_LIB, lib);
+    return added;
   },
   render(box){
     box = box || document.getElementById('dbWinsBody'); if(!box) return;
-    const sus = this.sustained();
-    if(!sus.length){
-      const lib = this.library();
-      box.innerHTML = lib.length
-        ? '<div class="empty">目前都是一次性小赢，还没出现「持续 ≥2 天」的。继续累积，重复做成的事会在这里浮现。</div>'
-        : '<div class="empty">还没有成功库。点下方「分析新素材」从感恩日记/必做里萃取小赢。</div>';
+    const gs = this.groups();
+    if(!gs.length){
+      box.innerHTML = '<div class="empty">还没有小赢。点「分析新素材」从感恩日记 / 必做 / 主线任务里萃取。</div>';
       return;
     }
-    const max = Math.max(...sus.map(s=>s.days));
-    box.innerHTML = sus.map(s=>{
-      const size = 13 + Math.round((s.days/Math.max(max,1))*16);
-      return `<span class="db-keyword" style="font-size:${size}px" onclick="Wins.showDays('${Util.esc(s.text).replace(/'/g,"\\'")}')" title="${s.days} 天 · 点开看涉及天数">${Util.esc(s.text)}<sup>${s.days}</sup></span>`;
+    const maxDays = Math.max(...gs.map(g=>g.days), 1);
+    box.innerHTML = gs.slice(0, 40).map(g=>{
+      let size, cls='db-keyword', mark='';
+      if(g.big){ size = 24; cls += ' db-win-big'; mark='🏆 '; }
+      else if(g.days>=2){ size = 15 + Math.round((g.days/maxDays)*12); }
+      else { size = 13; }
+      const tail = (g.big?'大赢 · ':'') + (g.days>=2 ? ('持续 '+g.days+' 天 · ') : '') + g.dates[0] + (g.dates.length>1 ? (' ~ '+g.dates[g.dates.length-1]) : '');
+      return `<span class="${cls}" style="font-size:${size}px" onclick="Wins.showDays('${Util.esc(g.text).replace(/'/g,"\\'")}')" title="${Util.esc(tail)}">${mark}${Util.esc(g.text)}<sup>${g.days>1?g.days:''}</sup></span>`;
     }).join('<span class="db-keyword-sep"> </span>');
   },
   renderIfEmpty(){
@@ -3654,12 +3707,15 @@ const Wins = {
     const byDate = {};
     lib.forEach(x=>{ (byDate[x.date]=byDate[x.date]||[]).push(x); });
     const dates = Object.keys(byDate).sort().reverse();
-    const html = `<p class="hint">成功库共 ${lib.length} 条（永久保存，不会因超过 30 天而丢失）。</p>` +
-      dates.map(d=>`<div class="db-sec" style="margin-bottom:8px"><h3 style="font-size:14px">${d} <span class="muted" style="font-weight:400;font-size:12px">${byDate[d].length} 条</span></h3><ul class="db-list">${byDate[d].map(x=>`<li>${Util.esc(x.text)} <span class="muted" style="font-size:11px">· ${x.source}</span></li>`).join('')}</ul></div>`).join('');
+    const html = `<p class="hint">成功库共 ${lib.length} 条（永久保存）。🏆＝大赢（已完成的主线任务）。</p>` +
+      dates.map(d=>{
+        const items = byDate[d].slice().sort((a,b)=> (a.type==='big'?-1:1));
+        return `<div class="db-sec" style="margin-bottom:8px"><h3 style="font-size:14px">${d} <span class="muted" style="font-weight:400;font-size:12px">${items.length} 条</span></h3><ul class="db-list">${items.map(x=>`<li>${x.type==='big'?'🏆 ':''}${Util.esc(x.text)} <span class="muted" style="font-size:11px">· ${x.source}</span></li>`).join('')}</ul></div>`;
+      }).join('');
     UI.modal('📚 成功库', html);
   },
   /* 兼容外壳：旧 DiaryBook 方法可能调用 */
-  async collect(){ this.renderIfEmpty(); return this.sustained(); },
+  async collect(){ this.renderIfEmpty(); return this.groups(); },
 };
 /* ==== 功能：日记本 END ==== */
 /* ==== 功能：追踪表 START ==== */
