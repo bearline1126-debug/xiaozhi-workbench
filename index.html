@@ -478,9 +478,9 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
    · 长按卡片 → 加 .editing → 浮出右上角红色 ✕
    · 长按之后拖动 → 调换顺序（DragSort.bind） */
 .self-mini-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:10px}
-.self-mini-card{position:relative;background:rgba(255,253,248,.94);border:1px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer;display:flex;align-items:flex-start;gap:6px;transition:transform .15s ease,box-shadow .15s ease;min-height:54px}
+.self-mini-card{position:relative;background:rgba(255,253,248,.94);border:1px solid var(--line);border-radius:10px;padding:6px 10px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:transform .15s ease,box-shadow .15s ease}
 .self-mini-card:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(20,30,18,.08)}
-.self-mini-card .smc-text{font-size:13px;line-height:1.5;color:var(--text);word-break:break-word;white-space:pre-wrap;flex:1;padding-right:14px}
+.self-mini-card .smc-text{font-size:13px;line-height:1.35;color:var(--text);word-break:break-word;white-space:pre-wrap;flex:1;padding-right:14px}
 .self-mini-card .smc-del{position:absolute;top:3px;right:3px;display:none;width:22px;height:22px;line-height:20px;text-align:center;border:0;border-radius:50%;background:rgba(180,40,40,.92);color:#fff;font-size:13px;cursor:pointer;padding:0;z-index:3}
 .self-mini-card.editing .smc-del{display:block}
 .self-mini-card.editing{box-shadow:0 0 0 2px rgba(180,40,40,.45)}
@@ -2489,7 +2489,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-15-v71';
+const BUILD_VERSION = '2026-08-15-v72';
 const App = {
   current:'home',
   booting:true,
