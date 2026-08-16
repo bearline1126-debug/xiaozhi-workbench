@@ -378,6 +378,9 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .res-desc{font-size:11px;color:var(--text-dim);line-height:1.4}
 @media (max-width:480px){ .res-grid{grid-template-columns:1fr} }
 .eng-q-opt:active{transform:scale(.97);border-color:var(--accent)}
+.eng-block-title{font-size:14px;font-weight:700;margin:4px 0 8px;color:var(--text);display:flex;align-items:center;gap:6px}
+.eng-block-title .eng-count{font-size:11px;font-weight:500;color:var(--text-dim);background:rgba(0,0,0,.05);padding:2px 8px;border-radius:10px}
+.eng-empty-hint{font-size:13px;color:var(--text-dim);padding:14px;background:rgba(255,255,255,.5);border:1px dashed var(--line);border-radius:12px}
 .eng-q-back{animation:flipIn .3s ease}
 @keyframes flipIn{from{opacity:0;transform:rotateY(90deg)}to{opacity:1;transform:rotateY(0)}}
 .thumb{
@@ -1163,7 +1166,8 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
         <span class="hint" id="englishSourceHint" style="margin-left:4px"></span>
       </div>
       <div class="grid" id="englishCards"></div>
-      <div id="englishQuiz" style="margin-top:10px"></div>
+      <div id="englishReview" style="margin-top:10px"></div>
+      <div id="englishTest" style="margin-top:14px"></div>
       <div class="card">
         <h2>每日写作</h2><p class="hint" id="englishWritingPrompt"></p>
         <textarea id="englishAnswer" placeholder="写下你的英文翻译"></textarea>
@@ -2527,7 +2531,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-15-v76';
+const BUILD_VERSION = '2026-08-16-v77';
 const App = {
   current:'home',
   booting:true,
@@ -5592,99 +5596,41 @@ const English = {
       `<div class="card"><h2>🗣️ 每日对话</h2>${engMain(Util.esc(d.dialog).replace(/\n/g,'<br>'))}${engZh(Util.esc(d.dialogZh).replace(/\n/g,'<br>'))}${doneFn('每日对话')?engDone():engActs(`<button class="btn small" onclick="English.playDialog()" title="朗读对话">🔊</button><button class="btn small ghost" onclick="English.done('每日对话')">完成学习</button>`)}</div>`
     ].join('');
     /* 测试卡片 */
-    this.renderQuiz();
+    this.renderReview(); this.renderTest();
     englishWritingPrompt.textContent=d.writing;
     englishResult.textContent='';
   },
-  renderQuiz(){
-    const box=document.getElementById('englishQuiz');
+  /* ===== 复习区（上方）：待复习卡一次一张，答完自动出下一张 ===== */
+  renderReview(){
+    const box=document.getElementById('englishReview');
     if(!box) return;
-    if(Store.getDaily('english_done',[]).includes('测试')){
-      box.innerHTML=`<div class="card" style="text-align:center;padding:24px"><div style="font-size:36px;margin-bottom:8px">🎉</div><div style="color:var(--accent);font-weight:700">今日测试已完成！已自动入账金币</div><div class="hint" style="margin-top:6px">明天再来挑战新题</div></div>`;
-      return;
-    }
-    /* v73：复习卡片一次只显示 1 张（不再一口气把所有 due 都放出来），
-       答完一张自动出下一张；全部 due 完成后才进入今日测试 */
     const due=this.dueItems();
-    if(due.length){
-      box.innerHTML=`<div class="eng-q-row eng-q-single">${this.quizCard(due[0])}</div><div class="hint" style="margin-top:8px;text-align:center">还有 ${due.length-1} 张复习，做完一张自动出下一张</div>`;
+    if(!due.length){
+      box.innerHTML=`<div class="eng-block-title">🔁 复习</div><div class="eng-empty-hint">✅ 今天没有待复习的（学过的词/搭配到期会自动出现在这里）</div>`;
       return;
     }
-    /* 复习完了 → 进入今日测试（一次只出一道：今日词 + 今日搭配 各出一张） */
-    const todays=this.todayTestItems();
-    const done=Store.get('english_today_test:'+Util.today(),{});
-    const remain=todays.filter(q => !(done[q.key]&&done[q.key].isCorrect));
-    if(!remain.length){
-      Store.setDaily('english_done',[...new Set(Store.getDaily('english_done',[]).concat('测试'))]);
-      Coin.earn('english_test','完成英语复习');
-      box.innerHTML=`<div class="card" style="text-align:center;padding:24px"><div style="font-size:36px;margin-bottom:8px">🎉</div><div style="color:var(--accent);font-weight:700">今日测试已完成！已自动入账金币</div><div class="hint" style="margin-top:6px">明天再来挑战新题</div></div>`;
-      return;
-    }
-    box.innerHTML=`<div class="eng-q-row eng-q-single">${this.todayTestCard(remain[0])}</div><div class="hint" style="margin-top:8px;text-align:center">今日测试 ${remain.length==2?'共 2 题':''}，答完自动出下一题</div>`;
-  },
-  /* v52：今日测试只测 word + phrase（v51 的 4 道题改为 2 道，去掉 今日句/今日对话）。
-   用户反馈：v51 加了今日句/今日对话测试不该要；只保留「每日单词」「固定搭配」。
-   SRS 复习里 quote/dialog 仍保留（用户学习时登记的，老规则不动）。 */
-todayTestItems(){
-    const t=this.today();
-    return [
-      {key:'today-word',type:'word',text:t.word,answer:t.wordZh,wrong:this.wrongOption(t.wordZh)},
-      {key:'today-phrase',type:'phrase',text:t.phrase,answer:t.phraseZh,wrong:t.phraseWrong||this.wrongZh(t.phraseZh)}
-    ];
-  },
-  todayTestCard(q){
-    const label={quote:'今日句',word:'今日词',phrase:'今日搭配',dialog:'今日对话'}[q.type]||'今日测试';
-    const sub='选出正确的中文意思';
-    const done=Store.get('english_today_test:'+Util.today(),{});
-    const res=done[q.key];
-    if(res){
-      return `<div class="card eng-quiz-card"><h2>🧪 ${label}</h2><div class="eng-q-word">${Util.esc(q.text)}</div><div style="text-align:center;padding:8px 0"><div style="font-size:30px">${res.isCorrect?'✅':'❌'}</div><div style="font-weight:700;color:${res.isCorrect?'var(--accent)':'var(--accent-2)'}">${res.isCorrect?'答对啦':'再记记'}</div></div></div>`;
-    }
-    const options=[q.answer, q.wrong].sort(()=>Math.random()-.5);
-    return `<div class="card eng-quiz-card"><h2>🧪 ${label}</h2><div class="eng-q-word">${Util.esc(q.text)}</div><p class="hint" style="margin-top:4px">${sub}</p><div class="eng-q-options">${options.map(opt=>`<button class="btn eng-q-opt" onclick="English.answerTodayTest('${q.key}','${Util.esc(opt)}')">${Util.esc(opt)}</button>`).join('')}</div></div>`;
-  },
-  answerTodayTest(key,selected){
-    const q=this.todayTestItems().find(x=>x.key===key); if(!q) return;
-    const isCorrect = selected===q.answer;
-    const cur=Store.get('english_today_test:'+Util.today(),{});
-    cur[key]={isCorrect, at:Date.now()};
-    Store.set('english_today_test:'+Util.today(),cur);
-    if(isCorrect){
-      /* 今日测试答对：也写入 SRS（reps=0，到期=今天，留给明天再测一次） */
-      this.ensureSRS(q.type);
-    }
-    this.renderQuiz();
-  },
-  /* 兼容旧版调用：保留 completeTestEmpty 防止引用残留 */
-  completeTestEmpty(){ this.renderQuiz(); },
-  quizCard(q){
+    const q=due[0];
+    this._reviewOpts=this._reviewOpts||{};
+    this._reviewOpts[q.key]=[q.answer,q.wrong].sort(()=>Math.random()-.5);
+    const opts=this._reviewOpts[q.key];
     const label={quote:'句子复习',word:'单词复习',phrase:'搭配复习',dialog:'对话复习'}[q.type]||'复习';
     const sub={quote:'这句话的中文意思是？',word:'这个单词的中文意思是？',phrase:'这个搭配的中文意思是？',dialog:'这段对话的中文意思是？'}[q.type]||'选择正确的中文意思';
-    const res=q._res;
-    if(res){
-      return `<div class="card eng-quiz-card">
+    box.innerHTML=`<div class="eng-block-title">🔁 复习 <span class="eng-count">${due.length} 张待复习</span></div>
+      <div class="card eng-quiz-card">
         <h2>🧪 ${label}</h2>
         <div class="eng-q-word">${Util.esc(q.text)}</div>
-        <div style="text-align:center;padding:8px 0 4px">
-          <div style="font-size:32px">${res.isCorrect?'✅':'❌'}</div>
-          <div style="font-weight:700;color:${res.isCorrect?'var(--accent)':'var(--accent-2)'};font-size:16px">${res.isCorrect?'答对啦，进度 +1':'答错了，明天再练'}</div>
-          <div style="margin-top:6px;font-size:14px"><b>${Util.esc(q.text)}</b> = ${Util.esc(q.answer)}</div>
+        <p class="hint" style="margin-top:4px">${sub}</p>
+        <div class="eng-q-options">
+          ${opts.map((opt,i)=>`<button class="btn eng-q-opt" onclick="English.answerQuiz('${q.key}',${i})">${Util.esc(opt)}</button>`).join('')}
         </div>
-      </div>`;
-    }
-    const options=[q.answer, q.wrong].sort(()=>Math.random()-.5);
-    return `<div class="card eng-quiz-card">
-      <h2>🧪 ${label}</h2>
-      <div class="eng-q-word">${Util.esc(q.text)}</div>
-      <p class="hint" style="margin-top:4px">${sub}</p>
-      <div class="eng-q-options">
-        ${options.map(opt=>`<button class="btn eng-q-opt" onclick="English.answerQuiz('${q.key}','${Util.esc(opt)}')">${Util.esc(opt)}</button>`).join('')}
+        <div class="hint" style="margin-top:6px">已连对 ${q.reps}/4 · 还差 ${Math.max(0,4-q.reps)} 次进「已学库」</div>
       </div>
-      <div class="hint" style="margin-top:6px">已连对 ${q.reps}/4 · 还差 ${Math.max(0,4-q.reps)} 次进「已学库」</div>
-    </div>`;
+      <div class="hint" style="margin-top:6px;text-align:center">做完一张自动出下一张</div>`;
   },
-  answerQuiz(key, selected){
+  answerQuiz(key, idx){
     const q=this.srsGet(key); if(!q) return;
+    const opts=this._reviewOpts?.[key]||[q.answer,q.wrong];
+    const selected=opts[idx];
     const isCorrect = selected===q.answer;
     if(isCorrect){
       q.reps += 1;
@@ -5692,32 +5638,75 @@ todayTestItems(){
       else { q.due = Util.dateAdd(Util.today(), this.nextInterval(q.reps)); }
     } else { q.reps = 0; q.due = Util.dateAdd(Util.today(), 1); }
     this.srsSet(key, q);
-    this.renderQuizFresh(key, isCorrect);
-    this.checkTestComplete();
+    this.renderReview();   /* 只刷新复习区，不再误触发测试完成 */
   },
-  completeTestEmpty(){ if(Store.getDaily('english_done',[]).includes('测试')) return; Store.setDaily('english_done',[...new Set(Store.getDaily('english_done',[]).concat('测试'))]); this.render(); Home.render(); UI.toast('✅ 复习打卡完成'); },
-  checkTestComplete(){
-    if(!this.dueItems().length && !Store.getDaily('english_done',[]).includes('测试')){
-      Store.setDaily('english_done',[...new Set(Store.getDaily('english_done',[]).concat('测试'))]);
-      Coin.earn('english_test','完成英语复习');
-      this.render(); Home.render();
-    }
+  /* ===== 测试区（下方）：今日词 + 今日搭配，各一题，独立作答 ===== */
+  todayTestItems(){
+    const t=this.today();
+    return [
+      {key:'today-word',type:'word',text:t.word,answer:t.wordZh,wrong:this.wrongOption(t.wordZh)},
+      {key:'today-phrase',type:'phrase',text:t.phrase,answer:t.phraseZh,wrong:t.phraseWrong||this.wrongZh(t.phraseZh)}
+    ];
   },
-  renderQuizFresh(key, isCorrect){
-    const q=this.srsGet(key); if(!q){ this.renderQuiz(); return; }
-    /* v73：答完一张就重新走 renderQuiz 走流程：
-       - 若还有 due → 渲染下一张复习卡
-       - 若 due 全部搞完 → 自动切到今日测试（一次也只显示 1 张） */
-    const due=this.dueItems();
-    if(!due.length){
-      /* 复习全部完成，进入今日测试 */
-      this.renderQuiz();
+  renderTest(){
+    const box=document.getElementById('englishTest');
+    if(!box) return;
+    if(Store.getDaily('english_done',[]).includes('测试')){
+      box.innerHTML=`<div class="eng-block-title">🧪 今日测试</div><div class="card" style="text-align:center;padding:20px"><div style="font-size:34px;margin-bottom:6px">🎉</div><div style="color:var(--accent);font-weight:700">今日测试已完成！已自动入账金币</div><div class="hint" style="margin-top:6px">明天再来挑战新题</div></div>`;
       return;
     }
-    const box=document.getElementById('englishQuiz');
-    if(!box) return;
-    box.innerHTML=`<div class="eng-q-row eng-q-single">${this.quizCard(due[0])}</div><div class="hint" style="margin-top:8px;text-align:center">还有 ${due.length-1} 张复习，做完一张自动出下一张</div>`;
+    const done=Store.get('english_today_test:'+Util.today(),{});
+    const items=this.todayTestItems().map(q=>{
+      const res=done[q.key];
+      const opts=[q.answer,q.wrong].sort(()=>Math.random()-.5);
+      return {q,res,opts};
+    });
+    this._testItems=items;
+    const answeredCount=items.filter(it=>done[it.q.key]&&done[it.q.key].isCorrect).length;
+    box.innerHTML=`<div class="eng-block-title">🧪 今日测试 <span class="eng-count">${answeredCount}/${items.length} 已答对</span></div>` +
+      items.map(({q,res,opts})=>{
+        const lab={quote:'今日句',word:'今日词',phrase:'今日搭配',dialog:'今日对话'}[q.type]||'今日题';
+        if(res){
+          return `<div class="card eng-quiz-card">
+            <h2>🧪 ${lab}</h2>
+            <div class="eng-q-word">${Util.esc(q.text)}</div>
+            <div style="text-align:center;padding:8px 0"><div style="font-size:30px">${res.isCorrect?'✅':'❌'}</div><div style="font-weight:700;color:${res.isCorrect?'var(--accent)':'var(--accent-2)'}">${res.isCorrect?'答对啦':'再记记'}</div></div>
+          </div>`;
+        }
+        return `<div class="card eng-quiz-card">
+          <h2>🧪 ${lab}</h2>
+          <div class="eng-q-word">${Util.esc(q.text)}</div>
+          <p class="hint" style="margin-top:4px">选出正确的中文意思</p>
+          <div class="eng-q-options">
+            ${opts.map((opt,i)=>`<button class="btn eng-q-opt" onclick="English.answerTodayTest('${q.key}',${i})">${Util.esc(opt)}</button>`).join('')}
+          </div>
+        </div>`;
+      }).join('') +
+      (answeredCount===items.length?`<div class="hint" style="margin-top:6px;text-align:center">全部答对啦 🎉 已自动入账金币</div>`:'');
   },
+  answerTodayTest(key, idx){
+    const item=(this._testItems||[]).find(x=>x.q.key===key); if(!item) return;
+    const q=item.q;
+    const selected=item.opts[idx];
+    const isCorrect = selected===q.answer;
+    const cur=Store.get('english_today_test:'+Util.today(),{});
+    cur[key]={isCorrect, at:Date.now()};
+    Store.set('english_today_test:'+Util.today(),cur);
+    if(isCorrect){ this.ensureSRS(q.type); }
+    /* 全部答对 → 标记今日测试完成 + 金币（与复习区完全解耦） */
+    const allCorrect = this.todayTestItems().every(x=>{ const r=cur[x.key]; return r&&r.isCorrect; });
+    if(allCorrect){
+      const doneList=Store.getDaily('english_done',[]);
+      if(!doneList.includes('测试')){
+        Store.setDaily('english_done',[...new Set(doneList.concat('测试'))]);
+        Coin.earn('english_test','完成英语测试');
+        Home.render();
+      }
+    }
+    this.renderTest();
+  },
+  completeTestEmpty(){ this.renderTest(); },
+
   reveal(){ englishResult.textContent='参考翻译：\n'+this.today().answer+'\n\n你的答案：\n'+(englishAnswer.value||'还没写'); },
   /* AI 分析我的翻译（v49） */
   async aiAnalyze(){
@@ -5755,7 +5744,6 @@ todayTestItems(){
       Coin.earn('english','完成英语全部学习');
       Store.setDaily('english_all',true);
     }
-    if(tMap[name]) this.checkTestComplete();
     this.render();
     Home.render();
   },
