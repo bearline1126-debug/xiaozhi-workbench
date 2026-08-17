@@ -381,6 +381,10 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .eng-block-title{font-size:14px;font-weight:700;margin:4px 0 8px;color:var(--text);display:flex;align-items:center;gap:6px}
 .eng-block-title .eng-count{font-size:11px;font-weight:500;color:var(--text-dim);background:rgba(0,0,0,.05);padding:2px 8px;border-radius:10px}
 .eng-empty-hint{font-size:13px;color:var(--text-dim);padding:14px;background:rgba(255,255,255,.5);border:1px dashed var(--line);border-radius:12px}
+.eng-two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}
+.eng-col{display:flex;flex-direction:column;min-width:0}
+.eng-col-h{font-size:13px;font-weight:700;margin:0 0 6px;color:var(--text);display:flex;align-items:center;gap:6px}
+.eng-col-h .eng-count{font-size:11px;font-weight:500;color:var(--text-dim);background:rgba(0,0,0,.05);padding:2px 8px;border-radius:10px}
 .eng-q-back{animation:flipIn .3s ease}
 @keyframes flipIn{from{opacity:0;transform:rotateY(90deg)}to{opacity:1;transform:rotateY(0)}}
 .thumb{
@@ -1179,16 +1183,9 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
         <h2>🎧 听力资源 / 播客</h2>
         <p class="hint" style="margin-bottom:10px">点开即在新标签页收听（均为免费英语学习播客与平台）。</p>
         <div class="res-grid">
-          <div class="res-tile" data-ext="https://www.bbc.co.uk/learningenglish/english/features/6-minute-english" role="link" tabindex="0"><span class="res-ico">📻</span><span class="res-name">BBC 6 Minute English</span><span class="res-desc">6 分钟一期，日常话题 + 地道表达</span></div>
-          <div class="res-tile" data-ext="https://learningenglish.voanews.com/" role="link" tabindex="0"><span class="res-ico">🗞️</span><span class="res-name">VOA Learning English</span><span class="res-desc">慢速新闻英语，适合打基础</span></div>
-          <div class="res-tile" data-ext="https://www.bbc.co.uk/learningenglish/english/features/the-english-we-speak" role="link" tabindex="0"><span class="res-ico">💬</span><span class="res-name">The English We Speak</span><span class="res-desc">每期一个鲜活口语短语</span></div>
-          <div class="res-tile" data-ext="https://www.eslpod.com/" role="link" tabindex="0"><span class="res-ico">🎙️</span><span class="res-name">ESL Pod</span><span class="res-desc">慢速讲解 + 情景对话，经典教材</span></div>
-          <div class="res-tile" data-ext="https://culips.com/" role="link" tabindex="0"><span class="res-ico">🌐</span><span class="res-name">Culips ESL Podcast</span><span class="res-desc">生活化会话，俚语与自然表达</span></div>
-          <div class="res-tile" data-ext="https://www.allearsenglish.com/" role="link" tabindex="0"><span class="res-ico">👂</span><span class="res-name">All Ears English</span><span class="res-desc">美式口语与 CONNECTION 式学习</span></div>
-          <div class="res-tile" data-ext="https://teacherluke.co.uk/" role="link" tabindex="0"><span class="res-ico">🎓</span><span class="res-name">Luke's English Podcast</span><span class="res-desc">英式幽默，长情陪伴型播客</span></div>
-          <div class="res-tile" data-ext="https://www.ted.com/talks" role="link" tabindex="0"><span class="res-ico">🎤</span><span class="res-name">TED Talks</span><span class="res-desc">真实演讲，练听力也练思维</span></div>
-          <div class="res-tile" data-ext="https://www.englishclass101.com/" role="link" tabindex="0"><span class="res-ico">📚</span><span class="res-name">EnglishClass101</span><span class="res-desc">分级别系统课 + 音频</span></div>
-          <div class="res-tile" data-ext="https://open.spotify.com/search/english%20learning%20podcast" role="link" tabindex="0"><span class="res-ico">🔎</span><span class="res-name">Spotify 英语播客</span><span class="res-desc">一键搜更多英文播客</span></div>
+          <div class="res-tile" data-ext="https://www.bbc.co.uk/learningenglish/english/features/6-minute-english" role="link" tabindex="0"><span class="res-ico">📻</span><span class="res-name">BBC 6 Minute English</span><span class="res-desc">6 分钟一期，日常话题 + 地道表达，最实用</span></div>
+          <div class="res-tile" data-ext="https://www.eslpod.com/" role="link" tabindex="0"><span class="res-ico">🎙️</span><span class="res-name">ESL Pod</span><span class="res-desc">慢速讲解 + 情景对话，专练口语翻译</span></div>
+          <div class="res-tile" data-ext="https://learningenglish.voanews.com/" role="link" tabindex="0"><span class="res-ico">🗞️</span><span class="res-name">VOA Learning English</span><span class="res-desc">慢速新闻英语，打开快、打基础稳</span></div>
         </div>
       </div>
     </section><!-- ==== 功能：英语积累 END ==== --><!-- ==== 功能：视觉灵感 START ==== --><section class="page" id="page-visual">
@@ -2531,7 +2528,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-16-v77';
+const BUILD_VERSION = '2026-08-17-v78';
 const App = {
   current:'home',
   booting:true,
@@ -5600,53 +5597,81 @@ const English = {
     englishWritingPrompt.textContent=d.writing;
     englishResult.textContent='';
   },
-  /* ===== 复习区（上方）：待复习卡一次一张，答完自动出下一张 ===== */
+  /* ===== 复习区（上方）：单词 / 搭配 两列并排，各列一次一张，答完出下一张 ===== */
   renderReview(){
     const box=document.getElementById('englishReview');
     if(!box) return;
-    const due=this.dueItems();
+    const due=this.dueItems().filter(x=>x.type==='word'||x.type==='phrase');
+    const lists={word:due.filter(x=>x.type==='word'), phrase:due.filter(x=>x.type==='phrase')};
+    this._reviewCur=this._reviewCur||{word:null, phrase:null};
+    for(const t of ['word','phrase']){
+      const l=lists[t];
+      if(this._reviewCur[t] && !l.some(x=>x.key===this._reviewCur[t])) this._reviewCur[t]=null;
+      if(!this._reviewCur[t] && l.length) this._reviewCur[t]=l[0].key;
+    }
     if(!due.length){
-      box.innerHTML=`<div class="eng-block-title">🔁 复习</div><div class="eng-empty-hint">✅ 今天没有待复习的（学过的词/搭配到期会自动出现在这里）</div>`;
+      box.innerHTML=`<div class="eng-block-title">🔁 复习</div><div class="eng-empty-hint">✅ 今天没有待复习的（学过的单词/搭配到期会自动出现在这里）</div>`;
       return;
     }
-    const q=due[0];
-    this._reviewOpts=this._reviewOpts||{};
-    this._reviewOpts[q.key]=[q.answer,q.wrong].sort(()=>Math.random()-.5);
-    const opts=this._reviewOpts[q.key];
-    const label={quote:'句子复习',word:'单词复习',phrase:'搭配复习',dialog:'对话复习'}[q.type]||'复习';
-    const sub={quote:'这句话的中文意思是？',word:'这个单词的中文意思是？',phrase:'这个搭配的中文意思是？',dialog:'这段对话的中文意思是？'}[q.type]||'选择正确的中文意思';
     box.innerHTML=`<div class="eng-block-title">🔁 复习 <span class="eng-count">${due.length} 张待复习</span></div>
-      <div class="card eng-quiz-card">
-        <h2>🧪 ${label}</h2>
-        <div class="eng-q-word">${Util.esc(q.text)}</div>
-        <p class="hint" style="margin-top:4px">${sub}</p>
-        <div class="eng-q-options">
-          ${opts.map((opt,i)=>`<button class="btn eng-q-opt" onclick="English.answerQuiz('${q.key}',${i})">${Util.esc(opt)}</button>`).join('')}
-        </div>
-        <div class="hint" style="margin-top:6px">已连对 ${q.reps}/4 · 还差 ${Math.max(0,4-q.reps)} 次进「已学库」</div>
-      </div>
-      <div class="hint" style="margin-top:6px;text-align:center">做完一张自动出下一张</div>`;
+      <div class="eng-two-col">${this._reviewCol(lists.word,'word','单词')}${this._reviewCol(lists.phrase,'phrase','搭配')}</div>`;
   },
-  answerQuiz(key, idx){
-    const q=this.srsGet(key); if(!q) return;
-    const opts=this._reviewOpts?.[key]||[q.answer,q.wrong];
-    const selected=opts[idx];
-    const isCorrect = selected===q.answer;
+  _reviewCol(list, type, label){
+    const cur=this._reviewCur[type];
+    const q=list.find(x=>x.key===cur) || list[0];
+    if(!q){
+      return `<div class="eng-col"><div class="eng-col-h">${label}复习</div><div class="eng-empty-hint">✅ 今天复习完</div></div>`;
+    }
+    const pos=list.indexOf(q);
+    this._reviewOpts=this._reviewOpts||{};
+    if(!this._reviewOpts[q.key]) this._reviewOpts[q.key]=[q.answer,q.wrong].sort(()=>Math.random()-.5);
+    const opts=this._reviewOpts[q.key];
+    return `<div class="eng-col">
+      <div class="eng-col-h">${label}复习 <span class="eng-count">${pos+1}/${list.length}</span></div>
+      <div class="card eng-quiz-card">
+        <div class="eng-q-word">${Util.esc(q.text)}</div>
+        <p class="hint" style="margin-top:4px">选出正确的中文意思</p>
+        <div class="eng-q-options">
+          ${opts.map((opt,i)=>`<button class="btn eng-q-opt" onclick="English.answerQuiz('${type}',${i})">${Util.esc(opt)}</button>`).join('')}
+        </div>
+        <div class="hint" style="margin-top:6px">已连对 ${q.reps}/4 · 再对 ${Math.max(0,4-q.reps)} 次进「已学库」</div>
+      </div>
+    </div>`;
+  },
+  answerQuiz(type, idx){
+    const list=this.dueItems().filter(x=>x.type===type);
+    const cur=this._reviewCur?.[type];
+    const q=list.find(x=>x.key===cur) || list[0];
+    if(!q) return;
+    const opts=this._reviewOpts?.[q.key]||[q.answer,q.wrong];
+    const isCorrect = opts[idx]===q.answer;
     if(isCorrect){
       q.reps += 1;
       if(q.reps >= 4){ q.mastered = true; this.addMastered({text:q.text, type:q.type, date:Util.today()}); }
       else { q.due = Util.dateAdd(Util.today(), this.nextInterval(q.reps)); }
     } else { q.reps = 0; q.due = Util.dateAdd(Util.today(), 1); }
-    this.srsSet(key, q);
+    this.srsSet(q.key, q);
+    if(this._reviewOpts) delete this._reviewOpts[q.key];   /* 下次到期重新洗牌 */
+    /* 答完当前卡 -> 推进到该列下一张（被答的卡已移出待复习，故取其后一位） */
+    const at=list.findIndex(x=>x.key===q.key);
+    const next=list[at+1];
+    this._reviewCur[type]=next ? next.key : null;
     this.renderReview();   /* 只刷新复习区，不再误触发测试完成 */
   },
-  /* ===== 测试区（下方）：今日词 + 今日搭配，各一题，独立作答 ===== */
+  /* ===== 测试区（下方）：今日词 + 今日搭配，两列并排，各一列一题（不含句子） ===== */
   todayTestItems(){
     const t=this.today();
-    return [
+    const raw=[
       {key:'today-word',type:'word',text:t.word,answer:t.wordZh,wrong:this.wrongOption(t.wordZh)},
       {key:'today-phrase',type:'phrase',text:t.phrase,answer:t.phraseZh,wrong:t.phraseWrong||this.wrongZh(t.phraseZh)}
     ];
+    this._testOpts=this._testOpts||{};
+    const day=Util.today();
+    return raw.map(q=>{
+      const ck='test:'+day+':'+q.key;   /* 按天缓存，避免跨天后选项与今日答案错位 */
+      if(!this._testOpts[ck]) this._testOpts[ck]=[q.answer,q.wrong].sort(()=>Math.random()-.5);
+      return {...q, opts:this._testOpts[ck]};
+    });
   },
   renderTest(){
     const box=document.getElementById('englishTest');
@@ -5656,43 +5681,37 @@ const English = {
       return;
     }
     const done=Store.get('english_today_test:'+Util.today(),{});
-    const items=this.todayTestItems().map(q=>{
-      const res=done[q.key];
-      const opts=[q.answer,q.wrong].sort(()=>Math.random()-.5);
-      return {q,res,opts};
-    });
+    const items=this.todayTestItems();
     this._testItems=items;
-    const answeredCount=items.filter(it=>done[it.q.key]&&done[it.q.key].isCorrect).length;
-    box.innerHTML=`<div class="eng-block-title">🧪 今日测试 <span class="eng-count">${answeredCount}/${items.length} 已答对</span></div>` +
-      items.map(({q,res,opts})=>{
-        const lab={quote:'今日句',word:'今日词',phrase:'今日搭配',dialog:'今日对话'}[q.type]||'今日题';
-        if(res){
-          return `<div class="card eng-quiz-card">
-            <h2>🧪 ${lab}</h2>
-            <div class="eng-q-word">${Util.esc(q.text)}</div>
-            <div style="text-align:center;padding:8px 0"><div style="font-size:30px">${res.isCorrect?'✅':'❌'}</div><div style="font-weight:700;color:${res.isCorrect?'var(--accent)':'var(--accent-2)'}">${res.isCorrect?'答对啦':'再记记'}</div></div>
-          </div>`;
-        }
-        return `<div class="card eng-quiz-card">
-          <h2>🧪 ${lab}</h2>
-          <div class="eng-q-word">${Util.esc(q.text)}</div>
-          <p class="hint" style="margin-top:4px">选出正确的中文意思</p>
-          <div class="eng-q-options">
-            ${opts.map((opt,i)=>`<button class="btn eng-q-opt" onclick="English.answerTodayTest('${q.key}',${i})">${Util.esc(opt)}</button>`).join('')}
-          </div>
-        </div>`;
-      }).join('') +
+    const answeredCount=items.filter(it=>done[it.key]&&done[it.key].isCorrect).length;
+    box.innerHTML=`<div class="eng-block-title">🧪 今日测试 <span class="eng-count">${answeredCount}/${items.length} 已答对</span></div>
+      <div class="eng-two-col">${this._testCol(items[0],done,'单词')}${this._testCol(items[1],done,'搭配')}</div>` +
       (answeredCount===items.length?`<div class="hint" style="margin-top:6px;text-align:center">全部答对啦 🎉 已自动入账金币</div>`:'');
   },
+  _testCol(item, done, label){
+    const res=done[item.key];
+    if(res){
+      return `<div class="eng-col"><div class="eng-col-h">${label}测试</div><div class="card eng-quiz-card">
+        <div class="eng-q-word">${Util.esc(item.text)}</div>
+        <div style="text-align:center;padding:8px 0"><div style="font-size:30px">${res.isCorrect?'✅':'❌'}</div><div style="font-weight:700;color:${res.isCorrect?'var(--accent)':'var(--accent-2)'}">${res.isCorrect?'答对啦':'再记记'}</div></div>
+      </div></div>`;
+    }
+    return `<div class="eng-col"><div class="eng-col-h">${label}测试</div><div class="card eng-quiz-card">
+      <div class="eng-q-word">${Util.esc(item.text)}</div>
+      <p class="hint" style="margin-top:4px">选出正确的中文意思</p>
+      <div class="eng-q-options">
+        ${item.opts.map((opt,i)=>`<button class="btn eng-q-opt" onclick="English.answerTodayTest('${item.key}',${i})">${Util.esc(opt)}</button>`).join('')}
+      </div>
+    </div></div>`;
+  },
   answerTodayTest(key, idx){
-    const item=(this._testItems||[]).find(x=>x.q.key===key); if(!item) return;
-    const q=item.q;
+    const item=(this._testItems||[]).find(x=>x.key===key); if(!item) return;
     const selected=item.opts[idx];
-    const isCorrect = selected===q.answer;
+    const isCorrect = selected===item.answer;
     const cur=Store.get('english_today_test:'+Util.today(),{});
     cur[key]={isCorrect, at:Date.now()};
     Store.set('english_today_test:'+Util.today(),cur);
-    if(isCorrect){ this.ensureSRS(q.type); }
+    if(isCorrect){ this.ensureSRS(item.type); }
     /* 全部答对 → 标记今日测试完成 + 金币（与复习区完全解耦） */
     const allCorrect = this.todayTestItems().every(x=>{ const r=cur[x.key]; return r&&r.isCorrect; });
     if(allCorrect){
