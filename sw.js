@@ -2,9 +2,9 @@
    1. install 立即 skipWaiting + 不预缓存任何资源
    2. activate 强制清掉所有旧 cache（包括自己当前的 HTML 缓存）
    3. fetch HTML 永远走网络，**永不缓存 HTML**（避免下次又命中旧版） */
-const CACHE = 'xiaozhi-workbench-v88';
+const CACHE = 'xiaozhi-workbench-v89';
 const ASSETS = ['./manifest.json', './icon.png', './icon-192.png', './assets/welcome-default.jpg'];
-const BUILD = '2026-08-20-v88';
+const BUILD = '2026-08-20-v89';
 
 const DEFAULT_MANIFEST = {
   name: '小彘的工作台', short_name: '小彘',
