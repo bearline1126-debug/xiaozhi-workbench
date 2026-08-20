@@ -511,15 +511,15 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
    之前的 .note-edit-pure wrapper 因为 HTML 没真的用上，所以 textarea 没被覆盖到全局边框/背景。
    现在直接用 ID 选择器 + !important 抵掉全局 input/textarea/select 默认边背景。
    用 :has() 让 ui-fs-body 在只含 textarea 时去掉 padding，textarea 真正占满全屏。 */
-#noteEditPure{flex:1;width:100%;height:100%;border:0 !important;outline:none;background:transparent !important;font-size:15px;line-height:1.7;padding:14px 16px;resize:none;font-family:inherit;color:var(--text);min-height:0;box-sizing:border-box;display:block}
+#noteEditPure{flex:1 1 40%;min-height:140px;width:100%;border:0 !important;outline:none;background:var(--bg-soft,#f4f7f2);font-size:14px;line-height:1.65;padding:12px 16px;resize:none;font-family:inherit;color:var(--text);box-sizing:border-box;display:block;border-top:1px solid var(--line)}
 #noteEditPure::placeholder{color:var(--text-dim)}
 .ui-fs-body:has(>#noteEditPure){padding:0;display:flex;flex-direction:column}
 .note-edit-in-full textarea{min-height:180px;resize:vertical;line-height:1.6}
 /* v54：内嵌在文字里的图片（小缩略图，可点看大图） */
 .note-inline-img{max-width:140px;max-height:140px;border-radius:8px;margin:4px 4px 4px 0;vertical-align:middle;cursor:zoom-in;border:1px solid var(--line)}
-/* v84：全屏编辑态顶部图片预览条（滚动显示，不挤压编辑区） */
-.note-edit-media{display:none;overflow-x:auto;white-space:nowrap;padding:8px 10px;margin-bottom:6px;background:var(--bg-soft,#f4f7f2);border:1px solid var(--line);border-radius:12px}
-.note-edit-media .note-inline-img{max-width:88px;max-height:88px;margin:0 6px 0 0;cursor:zoom-in}
+/* v87：全屏编辑态阅读视图（textarea 上方）—— 图片直接渲染成行内大图展示在文字位置 */
+.note-edit-view{flex:1 1 60%;min-height:140px;max-height:65%;overflow-y:auto;padding:14px 16px;background:transparent;font-size:15px;line-height:1.75;color:var(--text);white-space:pre-wrap;word-wrap:break-word;box-sizing:border-box}
+.note-edit-view .note-inline-img{max-width:100%!important;max-height:none!important;width:auto!important;height:auto!important;display:block;margin:10px 0;border-radius:8px;cursor:zoom-in;border:1px solid var(--line)}
 .note-detail-text{white-space:pre-wrap;word-break:break-word;font-size:13.5px;line-height:1.7;color:var(--text)}
 .note-detail-text .note-inline-img{margin:6px 6px 6px 0}
 .note-detail-meta{font-size:11.5px;color:var(--text-dim);margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)}
@@ -2525,7 +2525,7 @@ const AI = {
     const history = threadKey ? Store.get('ai_thread_'+threadKey, []) : [];
     const messages = [{role:'system',content:options.system || '你是一个温和、清醒、具体的个人复盘助手。回答要简明、可落地，不要说教。'}, ...history.slice(-10), {role:'user',content:prompt}];
     let r;
-    try { r = await fetch(base, { method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer ' + key}, body:JSON.stringify({model, messages, temperature:.6}) }); }
+    try { r = await fetch(base, { method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer ' + key}, body:JSON.stringify({model, messages, temperature: (typeof options.temperature === 'number') ? options.temperature : .6}) }); }
     catch(e){ throw new Error('连不上 AI 服务器（可能是网络问题）'); }
     if (r.status === 401) throw new Error('AI key 不对，请去设置里检查');
     if (r.status === 402) throw new Error('AI 余额不足（请去服务商充值，DeepSeek 在 platform.deepseek.com → 充值）');
@@ -2539,7 +2539,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-20-v86';
+const BUILD_VERSION = '2026-08-20-v87';
 const App = {
   current:'home',
   booting:true,
@@ -4266,21 +4266,21 @@ const Companion = {
         notePart + `现在：${nowStr}\n她刚才说：${q}\n\n（这是她最近的真实记录，你判断用得上时参考；你不知道她今天具体干了什么，别凭空编她没说出口的事——但如果记录里写着「她最近几天都累/烦/开心」，你看到可以自然带一句）\n${this.context()}`,
         {
           threadKey:'companion_'+Util.today(),
-          system:`你是一个真了解她的朋友。她正在读博（博二升博三），最近在写论文；会自省也容易内耗；情绪/感恩日记里有大量真实情绪和事件。说话像朋友，不像咨询师，更不像助手念稿。
+          temperature:.3,
+          system:`你是一个真了解她的朋友。她正在读博（博二升博三），最近在写论文；会自省也容易内耗；情绪/感恩日记里有大量真实情绪和事件。
 
-回她的时候：
-- 先接住情绪（用你自己的话，别照抄我给的示范句——「心累比身体累磨人」「看不到头的那种累最熬人」这种话我示例时都禁了，照抄就是念稿）；然后必须往前走一步——要么问一个能让她想清楚的问题，要么给一个她今天就能做的最小动作。
-- **绝对禁止只复述**：禁止把她的话换种说法重复一遍（「你很累论文卡着知识库烦」「这事确实累」「你说得对」这种复述等于没说——她不需要别人给她的话加语气词）。回复必须包含她没说的话（一个新问题 / 一个动作 / 一个不同的视角）。
-- **禁止「复述清单」**：不要把她刚说的两三件事逐条摆出来（"论文没思路、知识库一篇篇导、诉讼又卡着——确实都磨人"这种把她的话原样列一遍的格式=复读机）。要回应就挑她最在意的一件，往深里问一句或给一个动作。
-- 她给了具体困难（论文没思路/知识库一篇篇导/某件琐事）：给一个最小可执行动作，或帮她把卡点拆开（"你是卡在结构还是卡在文献"这种二分）；别只共情不接招。
-- 她问具体事（这个功能怎么用）：直接给步骤。
-- 她提了哪些事就只聊哪些——没听她亲口说的事不要替她补。
-- context 里看到她真实的近况可以自然带一句（"你最近几天情绪都写着累"那种）；但别编造她没说出口的成就或行为（禁写"你今天做了很多事""你最近挺努力"）。
-- 闲聊/打招呼/单纯发泄：1-3 句，不硬挂引用。
-- 引用她以前提过的事最多 1 条 1-2 句，自然带过；引用不出就别引。
-- 真不知道回"嗯"或"这事我说不好"都比瞎编强。
-- 现在是 ${nowStr}，按这个时辰说早晚/下午。
-- 一般 3-6 句；不喊口号不空话；允许沉默式共情。`
+# 回复铁律（违反任何一条就是不合格回复）
+
+1. **第一句必须是具体问句（？结尾）或具体可执行动作（动词开头）**——这是最硬的规则，没有例外。模型常见的"先来一句抒情共情"是错的：不要"心累比身体累磨人"、不要"看不到头的那种累最熬人"、不要"其实/说真的/确实/抱抱/嗯嗯"开头。第一句直接进问题或动作。
+2. **禁止把她的话换种说法复述**（「你很累论文卡着知识库烦」「这事确实累」=复读机，没意义）。回复必须包含她没说的话。
+3. **禁止"复述清单"**：不要把她说的两三件事逐条列出来（"论文没思路、知识库一篇篇导、诉讼又卡着——确实都磨人"=复读机）。挑一件往深里问或给动作。
+4. **她给了具体困难就给最小动作**或拆卡点（"卡在结构还是卡在文献"），不要只共情不接招。
+5. **闲聊/打招呼/发泄**：1-3 句，不硬挂引用。
+6. **context 里的近况可以自然带一句**，但别编她没说出口的事（禁"你今天做了很多事"）。
+7. **引用她以前提过的事最多 1 条 1-2 句**；引用不出就别引。
+8. **真不知道**回"嗯"或"这事我说不好"比瞎编强。
+9. 现在是 ${nowStr}，按此时辰说早晚/下午。
+10. 3-6 句；不喊口号不空话。`
         }
       );
       this.push({role:'assistant', content:out, at:this.now(), refs});
@@ -4758,24 +4758,22 @@ const Notes = {
     input.value = '';
     if(taId === 'noteText'){ this._updateMediaCount(); }
     else { const span = document.getElementById('noteEditMediaCount'); if(span){ const ids=this._mediaInText(ta.value); span.textContent = ids.length?('已插入 '+ids.length+' 张图'):''; } }
-    if(taId === 'noteEditPure') this._renderEditMedia();
+    if(taId === 'noteEditPure') this._renderEditView();
   },
   _mediaInText(text){ return [...String(text||'').matchAll(/\[img:(m_[a-zA-Z0-9_]+)\]/g)].map(m=>m[1]); },
-  /* v84：全屏编辑态（openDetail）的图片预览区 —— 把 textarea 里的 [img:m_xxx] 标记渲染成真实图片，
-     点图片可放大看原图；没图片时隐藏。载入、打字、插图上都会刷新。 */
-  _renderEditMedia(){
+  /* v87：全屏编辑态阅读视图 —— 扫描 textarea 文本里的 [img:m_xxx] 标记渲染成行内大图（直接展示在文字位置），其余文字按段渲染（保留换行）。
+     改名为 _renderEditView（替代 v85 的顶部预览条）。载入、打字、插图都会刷新。 */
+  _renderEditView(){
     try{
-      const box = document.getElementById('noteEditMediaPreview');
-      if(!box) return;
+      const view = document.getElementById('noteEditView');
       const ta = document.getElementById('noteEditPure');
-      if(!ta){ box.style.display='none'; return; }
-      const ids = this._mediaInText(ta.value);
-      if(!ids.length){ box.style.display='none'; box.innerHTML=''; return; }
-      box.style.display='flex';
-      box.innerHTML = ids.map(id => `<img class="note-inline-img" data-media="${id}" alt="图片" onclick="Media.openFull('${id}')">`).join('');
-      Media.paint(box);
+      if(!view || !ta) return;
+      view.innerHTML = this._renderTextWithMedia(ta.value);
+      Media.paint(view);
     }catch(e){}
   },
+  /* 旧 _renderEditMedia 已并入 _renderEditView（v87），保留同名空函数以防老链接误调 */
+  _renderEditMedia(){ this._renderEditView(); },
   _updateMediaCount(){
     const span = document.getElementById('noteMediaCount');
     if(!span) return;
@@ -4936,21 +4934,21 @@ const Notes = {
     const rightBtn = `<button class="ui-fs-icon-btn" type="button" onclick="Notes.copyFullFromEdit(this)" title="复制全文">📋</button><button class="ui-fs-icon-btn" type="button" onclick="this.blur();document.getElementById('noteEditPureFile').click()" title="插入图片">🖼</button><button class="ui-fs-icon-btn" type="button" onclick="Notes.undoEdit(this)" title="撤销">↶</button><button class="ui-fs-icon-btn" type="button" onclick="Notes.redoEdit(this)" title="重做">↷</button>`;
     /* v59：去掉文本框下面的「已插入 N 张图」提示，整屏只有 textarea + 隐藏文件输入 */
     UI.openFull('', `
-      <div class="note-edit-media" id="noteEditMediaPreview"></div>
+      <div class="note-edit-view" id="noteEditView"></div>
       <textarea id="noteEditPure" placeholder="写下你的经验、原则、观察..."></textarea>
-      <input type="file" id="noteEditPureFile" accept="image/*" multiple style="display:none" onchange="Notes.insertImages(this,'noteEditPure');Notes._autoSaveEdit()">
+      <input type="file" id="noteEditPureFile" accept="image/*" multiple style="display:none" onchange="Notes.insertImages(this,'noteEditPure');Notes._renderEditView()">
     `, '← 返回', null, rightBtn, /*hideTitle*/true);
     const ta = document.getElementById('noteEditPure'); if(!ta) return;
     ta.value = it.text || '';
-    /* v84：载入后把文本里的图片标记渲染成可见预览（点进去直接看图片，不再是 [img:m_xxx] 字符） */
-    this._renderEditMedia();
+    /* v87：上下分屏阅读视图 —— 图片在文字所在位置直接渲染成行内大图，不再是顶部小缩略图 */
+    this._renderEditView();
     /* v67：初始化本次编辑的撤销/重做历史栈（基于已载入内容作为基线） */
     this._initUndo(ta);
     /* 自动保存：失焦 600ms / 退栈时保存 */
     let timer = null;
     ta.addEventListener('input', ()=>{
       clearTimeout(timer);
-      Notes._renderEditMedia();
+      Notes._renderEditView();
       timer = setTimeout(()=>Notes._autoSaveEdit(), 600);
     });
     /* 退栈时强制刷一次：UI.openFull 把 onBack 存在 box._onBack */
