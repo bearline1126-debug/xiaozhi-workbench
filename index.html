@@ -134,7 +134,7 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 }
 .quote{position:relative;z-index:1;font-family:var(--title-font);font-weight:800;font-size:21px;line-height:1.38;max-width:260px}
 .quote-row{display:flex;align-items:flex-start;gap:8px}
-.quote-rotate{flex:0 0 auto;margin-top:3px;width:26px;height:26px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.16);color:#fff;font-size:13px;line-height:1;cursor:pointer;display:grid;place-items:center;transition:transform .15s,background .15s}
+.quote-rotate{flex:0 0 auto;margin-top:3px;width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.16);color:#fff;font-size:16px;line-height:1;cursor:pointer;display:grid;place-items:center;transition:transform .15s,background .15s;z-index:2;position:relative}
 .quote-rotate:active{transform:scale(.88);background:rgba(255,255,255,.3)}
 .date-line{position:relative;z-index:1;color:var(--text-dim);font-size:12px;margin-top:8px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
 .progress{position:relative;z-index:1;margin-top:16px;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
@@ -2539,7 +2539,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-20-v85';
+const BUILD_VERSION = '2026-08-20-v86';
 const App = {
   current:'home',
   booting:true,
@@ -3006,7 +3006,7 @@ const Home = {
     return out;
   },
   /* v84：首页欢迎语「换一句」按钮 —— 清掉当天缓存后重新随机抽，避免用户感觉每天都一样 */
-  rotateQuote(){ try{ Store.remove('welcome_quote_cache'); }catch(e){} const el=document.getElementById('homeQuote'); if(el) el.textContent=this.quote(); UI.toast('换了一句 ✨'); },
+  rotateQuote(){ try{ Store.remove('welcome_quote_cache'); }catch(e){} try{ const el=document.getElementById('homeQuote'); if(el) el.textContent=this.quote(); UI.toast('换了一句 ✨'); }catch(err){ try{ UI.toast('换句失败：'+err.message); }catch(e){} } },
   /* v57：联网拿一句鸡汤（异步；只 fire-and-forget，不阻塞 quote） */
   async _refreshQuoteOnline(today){
     const key = Store.getSecret('ai');
@@ -4271,6 +4271,7 @@ const Companion = {
 回她的时候：
 - 先接住情绪（用你自己的话，别照抄我给的示范句——「心累比身体累磨人」「看不到头的那种累最熬人」这种话我示例时都禁了，照抄就是念稿）；然后必须往前走一步——要么问一个能让她想清楚的问题，要么给一个她今天就能做的最小动作。
 - **绝对禁止只复述**：禁止把她的话换种说法重复一遍（「你很累论文卡着知识库烦」「这事确实累」「你说得对」这种复述等于没说——她不需要别人给她的话加语气词）。回复必须包含她没说的话（一个新问题 / 一个动作 / 一个不同的视角）。
+- **禁止「复述清单」**：不要把她刚说的两三件事逐条摆出来（"论文没思路、知识库一篇篇导、诉讼又卡着——确实都磨人"这种把她的话原样列一遍的格式=复读机）。要回应就挑她最在意的一件，往深里问一句或给一个动作。
 - 她给了具体困难（论文没思路/知识库一篇篇导/某件琐事）：给一个最小可执行动作，或帮她把卡点拆开（"你是卡在结构还是卡在文献"这种二分）；别只共情不接招。
 - 她问具体事（这个功能怎么用）：直接给步骤。
 - 她提了哪些事就只聊哪些——没听她亲口说的事不要替她补。
@@ -4763,15 +4764,17 @@ const Notes = {
   /* v84：全屏编辑态（openDetail）的图片预览区 —— 把 textarea 里的 [img:m_xxx] 标记渲染成真实图片，
      点图片可放大看原图；没图片时隐藏。载入、打字、插图上都会刷新。 */
   _renderEditMedia(){
-    const box = document.getElementById('noteEditMediaPreview');
-    if(!box) return;
-    const ta = document.getElementById('noteEditPure');
-    if(!ta){ box.style.display='none'; return; }
-    const ids = this._mediaInText(ta.value);
-    if(!ids.length){ box.style.display='none'; box.innerHTML=''; return; }
-    box.style.display='';
-    box.innerHTML = ids.map(id => `<img class="note-inline-img" data-media="${id}" alt="图片" onclick="Media.openFull('${id}')">`).join('');
-    Media.paint(box);
+    try{
+      const box = document.getElementById('noteEditMediaPreview');
+      if(!box) return;
+      const ta = document.getElementById('noteEditPure');
+      if(!ta){ box.style.display='none'; return; }
+      const ids = this._mediaInText(ta.value);
+      if(!ids.length){ box.style.display='none'; box.innerHTML=''; return; }
+      box.style.display='flex';
+      box.innerHTML = ids.map(id => `<img class="note-inline-img" data-media="${id}" alt="图片" onclick="Media.openFull('${id}')">`).join('');
+      Media.paint(box);
+    }catch(e){}
   },
   _updateMediaCount(){
     const span = document.getElementById('noteMediaCount');
