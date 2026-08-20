@@ -1,6 +1,10 @@
-const CACHE = 'xiaozhi-workbench-v83';
-const ASSETS = ['./', './index.html', './manifest.json', './icon.png', './icon-192.png', './assets/welcome-default.jpg'];
-const BUILD = '2026-08-20-v83';
+/* v84：彻底修"部署了用户看不到"问题
+   1. install 立即 skipWaiting + 不预缓存任何资源
+   2. activate 强制清掉所有旧 cache（包括自己当前的 HTML 缓存）
+   3. fetch HTML 永远走网络，**永不缓存 HTML**（避免下次又命中旧版） */
+const CACHE = 'xiaozhi-workbench-v84';
+const ASSETS = ['./manifest.json', './icon.png', './icon-192.png', './assets/welcome-default.jpg'];
+const BUILD = '2026-08-20-v84';
 
 const DEFAULT_MANIFEST = {
   name: '小彘的工作台', short_name: '小彘',
@@ -16,11 +20,17 @@ const DEFAULT_MANIFEST = {
 };
 
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));
+  /* 不预缓存 HTML（避免下次又命中旧 HTML）
+     只预缓存静态资源（图标、壁纸），并且用 BUG 处理：旧 install 用 cache.addAll 会阻塞 SW 升级，
+     改成 cache.add（单个失败不阻塞） */
+  event.waitUntil(
+    caches.open(CACHE).then(cache => Promise.all(ASSETS.map(a => cache.add(a).catch(() => null))))
+  );
   self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
+  /* 强制清掉所有旧 cache（包括当前 scope 里所有非 v84 的 cache） */
   event.waitUntil(
     caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
   );
@@ -56,7 +66,7 @@ async function buildManifest(url){
     start_url: './index.html', scope: './', display: 'standalone',
     display_override: DEFAULT_MANIFEST.display_override,
     orientation: 'portrait',
-    background_color: '#eef7ef', theme_color: '#dfead6',
+    background_color: DEFAULT_MANIFEST.background_color, theme_color: DEFAULT_MANIFEST.theme_color,
     categories: DEFAULT_MANIFEST.categories,
     icons: DEFAULT_MANIFEST.icons
   };
@@ -65,8 +75,14 @@ async function buildManifest(url){
   });
 }
 
-/* 网络优先策略：HTML 始终尝试拉最新版；其他资源缓存优先 */
 self.addEventListener('fetch', event => {
+  if (event.request.mode === 'navigate') {
+    /* navigation 请求永远走网络，不缓存 */
+    event.respondWith(
+      fetch(event.request, { cache: 'no-store' }).catch(() => caches.match('./index.html'))
+    );
+    return;
+  }
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
@@ -77,21 +93,15 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  /* HTML 文件：网络优先，确保部署后立即生效 */
+  /* HTML：永远走网络，不缓存到 cache（解决"部署了用户看到还是旧版"的核心问题） */
   if (url.pathname.endsWith('.html') || url.pathname === '/' || url.pathname.endsWith('/')) {
     event.respondWith(
-      fetch(event.request)
-        .then(resp => {
-          const copy = resp.clone();
-          caches.open(CACHE).then(cache => cache.put(event.request, copy));
-          return resp;
-        })
-        .catch(() => caches.match(event.request) || caches.match('./index.html'))
+      fetch(event.request, { cache: 'no-store' }).catch(() => caches.match('./index.html'))
     );
     return;
   }
 
-  /* 其他资源：缓存优先（图标、壁纸等） */
+  /* 其他静态资源：缓存优先 */
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;

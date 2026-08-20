@@ -2530,7 +2530,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-20-v83';
+const BUILD_VERSION = '2026-08-20-v84';
 const App = {
   current:'home',
   booting:true,
@@ -2608,13 +2608,25 @@ const App = {
     Lock.check();
     Migrate.local();
     Migrate.homeTop();
-    /* 版本检测：构建版本变化时自动刷新，彻底解决手机缓存不更新问题 */
+    /* 版本检测：构建版本变化时自动刷新，彻底解决手机缓存不更新问题
+       v84：先强制清掉所有 sw cache（包括旧版缓存住的 HTML），再 reload，
+       避免"reload 后又被同一 sw 喂旧 HTML 缓存"的死循环 */
     if(Store.get('_buildVersion') !== BUILD_VERSION){
       Store.set('_buildVersion', BUILD_VERSION);
-      /* 不用 alert，直接静默刷新即可 */
-      if(Store.get('_buildVersion') && navigator.serviceWorker?.controller){
+      const clearAndReload = () => {
+        if('caches' in window){
+          caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))))
+            .finally(() => location.reload());
+        } else {
+          location.reload();
+        }
+      };
+      if(navigator.serviceWorker?.controller){
+        clearAndReload();
+      } else if(navigator.serviceWorker){
+        navigator.serviceWorker.ready.then(clearAndReload);
+      } else {
         location.reload();
-        return;
       }
     }
     Daily.touch();
@@ -4246,7 +4258,8 @@ const Companion = {
           system:`你是一个真了解她的朋友。她正在读博（博二升博三），最近在写论文；会自省也容易内耗；情绪/感恩日记里有大量真实情绪和事件。说话像朋友，不像咨询师，更不像助手念稿。
 
 回她的时候：
-- 先接住情绪（用你自己的话，别照抄我给的示范句）；然后必须往前走一步——要么问一个能让她想清楚的问题，要么给一个她今天就能做的最小动作。禁止只把她的话换种说法重复一遍（比如"你很累论文卡着知识库烦"这种复述等于没说）。
+- 先接住情绪（用你自己的话，别照抄我给的示范句——「心累比身体累磨人」「看不到头的那种累最熬人」这种话我示例时都禁了，照抄就是念稿）；然后必须往前走一步——要么问一个能让她想清楚的问题，要么给一个她今天就能做的最小动作。
+- **绝对禁止只复述**：禁止把她的话换种说法重复一遍（「你很累论文卡着知识库烦」「这事确实累」「你说得对」这种复述等于没说——她不需要别人给她的话加语气词）。回复必须包含她没说的话（一个新问题 / 一个动作 / 一个不同的视角）。
 - 她给了具体困难（论文没思路/知识库一篇篇导/某件琐事）：给一个最小可执行动作，或帮她把卡点拆开（"你是卡在结构还是卡在文献"这种二分）；别只共情不接招。
 - 她问具体事（这个功能怎么用）：直接给步骤。
 - 她提了哪些事就只聊哪些——没听她亲口说的事不要替她补。
