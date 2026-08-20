@@ -2,9 +2,9 @@
    1. install 立即 skipWaiting + 不预缓存任何资源
    2. activate 强制清掉所有旧 cache（包括自己当前的 HTML 缓存）
    3. fetch HTML 永远走网络，**永不缓存 HTML**（避免下次又命中旧版） */
-const CACHE = 'xiaozhi-workbench-v90';
+const CACHE = 'xiaozhi-workbench-v91';
 const ASSETS = ['./manifest.json', './icon.png', './icon-192.png', './assets/welcome-default.jpg'];
-const BUILD = '2026-08-20-v90';
+const BUILD = '2026-08-20-v91';
 
 const DEFAULT_MANIFEST = {
   name: '小彘的工作台', short_name: '小彘',
@@ -76,13 +76,6 @@ async function buildManifest(url){
 }
 
 self.addEventListener('fetch', event => {
-  if (event.request.mode === 'navigate') {
-    /* navigation 请求永远走网络，不缓存 */
-    event.respondWith(
-      fetch(event.request, { cache: 'no-store' }).catch(() => caches.match('./index.html'))
-    );
-    return;
-  }
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
@@ -93,10 +86,19 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  /* HTML：永远走网络，不缓存到 cache（解决"部署了用户看到还是旧版"的核心问题） */
-  if (url.pathname.endsWith('.html') || url.pathname === '/' || url.pathname.endsWith('/')) {
+  /* HTML（含 navigate）：SWR 策略 —— 网络优先拿最新（部署立即生效），同时缓存一份用于离线/网络失败兜底
+     v91：修 v84 引入的回归 bug（HTML 永不缓存 → 网络不稳时 fetch 失败、缓存里又没有 → 白屏打不开） */
+  if (event.request.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname === '/' || url.pathname.endsWith('/')) {
     event.respondWith(
-      fetch(event.request, { cache: 'no-store' }).catch(() => caches.match('./index.html'))
+      fetch(event.request, { cache: 'no-store' })
+        .then(resp => {
+          if (resp && resp.ok) {
+            const copy = resp.clone();
+            caches.open(CACHE).then(c => c.put('./index.html', copy)).catch(() => {});
+          }
+          return resp;
+        })
+        .catch(() => caches.match('./index.html'))
     );
     return;
   }
