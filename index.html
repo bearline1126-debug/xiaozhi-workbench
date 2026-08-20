@@ -511,8 +511,11 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
    之前的 .note-edit-pure wrapper 因为 HTML 没真的用上，所以 textarea 没被覆盖到全局边框/背景。
    现在直接用 ID 选择器 + !important 抵掉全局 input/textarea/select 默认边背景。
    用 :has() 让 ui-fs-body 在只含 textarea 时去掉 padding，textarea 真正占满全屏。 */
-#noteEditPure{flex:1 1 40%;min-height:140px;width:100%;border:0 !important;outline:none;background:var(--bg-soft,#f4f7f2);font-size:14px;line-height:1.65;padding:12px 16px;resize:none;font-family:inherit;color:var(--text);box-sizing:border-box;display:block;border-top:1px solid var(--line)}
-#noteEditPure::placeholder{color:var(--text-dim)}
+/* v88：单 div contenteditable —— 点进来纯阅读（图片大图行内显示在文字位置），点击/聚焦出现光标进入编辑 */
+#noteEditPure{flex:1;width:100%;height:100%;min-height:0;padding:16px;border:0 !important;outline:none;background:transparent !important;font-size:15px;line-height:1.75;font-family:inherit;color:var(--text);box-sizing:border-box;display:block;white-space:pre-wrap;word-wrap:break-word;overflow-y:auto;cursor:text;border-radius:0}
+#noteEditPure:focus{background:rgba(255,255,255,.02)}
+#noteEditPure:empty::before{content:attr(data-placeholder);color:var(--text-dim);pointer-events:none}
+#noteEditPure .note-inline-img{max-width:100%!important;max-height:none!important;width:auto!important;height:auto!important;display:block;margin:10px 0;border-radius:8px;cursor:zoom-in;border:1px solid var(--line)}
 .ui-fs-body:has(>#noteEditPure){padding:0;display:flex;flex-direction:column}
 .note-edit-in-full textarea{min-height:180px;resize:vertical;line-height:1.6}
 /* v54：内嵌在文字里的图片（小缩略图，可点看大图） */
@@ -2539,7 +2542,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-20-v87';
+const BUILD_VERSION = '2026-08-20-v88';
 const App = {
   current:'home',
   booting:true,
@@ -2954,12 +2957,12 @@ const Home = {
   saveWidgets(list){ Store.set('home_widgets', list); },
   /* v57：欢迎语 —— 三类素材按权重随机抽一句：内置名言/鸡汤 + 经验摘录某分类下随机一条（用户可设置素材分类） + 联网搜（如果设了 AI key）。
      不写日期、不写客套话、不超过 3 行。 */
-  quote(){
+  quote(localOnly = false){
     const today = Util.today();
     const last = Store.get('welcome_quote_cache', {});
-    if(last.date === today && last.text) return last.text;
+    if(last.date === today && last.text && !localOnly) return last.text;
     const pickFrom = (arr) => arr && arr.length ? arr[Math.floor(Math.random()*arr.length)] : '';
-    /* v58：100 条内置鸡汤/名言/鼓气语录（涵盖自我、行动、休息、坚持、关系、记录、时间、选择、心态、习惯） */
+    /* v88：230 条内置鸡汤/名言/鼓气语录（涵盖自我、行动、休息、坚持、关系、记录、时间、选择、心态、习惯） */
     const builtin = [
       /* === 自我 / 自洽 === */
       '把简单的事重复做，做扎实。','你比自己想象的更有韧性。','你不必完美，你只需要真实地往前走。','一个稳定的内心，比任何技巧都珍贵。','懂得停下的人，才有走得更远的资格。','允许自己今天只做一件事，那也是胜利。','先照顾好心情，事情自然跟得上。','你给时间以耐心，时间就给你以答案。','别让昨天的疲惫，偷走今天的你。','所谓成长，是把模糊的感觉变成清晰的字句。','能承认"我今天不太好"，就是一种力量。','有时候慢一步，是为了走得稳一点。','你是你自己最久的伙伴，善待自己。','先和自己和解，外面才会宽敞。','情绪不是敌人，是信使。','看见自己，已经是一大步。','不是所有问题都要立刻解决，先陪着它一会儿。','今天的自己，比昨天多懂一点点，就够了。','你此刻的状态，并不决定你的方向。','凡事过不去的时候，给自己两分钟。','与其等风来，不如先站直了。','先稳住呼吸，再稳住心。','一个人吃饭、走路的你，也很好。','别拿别人的尺子量自己的路。','今天的稳健，就是明天的自由。','不必把所有事扛在肩上。','你能掌控的，远比你以为的多。','先照顾好自己，再去照亮别人。','你的身体记得你所有的好。','不必为没发生的事，先学会担忧。',
@@ -2974,7 +2977,9 @@ const Home = {
       /* === 关系 / 善意 === */
       '对你温柔一点的人，也值得你温柔一点。','一句温和的话，能接住一整天的疲惫。','先学会倾听，再开口表达。','把今天的一份好意留给身边的人。','谢谢你，就是很轻又有力的一句话。','你对世界的善意，会在某个转角遇见你。',
       /* === 记录 / 反思 === */
-      '认真记录的人，不会被生活遗忘。','人要在事上磨，心要在静处养。','随手记下来，比灵感记得更久。','写出来，会替你把心腾空。','回头看，你会发现那时的自己比你想象的强大。','今天写下的字，明天会替你感谢。','记下来，是给明天的自己留一句话。','记一笔账，三分钟；给明天的你，三十分钟礼物。','回头翻一翻，比刷手机更疗愈。','今天的观察，会变成以后的判断。'
+      '认真记录的人，不会被生活遗忘。','人要在事上磨，心要在静处养。','随手记下来，比灵感记得更久。','写出来，会替你把心腾空。','回头看，你会发现那时的自己比你想象的强大。','今天写下的字，明天会替你感谢。','记下来，是给明天的自己留一句话。','记一笔账，三分钟；给明天的你，三十分钟礼物。','回头翻一翻，比刷手机更疗愈。','今天的观察，会变成以后的判断。',
+      /* === v88 新增 130 句（自我/行动/当下/坚持/选择/关系/记录/休息/身体/情绪） === */
+      '把"好累"换成"好累，那今晚早点睡"，试试看。','你没有落后，只是在走自己的节奏。','今天不想动，可以；先躺着，也是一种充电。','不是所有的路都要赶，有些路要慢慢走。','你不需要对每个请求都立刻回应。','把"应该"放一放，先问自己"想不想"。','一句"够好了"，能省下很多力气。','你已经做了很多，只是你忘了数。','没事的，慢一点也是到。','把目标改小一点，先够得着。','想哭就哭，眼泪也是出口。','你不是不努力，你只是累了。','休息不是偷懒，是给明天攒力气。','吃饭慢一点，嚼久一点，胃会感谢你。','你比你以为的更接近答案。','把手机放远一点，世界会近一点。','睡个好觉比什么都强。','别怕犯错，错了才知道哪条对。','今天能笑一次，就赢了。','心里有事，说出来就轻一半。','别跟昨天比，跟前天的自己比。','把大事拆成小事，一件一件来。','你不需要完美，你需要开始。','允许自己"还没准备好"，也是一种勇气。','把今天想清楚，明天就省一半事。','你不需要所有人理解你。','把时间留给让你充电的事。','一件一件做完，就是最好的进度。','把心里的结，写下来再睡。','抬头看看天，今天的云很特别。','你值得被温柔对待，包括被自己。','把"我不知道"说出口，也是一种能力。','别怕求助，求助是本事不是软弱。','深呼吸三次，世界会慢半拍。','你比自己想象的更稳。','再难的日子，熬过去就是回忆。','把今天最让你累的那件事，列出来。','你不必时刻在线，下线也是一种生活。','把"再坚持一下"换成"再温柔一点"。','累了就停，不丢人。','今天的你，已经很努力了。','把"完美"换成"完成"。','你不需要被所有人喜欢。','把心里话写进日记，纸会替你记。','别急，你正在变成你想成为的人。','今天没做完的事，明天还在。','把注意力放回自己身上。','你的价值，不取决于今天的产出。','别再刷了，去洗个脸清醒一下。','把想说的话先存起来，明天再发。','你不是一个人在战斗。','今天能喝水吃饭睡觉，就是胜利。','把"我应该"换成"我可以"。','你不需要证明给任何人看。','累了就坐一会儿，没人计时。','把"来不及"换成"还来得及"。','你值得一顿热饭。','别把今天的情绪，带给明天的自己。','把每一件小事都当练习。','你已经做得很好了。','把时间花在你爱的人身上。','你不是机器，你是有血有肉的人。','今天也辛苦了，奖励自己一下。','把"我不知道"改成"我还在想"。','你的努力，时间都看见。','别怕一个人待着，独处也是充电。','把今天最开心的小事记下来。','你不欠任何人一个交代。','把焦虑写下来，脑子就空了。','今天的你，比昨天的你更懂自己。','别再熬夜了，黑眼圈不会让你更聪明。','把"做不到"换成"还没做到"。','你的身体是你最久的家，善待它。','把"想太多"换成"想深一点"。','你已经走了很远了，回头看看。','别跟别人比节奏，你有你自己的时区。','把"太难了"换成"那就慢慢来"。','你不需要每天都有意义。','把今天想哭的瞬间，温柔地抱一下自己。','你不是懒，你只是需要休息。','把"必须成功"换成"尽力就好"。','今天能出门走两步，就已经赢了。','你比自己想象的更值得被爱。','把"我没用"换成"我还在路上"。','别再挑自己的毛病了，先看见自己的好。','把"我不行"换成"我试试"。','你已经做了很多决定，每一个都不容易。','把今天的"不行"留给明天的"试试"。','别怕走得慢，怕的是不走。','你不需要时刻开心，允许自己有时难过。','把"太累了"说出来，比憋着强。','你已经撑过了很多你以为过不去的。','把"我没时间"换成"我选择不做"。','今天的你，值得一句"辛苦了"。','别再跟别人解释你了，懂的人自然懂。','把注意力从"还要多久"换成"我已经走了多远"。','你已经比昨天勇敢了，这就是进步。','别让"以后再说"变成"永远没说"。','今天的你，是过去所有选择的总和，谢谢自己。','把"我应该更努力"换成"我已经够努力了"。','别怕被人看见不完美的你。','你已经做得很好了，真的。','把"我做不到"换成"我还没找到方法"。','今天能好好吃饭、好好睡觉，就是了不起的一天。',
     ];
     /* v58：来源比例 → 20% 内置、40% 经验摘录素材抽句、40% 联网搜（用用户已设好的 AI base/model/key，通常是千问 / deepseek 都行） */
     const roll = Math.random();
@@ -2996,17 +3001,18 @@ const Home = {
       if(!out) out = pickFrom(builtin);
     } else {
       /* 联网（异步但 quote() 同步返回，所以这里 fire-and-forget：
-         把上一句缓存先用上，联网成功后更新 homeQuote 即可） */
+         把上一句缓存先用上，联网成功后更新 homeQuote 即可）
+         v88：rotateQuote 调 localOnly=true 时不走联网（避免点一次被异步覆盖成第二句） */
       out = pickFrom(builtin);
-      this._refreshQuoteOnline(today);
+      if(!localOnly) this._refreshQuoteOnline(today);
     }
     /* 截断到 60 字以内（3 行） */
     out = String(out||pickFrom(builtin)).replace(/\s+/g,' ').trim().slice(0,80);
     Store.set('welcome_quote_cache', {date:today, text:out});
     return out;
   },
-  /* v84：首页欢迎语「换一句」按钮 —— 清掉当天缓存后重新随机抽，避免用户感觉每天都一样 */
-  rotateQuote(){ try{ Store.remove('welcome_quote_cache'); }catch(e){} try{ const el=document.getElementById('homeQuote'); if(el) el.textContent=this.quote(); UI.toast('换了一句 ✨'); }catch(err){ try{ UI.toast('换句失败：'+err.message); }catch(e){} } },
+  /* v88：首页欢迎语「换一句」按钮 —— 清掉当天缓存后重新随机抽，强制走本地（不走联网），避免被异步联网覆盖成第二句 */
+  rotateQuote(){ try{ Store.remove('welcome_quote_cache'); }catch(e){} try{ const el=document.getElementById('homeQuote'); if(el) el.textContent=this.quote(true); UI.toast('换了一句 ✨'); }catch(err){ try{ UI.toast('换句失败：'+err.message); }catch(e){} } },
   /* v57：联网拿一句鸡汤（异步；只 fire-and-forget，不阻塞 quote） */
   async _refreshQuoteOnline(today){
     const key = Store.getSecret('ai');
@@ -4736,44 +4742,78 @@ const Notes = {
     Store.set('note_tags',[...new Set(this.tagOptions().concat(this.splitTags(tags)))].filter(Boolean).slice(0,80));
     this.splitTags(tags).forEach(t=>Util.bump('note_tags',t));
   },
-  /* v54：上传多张图片，在指定 textarea（taId）当前光标处插入 [img:m_xxx] 占位符 */
+  /* v54：上传多张图片，在指定元素（taId）当前光标处插入 [img:m_xxx] 占位符（textarea）或行内 img 元素（contenteditable div） */
   async insertImages(input, taId){
-    const ta = document.getElementById(taId || 'noteText');
+    const el = document.getElementById(taId || 'noteText');
     const files = [...(input.files||[])].filter(f=>f && f.type && f.type.startsWith('image/'));
     if(!files.length){ input.value=''; return; }
     for(const f of files){
       const saved = await Media.save(f, 'life').catch(()=>null);
       if(!saved){ UI.toast('保存图片失败'); continue; }
-      if(ta){
+      if(!el) continue;
+      if(el.tagName === 'TEXTAREA' || el.tagName === 'INPUT'){
         const tag = `[img:${saved.id}]`;
-        const s = ta.selectionStart, e = ta.selectionEnd;
-        const before = ta.value.slice(0, s), after = ta.value.slice(e);
-        ta.value = before + tag + after;
-        ta.selectionStart = ta.selectionEnd = s + tag.length;
-        ta.focus();
-        /* v67：图片插入也是一次可撤销的操作 */
-        this._pushUndoNow();
+        const s = el.selectionStart ?? el.value.length, e = el.selectionEnd ?? el.value.length;
+        const before = el.value.slice(0, s), after = el.value.slice(e);
+        el.value = before + tag + after;
+        if(el.setSelectionRange){ el.setSelectionRange(s + tag.length, s + tag.length); }
+        el.focus();
+      } else {
+        this._insertImgAtCursor(el, saved.id);
       }
+      this._pushUndoNow();
     }
     input.value = '';
     if(taId === 'noteText'){ this._updateMediaCount(); }
-    else { const span = document.getElementById('noteEditMediaCount'); if(span){ const ids=this._mediaInText(ta.value); span.textContent = ids.length?('已插入 '+ids.length+' 张图'):''; } }
-    if(taId === 'noteEditPure') this._renderEditView();
+    else if(taId === 'noteEditPure'){ this._autoSaveEdit(); }
   },
   _mediaInText(text){ return [...String(text||'').matchAll(/\[img:(m_[a-zA-Z0-9_]+)\]/g)].map(m=>m[1]); },
-  /* v87：全屏编辑态阅读视图 —— 扫描 textarea 文本里的 [img:m_xxx] 标记渲染成行内大图（直接展示在文字位置），其余文字按段渲染（保留换行）。
-     改名为 _renderEditView（替代 v85 的顶部预览条）。载入、打字、插图都会刷新。 */
-  _renderEditView(){
-    try{
-      const view = document.getElementById('noteEditView');
-      const ta = document.getElementById('noteEditPure');
-      if(!view || !ta) return;
-      view.innerHTML = this._renderTextWithMedia(ta.value);
-      Media.paint(view);
-    }catch(e){}
+  /* v88：把 div 里的内容（含 <img data-media>、<br>、文本）按顺序提取为含 [img:m_xxx] 标记的纯文本，用于保存 */
+  _extractTextFromDiv(div){
+    if(!div) return '';
+    const blockTags = new Set(['DIV','P','H1','H2','H3','H4','H5','H6','UL','OL','LI','BLOCKQUOTE','PRE','TR']);
+    let out = '';
+    const walk = (node) => {
+      if(!node) return;
+      if(node.nodeType === 3){ out += node.textContent; return; }
+      if(node.nodeType !== 1) return;
+      if(node.tagName === 'IMG'){ const id = node.dataset.media; if(id) out += `[img:${id}]`; return; }
+      if(node.tagName === 'BR'){ out += '\n'; return; }
+      node.childNodes.forEach(walk);
+      if(blockTags.has(node.tagName)) out += '\n';
+    };
+    div.childNodes.forEach(walk);
+    return out;
   },
-  /* 旧 _renderEditMedia 已并入 _renderEditView（v87），保留同名空函数以防老链接误调 */
-  _renderEditMedia(){ this._renderEditView(); },
+  _setDivFromText(div, text){
+    if(!div) return;
+    div.innerHTML = this._renderTextWithMedia(text || '');
+    Media.paint(div);
+  },
+  _insertImgAtCursor(div, mediaId){
+    if(!div) return;
+    div.focus();
+    const sel = window.getSelection();
+    const range = (sel && sel.rangeCount) ? sel.getRangeAt(0) : null;
+    const img = document.createElement('img');
+    img.className = 'note-inline-img';
+    img.dataset.media = mediaId;
+    img.alt = '图片';
+    img.setAttribute('onclick', `Media.openFull('${mediaId}')`);
+    if(range && div.contains(range.commonAncestorContainer)){
+      range.deleteContents();
+      range.insertNode(img);
+      range.setStartAfter(img);
+      range.setEndAfter(img);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    } else {
+      div.appendChild(img);
+    }
+    Media.paint(div);
+  },
+  /* 旧 _renderEditView 已并入 openDetail 自身（v88 单 div 方案），保留同名空函数以防老链接误调 */
+  _renderEditView(){},
   _updateMediaCount(){
     const span = document.getElementById('noteMediaCount');
     if(!span) return;
@@ -4926,38 +4966,37 @@ const Notes = {
   },
   /* v57：详情 = 全屏纯文本编辑。无标题/分类/标签输入框、无保存/取消按钮 —— 默认自动保存；
      右下角 🖼 插入图片（带文字说明）。删除另放在小卡长按浮出的红色 ✕。 */
-  /* v58：详情 = 全屏纯文本编辑 —— 整个全屏就是一个无边 textarea，
-     顶部右侧一个 🖼 小图标（点击插入图片，符号替代之前大按钮）。
-     标题 / 分类 / 标签 / 保存 / 取消 / ✕ 都没有：默认自动保存、退栈即保存。 */
+  /* v88：单 div contenteditable —— 点进来纯阅读（图片大图行内显示在文字位置），点击/聚焦出现光标进入编辑，blur 或 ← 返回自动保存 */
   openDetail(id){
     const it = this.list().find(x=>x.id===id); if(!it) return;
-    const rightBtn = `<button class="ui-fs-icon-btn" type="button" onclick="Notes.copyFullFromEdit(this)" title="复制全文">📋</button><button class="ui-fs-icon-btn" type="button" onclick="this.blur();document.getElementById('noteEditPureFile').click()" title="插入图片">🖼</button><button class="ui-fs-icon-btn" type="button" onclick="Notes.undoEdit(this)" title="撤销">↶</button><button class="ui-fs-icon-btn" type="button" onclick="Notes.redoEdit(this)" title="重做">↷</button>`;
-    /* v59：去掉文本框下面的「已插入 N 张图」提示，整屏只有 textarea + 隐藏文件输入 */
+    const rightBtn = `<button class="ui-fs-icon-btn" type="button" onclick="Notes.copyFullFromEdit(this)" title="复制全文">📋</button><button class="ui-fs-icon-btn" type="button" onclick="document.getElementById('noteEditPureFile').click()" title="插入图片">🖼</button><button class="ui-fs-icon-btn" type="button" onclick="Notes.undoEdit(this)" title="撤销">↶</button><button class="ui-fs-icon-btn" type="button" onclick="Notes.redoEdit(this)" title="重做">↷</button>`;
     UI.openFull('', `
-      <div class="note-edit-view" id="noteEditView"></div>
-      <textarea id="noteEditPure" placeholder="写下你的经验、原则、观察..."></textarea>
-      <input type="file" id="noteEditPureFile" accept="image/*" multiple style="display:none" onchange="Notes.insertImages(this,'noteEditPure');Notes._renderEditView()">
+      <div id="noteEditPure" class="note-edit-view" contenteditable="true" tabindex="0" spellcheck="false" data-placeholder="写下你的经验、原则、观察..."></div>
+      <input type="file" id="noteEditPureFile" accept="image/*" multiple style="display:none" onchange="Notes.insertImages(this,'noteEditPure')">
     `, '← 返回', null, rightBtn, /*hideTitle*/true);
-    const ta = document.getElementById('noteEditPure'); if(!ta) return;
-    ta.value = it.text || '';
-    /* v87：上下分屏阅读视图 —— 图片在文字所在位置直接渲染成行内大图，不再是顶部小缩略图 */
-    this._renderEditView();
-    /* v67：初始化本次编辑的撤销/重做历史栈（基于已载入内容作为基线） */
-    this._initUndo(ta);
-    /* 自动保存：失焦 600ms / 退栈时保存 */
+    const div = document.getElementById('noteEditPure'); if(!div) return;
+    /* 载入：图片直接渲染成行内大图显示在文字位置（_renderTextWithMedia） */
+    div.innerHTML = this._renderTextWithMedia(it.text || '');
+    Media.paint(div);
+    /* paste 强制纯文本（避免复制网页带样式） */
+    div.addEventListener('paste', (e)=>{
+      e.preventDefault();
+      const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+      document.execCommand('insertText', false, text);
+    });
+    this._initUndo(div);
+    /* 自动保存：input 去抖 600ms */
     let timer = null;
-    ta.addEventListener('input', ()=>{
+    div.addEventListener('input', ()=>{
       clearTimeout(timer);
-      Notes._renderEditView();
       timer = setTimeout(()=>Notes._autoSaveEdit(), 600);
     });
-    /* 退栈时强制刷一次：UI.openFull 把 onBack 存在 box._onBack */
+    /* 退栈时强制保存 */
     const box = document.getElementById('uiFullBox');
     if(box){
       const oldBack = box._onBack;
       box._onBack = ()=>{ try{ Notes._autoSaveEdit(); }catch(e){} if(typeof oldBack === 'function'){ try{ oldBack(); }catch(e){} } };
     }
-    setTimeout(()=>ta.focus(), 60);
     /* id 暂存，供 _autoSaveEdit 用 */
     this._fsEditingId = id;
   },
@@ -4969,8 +5008,8 @@ const Notes = {
       btn.classList.remove('is-flash'); void btn.offsetWidth; btn.classList.add('is-flash');
       setTimeout(()=>{ try{ btn.classList.remove('is-flash'); btn.blur(); }catch(e){} }, 460);
     }
-    const ta = document.getElementById('noteEditPure');
-    const text = ta ? ta.value : '';
+    const div = document.getElementById('noteEditPure');
+    const text = div ? this._extractTextFromDiv(div) : '';
     if(!text){ UI.toast('内容为空，没什么可复制'); return; }
     if(navigator.clipboard && navigator.clipboard.writeText){
       navigator.clipboard.writeText(text).then(()=>UI.toast('已复制全文 ✓'), ()=>this._clipCopy(text));
@@ -4981,20 +5020,19 @@ const Notes = {
       const ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0'; ta.style.top='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); UI.toast('已复制全文 ✓');
     }catch(e){ UI.toast('复制失败，请手动长按选择'); }
   },
-  /* v67：编辑面板撤销/重做 —— 轻量历史栈，基于 textarea 内容快照（每次 input 去抖入栈；图片插入调用 _pushUndoNow 入栈）。
-     基线 = 打开时载入的内容；撤销回到该基线为止，重做恢复到最新。还原后自动保存。 */
-  _initUndo(ta){
-    this._hist = [ta.value]; this._hp = 0;
+  /* v88：编辑面板撤销/重做 —— 轻量历史栈，基于 contenteditable div 内容快照（_extractTextFromDiv 提取为纯文本）。 */
+  _initUndo(div){
+    this._hist = [this._extractTextFromDiv(div)]; this._hp = 0;
     const self = this;
-    ta.addEventListener('input', ()=>{
+    div.addEventListener('input', ()=>{
       clearTimeout(self._histTimer);
       self._histTimer = setTimeout(()=>self._pushUndoNow(), 400);
     });
   },
   _pushUndoNow(){
     if(!this._hist) return;
-    const ta = document.getElementById('noteEditPure'); if(!ta) return;
-    const v = ta.value;
+    const div = document.getElementById('noteEditPure'); if(!div) return;
+    const v = this._extractTextFromDiv(div);
     if(this._hist[this._hp] === v) return;
     this._hist = this._hist.slice(0, this._hp + 1);
     this._hist.push(v);
@@ -5006,23 +5044,23 @@ const Notes = {
     if(!this._hist || this._hp <= 0){ UI.toast('没有可撤销的操作'); return; }
     clearTimeout(this._histTimer);
     this._hp--;
-    const ta = document.getElementById('noteEditPure');
-    if(ta){ ta.value = this._hist[this._hp]; ta.focus(); this._autoSaveEdit(); }
+    const div = document.getElementById('noteEditPure');
+    if(div){ this._setDivFromText(div, this._hist[this._hp]); div.focus(); this._autoSaveEdit(); }
   },
   redoEdit(btn){
     if(btn){ btn.classList.remove('is-flash'); void btn.offsetWidth; btn.classList.add('is-flash'); setTimeout(()=>{ try{btn.classList.remove('is-flash'); btn.blur();}catch(e){} }, 460); }
     if(!this._hist || this._hp >= this._hist.length - 1){ UI.toast('没有可重做的操作'); return; }
     clearTimeout(this._histTimer);
     this._hp++;
-    const ta = document.getElementById('noteEditPure');
-    if(ta){ ta.value = this._hist[this._hp]; ta.focus(); this._autoSaveEdit(); }
+    const div = document.getElementById('noteEditPure');
+    if(div){ this._setDivFromText(div, this._hist[this._hp]); div.focus(); this._autoSaveEdit(); }
   },
-  /* v57：详情全屏自动保存 —— 用上次记录到的 _fsEditingId，把 text 写回 notes */
+  /* v88：详情全屏自动保存 —— 从 contenteditable div 提取纯文本写回 notes */
   _autoSaveEdit(){
     const id = this._fsEditingId;
-    const ta = document.getElementById('noteEditPure');
-    if(!id || !ta) return;
-    const text = ta.value;
+    const div = document.getElementById('noteEditPure');
+    if(!id || !div) return;
+    const text = this._extractTextFromDiv(div);
     const textNoMedia = String(text||'').replace(/\[img:m_[a-zA-Z0-9_]+\]/g,'').trim();
     const title = Util.firstSentence(textNoMedia);
     const list = this.list();
