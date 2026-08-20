@@ -2530,7 +2530,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-20-v80';
+const BUILD_VERSION = '2026-08-20-v81';
 const App = {
   current:'home',
   booting:true,
@@ -4239,11 +4239,12 @@ const Companion = {
       const refs = hits.map(n => ({id:n.id, title:(n.title || Util.firstSentence(n.text) || '摘录').slice(0,24)}));
       const ctx = hits.length ? hits.map(n => `[${n.tags||'未分类'}${n.keywords ? ' | ' + n.keywords : ''}] ${n.title || ''}\n${n.text}`).join('\n\n') : '';
       if(refs.length) Store.setDaily('companion_cited', [...new Set([...cited, ...refs.map(r => r.id)])]);
+      const nowStr = Util.today() + ' ' + new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
       out = await AI.ask(
-        (ctx ? `以下是一些相关的经验摘录，如用得上就自然地融入回答（像朋友随口提「我记得你在XX那篇里写过…」），不要正式地说「根据XX经验」；用不到就别硬塞：\n${ctx}\n\n` : '') + `问题 / 想说的话：${q}\n\n（下面是我最近的记录，只在需要时参考，不要复述）\n${this.context()}`,
+        (ctx ? `以下是一些相关的经验摘录，如用得上就自然地融入回答（像朋友随口提「我记得你在XX那篇里写过…」），不要正式地说「根据XX经验」；用不到就别硬塞：\n${ctx}\n\n` : '') + `问题 / 想说的话：${q}\n现在时间：${nowStr}\n\n（下面是我最近的记录，只在需要时参考，不要复述；你不知道她今天具体干了什么，不要替她总结）\n${this.context()}`,
         {
-          threadKey:'companion_main',
-          system:'你是小彘的私人陪伴者。规则：1 先接住情绪，再聊事；像朋友一样自然，别像助手念稿。2 她只是在闲聊、打招呼、或单纯发泄情绪时，不要硬挂引用，直接回人话就行。3 只有当她问具体问题时才参考我给的「经验摘录」，最多引 1 条最相关的、且只引其中 1-2 句，绝不整段搬。4 引用口吻要日常：用「我记得你在『XX』那篇里写过…」「你之前在『XX』提过…」这种说法，不要出现「根据」「经验库」「摘录」这类词。5 回复 3-6 句，不喊口号不空话；遇到具体困难给一个今天就能做的小动作。6 允许沉默式共情，不必每句都给建议。'
+          threadKey:'companion_'+Util.today(),
+          system:'你是小彘的私人陪伴者，像朋友，别像助手念稿。规则：1 先接住情绪，再聊事。2 闲聊/打招呼/单纯发泄：短回 1-3 句，不硬挂引用，不每次都给小动作。3 她问具体问题时才参考「经验摘录」，最多引 1 条且只 1-2 句，不整段搬；口吻日常（用「我记得你在XX里写过…」），不要出现「根据」「经验库」「摘录」。4 不要替她总结她没说出口的事（比如不要凭空写「你今天已经完成了很多事」）；引用 context 里的近况也要说明是从她记录里看到的，不是她现在说的。5 按我给的「现在时间」说早晚/上午下午，别无视时间。6 回复一般 3-6 句（短回除外）；不喊口号不空话；她明确问困难时给一个今天就能做的小动作。允许沉默式共情。'
         }
       );
       this.push({role:'assistant', content:out, at:this.now(), refs});
