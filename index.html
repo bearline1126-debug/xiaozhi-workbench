@@ -2530,7 +2530,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-20-v82';
+const BUILD_VERSION = '2026-08-20-v83';
 const App = {
   current:'home',
   booting:true,
@@ -4195,22 +4195,19 @@ const Companion = {
   },
   now(){ return new Date().toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}); },
   /* 从经验摘录里找相关条目：关键词 > 标签 > 正文 */
-  matchNotes(q, limit = 2){
+  matchNotes(q, limit = 1){
     const s = String(q || '').toLowerCase();
     const plain = s.replace(/\s+/g, '');
     if(!plain) return [];
-    const grams = [];
-    for(let i = 0; i < plain.length - 1; i++) grams.push(plain.slice(i, i + 2));
     const words = s.split(/[^a-z0-9\u4e00-\u9fa5]+/).filter(w => w.length >= 2);
     return Notes.list().map(n => {
       const hay = ((n.title||'') + ' ' + (n.text||'') + ' ' + (n.tags||'') + ' ' + (n.keywords||'')).toLowerCase();
       let score = 0;
-      Notes.splitTags(n.keywords).forEach(k => { if(k && plain.includes(k.toLowerCase())) score += 5; });
-      Notes.splitTags(n.tags).forEach(k => { if(k && plain.includes(k.toLowerCase())) score += 3; });
-      words.forEach(w => { if(hay.includes(w)) score += 2; });
-      grams.forEach(g => { if(hay.includes(g)) score += 1; });
+      Notes.splitTags(n.keywords).forEach(k => { if(k && k.length >= 2 && plain.includes(k.toLowerCase())) score += 8; });
+      Notes.splitTags(n.tags).forEach(k => { if(k && k.length >= 2 && plain.includes(k.toLowerCase())) score += 5; });
+      words.forEach(w => { if(w.length >= 2 && hay.includes(w)) score += 2; });
       return {n, score};
-    }).filter(x => x.score >= 5).sort((a, b) => b.score - a.score).slice(0, limit).map(x => x.n);
+    }).filter(x => x.score >= 6).sort((a, b) => b.score - a.score).slice(0, limit).map(x => x.n);
   },
   /* 给 AI 的近期生活快照，保持精简 */
   context(){
@@ -4248,15 +4245,17 @@ const Companion = {
           threadKey:'companion_'+Util.today(),
           system:`你是一个真了解她的朋友。她正在读博（博二升博三），最近在写论文；会自省也容易内耗；情绪/感恩日记里有大量真实情绪和事件。说话像朋友，不像咨询师，更不像助手念稿。
 
-判断后回：
-- 她在聊感受（累/压力/焦虑/烦/不开心/难受）：先接住——「心累比身体累磨人」「看不到头的那种累最熬人」；再问她一句让事情具体起来（"是博三活儿压过来，还是读文献读不动了"那种）；别一上来就甩方法
-- 她问具体事（这个功能怎么用/某件事怎么办）才给步骤；她要的是陪伴就先陪
-- 闲聊/打招呼/单纯发泄：1-3 句，不硬挂引用，不每次都给"小动作"
-- 引用她以前提过的事最多 1 条 1-2 句，自然带过
-- 她最近的记录里有真东西——你看到「她最近几天情绪都写着累」之类可以自然提；但别凭空总结她没说的（禁写「你今天做了很多事」「你最近挺努力」这类）
-- 真不知道就回「嗯」或「这事我说不好」比瞎编强
-- 现在是 ${nowStr}，按这个时辰说早晚/上午下午
-- 一般 3-6 句居多；不喊口号不空话；允许沉默式共情`
+回她的时候：
+- 先接住情绪（用你自己的话，别照抄我给的示范句）；然后必须往前走一步——要么问一个能让她想清楚的问题，要么给一个她今天就能做的最小动作。禁止只把她的话换种说法重复一遍（比如"你很累论文卡着知识库烦"这种复述等于没说）。
+- 她给了具体困难（论文没思路/知识库一篇篇导/某件琐事）：给一个最小可执行动作，或帮她把卡点拆开（"你是卡在结构还是卡在文献"这种二分）；别只共情不接招。
+- 她问具体事（这个功能怎么用）：直接给步骤。
+- 她提了哪些事就只聊哪些——没听她亲口说的事不要替她补。
+- context 里看到她真实的近况可以自然带一句（"你最近几天情绪都写着累"那种）；但别编造她没说出口的成就或行为（禁写"你今天做了很多事""你最近挺努力"）。
+- 闲聊/打招呼/单纯发泄：1-3 句，不硬挂引用。
+- 引用她以前提过的事最多 1 条 1-2 句，自然带过；引用不出就别引。
+- 真不知道回"嗯"或"这事我说不好"都比瞎编强。
+- 现在是 ${nowStr}，按这个时辰说早晚/下午。
+- 一般 3-6 句；不喊口号不空话；允许沉默式共情。`
         }
       );
       this.push({role:'assistant', content:out, at:this.now(), refs});
