@@ -2528,7 +2528,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-17-v78';
+const BUILD_VERSION = '2026-08-20-v79';
 const App = {
   current:'home',
   booting:true,
@@ -3960,7 +3960,37 @@ const Mood = {
   render(){ Util.fillMoodSelect('moodSymbol'); const list=this.list(); moodList.innerHTML=list.length?list.map(x=>UI.item(`${x.symbol} ${x.date} ${x.time}`, x.summary || x.text, `<button class="del" onclick="Mood.del('${x.id}')">✕</button>`)).join(''):'<div class="empty">还没有情绪日记</div>'; },
   del(id){ Store.set('moods', this.list().filter(x=>x.id!==id)); this.render(); },
   todayCount(){ return this.list().filter(x=>x.date===Util.today()).length; },
-  async aiAnalyze(){ const text=moodText.value.trim(); if(!text) return UI.toast('先写一段日记'); moodAi.textContent='分析中...'; try{ moodAi.textContent=await AI.ask('请像情绪教练一样复盘这篇情绪日记，把「事件 → 解读 → 情绪 → 行为 → 结果」的回路讲清楚。分点输出，每点一两句：\n1 察觉到是什么情绪？（先给情绪命名，列 2-3 个词，如「被忽视、委屈、有点恼火」，别只说不开心/开心）\n2 事件：刚才到底发生了什么？（客观还原一句话，不加评价）\n3 我怎么解读这件事的？（我当时给自己讲了什么故事、贴了什么标签，如「他不在乎我」「我又搞砸了」）\n4 这个解读带来了什么情绪？强度几分（1-10）\n5 情绪反过来又影响了我的解读：这个情绪让我更容易往哪个方向想？它放大或缩小了哪些念头？（点明「解读→情绪→再解读」这个相互喂养的回路）\n6 事件+解读+情绪共同导致了什么行为？（我做了/没做什么、说了/没说什么）\n7 这些行为带来了什么结果？短期结果是什么，这个结果又怎么喂回了下一轮的解读（循环还是被打破）\n8 我可以学到什么（一句话）\n9 一个现在就能做的 1 分钟小动作，用来打断这个回路\n日记原文：\n'+text); }catch(e){ moodAi.textContent=e.message; } },
+  LOOP_SYSTEM: `你是用户的私人情绪教练，陪他做 CBT 式的「情绪回路」复盘。请严格遵守：
+
+1) 先共情，再分析。开头用一句话接住他的情绪（如"头痛还要扛到十点，确实够委屈"）。但是——如果用户的解读明显跑偏（比如把别人偶然的行为当成"故意针对"），不要附和、不要顺着说他"对，就是他故意的"；而是温和地分开两层：感受是真的，结论可以再看看。共情他的感受，不共情他错误的结论。
+
+2) 不复读他写的东西。他已经写下的情绪词、事件，不要原样再列一遍当分析。你的价值是往下拆：他没说出口的那层（比如"我不敢提边界""我怕有不良影响""提了也没用"），以及这些怎么连成回路。
+
+3) 看得见他的过去。如果这次提供了「历史情绪日记」，一定要对照：指出这是第几次同类触发、和过去哪篇像、那条回路是不是还在重复转。这是你比复读机强的地方，不做就浪费了。
+
+4) 输出严格走这条回路，分点、每点一两句、中文、不说教不灌鸡汤：
+   · 事件：客观还原一句话，不加评价
+   · 我的解读：我当时给自己讲了什么故事（含没说出口的那层）
+   · 解读带来的情绪 + 强度（1-10）
+   · 情绪反过来怎么喂养解读（点明"解读→情绪→再解读"在互相喂）
+   · 事件+解读+情绪共同导致的行为（做了/没做什么）
+   · 行为的结果，且结果怎么喂回下一轮（循环还是被打破）
+   · 一个现在就能做的 1 分钟动作，用来打断这个回路`,
+  pastCorpus(days=30){
+    const today = Util.today();
+    const from = Util.dateAdd(today, -days);
+    const items = this.list().filter(x => x.date < today && x.date >= from);
+    if(!items.length) return '';
+    return items.map(x => '['+x.date+' '+(x.time||'')+'] '+(x.symbol||'')+' '+x.text.slice(0,140)).join('\n');
+  },
+  loopUser(text){
+    const past = this.pastCorpus(30);
+    let p = '这是用户今天写的一段情绪日记：\n---\n' + text + '\n---';
+    if(past) p += '\n\n以下是他过去一段时间的情绪日记（仅供对照，千万不要复述这些，要去发现"是不是又出现了同类触发 / 和哪篇像 / 回路在不在重复"）：\n---\n' + past + '\n---';
+    p += '\n\n请按你的规则做一份「情绪回路」复盘。如果历史里能看到同类触发反复出现，明确点出"这周第几次了"或"和上次的 XX 很像"。';
+    return p;
+  },
+  async aiAnalyze(){ const text=moodText.value.trim(); if(!text) return UI.toast('先写一段日记'); moodAi.textContent='分析中...'; try{ moodAi.textContent=await AI.ask(this.loopUser(text), {system:this.LOOP_SYSTEM}); }catch(e){ moodAi.textContent=e.message; } },
   collect(days=30){ const from=Util.dateAdd(Util.today(),-days); return this.list().filter(x=>x.date>=from); },
   async chain(){
     const all=this.list();
@@ -4066,7 +4096,7 @@ const DailyLog = {
     const text = dlMoodText.value.trim();
     if(!text) return UI.toast('先在第三栏写一段');
     dlAi.textContent = '分析中...';
-    try{ dlAi.textContent = await AI.ask('请像情绪教练一样复盘这段情绪日记，把「事件 → 解读 → 情绪 → 行为 → 结果」的回路讲清楚。分点输出，每点一两句：\n1 察觉到是什么情绪？（先给情绪命名，列 2-3 个词，如「被忽视、委屈、有点恼火」，别只说不开心/开心）\n2 事件：刚才到底发生了什么？（客观还原一句话，不加评价）\n3 我怎么解读这件事的？（我当时给自己讲了什么故事、贴了什么标签，如「他不在乎我」「我又搞砸了」）\n4 这个解读带来了什么情绪？强度几分（1-10）\n5 情绪反过来又影响了我的解读：这个情绪让我更容易往哪个方向想？它放大或缩小了哪些念头？（点明「解读→情绪→再解读」这个相互喂养的回路）\n6 事件+解读+情绪共同导致了什么行为？（我做了/没做什么、说了/没说什么）\n7 这些行为带来了什么结果？短期结果是什么，这个结果又怎么喂回了下一轮的解读（循环还是被打破）\n8 我可以学到什么（一句话）\n9 一个现在就能做的 1 分钟小动作，用来打断这个回路\n日记原文：\n'+text); }
+    try{ dlAi.textContent = await AI.ask(Mood.loopUser(text), {system:Mood.LOOP_SYSTEM}); }
     catch(e){ dlAi.textContent = e.message; }
   },
   /* AI 一句话总结情绪（基于今日感恩日记+情绪日记+习惯） */
