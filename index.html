@@ -521,8 +521,7 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 /* v54：内嵌在文字里的图片（小缩略图，可点看大图） */
 .note-inline-img{max-width:140px;max-height:140px;border-radius:8px;margin:4px 4px 4px 0;vertical-align:middle;cursor:zoom-in;border:1px solid var(--line)}
 /* v87：全屏编辑态阅读视图（textarea 上方）—— 图片直接渲染成行内大图展示在文字位置 */
-.note-edit-view{flex:1 1 60%;min-height:140px;max-height:65%;overflow-y:auto;padding:14px 16px;background:transparent;font-size:15px;line-height:1.75;color:var(--text);white-space:pre-wrap;word-wrap:break-word;box-sizing:border-box}
-.note-edit-view .note-inline-img{max-width:100%!important;max-height:none!important;width:auto!important;height:auto!important;display:block;margin:10px 0;border-radius:8px;cursor:zoom-in;border:1px solid var(--line)}
+/* v88 旧的 .note-edit-view 规则已废弃（v88 改单 div contenteditable 后 div 走 #noteEditPure 选择器，这里清掉避免 max-height:65% 残留导致"底部留白"） */
 .note-detail-text{white-space:pre-wrap;word-break:break-word;font-size:13.5px;line-height:1.7;color:var(--text)}
 .note-detail-text .note-inline-img{margin:6px 6px 6px 0}
 .note-detail-meta{font-size:11.5px;color:var(--text-dim);margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)}
@@ -2545,7 +2544,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-20-v89';
+const BUILD_VERSION = '2026-08-20-v90';
 const App = {
   current:'home',
   booting:true,
@@ -2997,22 +2996,32 @@ const Home = {
       const noteCat = Store.get('home_quote_note_cat', Notes.cats()[0] || '');
       if(noteCat){
         const pool = Notes.list().filter(x => (x.cat||'') === noteCat);
-        /* v89：随机抽条 + 随机抽该条里的一句话（不再总取第一句），并多试 3 次避开最近 5 句 */
+        /* v90：抽句时过滤"标题/无意义短句"（>=10 字、非纯标点数字、不与标题相似、不在最近 5 句） */
         if(pool.length){
           const recent = Home._recentQuotes || [];
-          for(let attempt = 0; attempt < 5; attempt++){
+          const isValid = (s, title) => {
+            if(s.length < 10) return false;
+            if(/^[\d\s\W_]+$/.test(s)) return false;
+            if(!/[\u4e00-\u9fa5]/.test(s)) return false;  // 至少含一个汉字
+            if(title){
+              const t = title.trim();
+              if(t && (s === t || s.includes(t) || t.includes(s))) return false;
+            }
+            return true;
+          };
+          for(let attempt = 0; attempt < 6; attempt++){
             const pick = pool[Math.floor(Math.random()*pool.length)];
-            const raw = String(pick.text||pick.title||'').replace(/\[img:m_[a-zA-Z0-9_]+\]/g,'').trim();
-            const sentences = raw.split(/[\n。!?]/).map(s=>s.trim()).filter(s => s.length >= 6);
+            const raw = String(pick.text||'').replace(/\[img:m_[a-zA-Z0-9_]+\]/g,'').trim();
+            const sentences = raw.split(/[\n。!?]/).map(s=>s.trim()).filter(s => isValid(s, pick.title));
             if(!sentences.length) continue;
             const sent = sentences[Math.floor(Math.random()*sentences.length)].slice(0,60).trim();
             if(sent && !recent.includes(sent)){ out = sent; break; }
           }
           if(!out && pool.length){
-            /* 实在没避开，随机抽一条 */
+            /* 实在没避开，再放宽到 6 字重抽一次 */
             const pick = pool[Math.floor(Math.random()*pool.length)];
-            const raw = String(pick.text||pick.title||'').replace(/\[img:m_[a-zA-Z0-9_]+\]/g,'').trim();
-            const sentences = raw.split(/[\n。!?]/).map(s=>s.trim()).filter(s => s.length >= 6);
+            const raw = String(pick.text||'').replace(/\[img:m_[a-zA-Z0-9_]+\]/g,'').trim();
+            const sentences = raw.split(/[\n。!?]/).map(s=>s.trim()).filter(s => isValid(s, pick.title));
             if(sentences.length) out = sentences[Math.floor(Math.random()*sentences.length)].slice(0,60).trim();
           }
         }
