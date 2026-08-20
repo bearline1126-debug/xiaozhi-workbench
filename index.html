@@ -689,9 +689,11 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
 .bubble.ai{align-self:flex-start;background:rgba(255,255,255,.9);border:1px solid var(--line);border-bottom-left-radius:6px}
 .bubble .bubble-time{display:block;font-size:10px;opacity:.62;margin-top:5px}
 .bubble-refs{
-  align-self:flex-start;max-width:88%;font-size:11px;color:var(--text-dim);line-height:1.55;
-  border-left:3px solid rgba(107,152,79,.4);padding:4px 0 4px 9px;
+  align-self:flex-start;max-width:88%;font-size:11px;color:var(--text-dim);line-height:1.4;
+  padding:3px 0 0;display:flex;flex-wrap:wrap;gap:6px;
 }
+.bubble-ref{display:inline-block;padding:2px 9px;color:var(--accent);background:rgba(107,152,79,.1);border-radius:11px;cursor:pointer;white-space:nowrap}
+.bubble-ref:active{background:rgba(107,152,79,.24)}
 .chat-send{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-top:10px}
 .chat-send textarea{min-height:52px}
 /* ==== 存储用量 ==== */
@@ -2528,7 +2530,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-20-v79';
+const BUILD_VERSION = '2026-08-20-v80';
 const App = {
   current:'home',
   booting:true,
@@ -4168,7 +4170,11 @@ const Companion = {
     }
     box.innerHTML = list.slice(-40).map(m => {
       const bubble = `<div class="bubble ${m.role === 'user' ? 'me' : 'ai'}">${Util.esc(m.content)}<span class="bubble-time">${m.at || ''}</span></div>`;
-      const refs = m.refs?.length ? `<div class="bubble-refs">📚 相关经验摘录：<br>${m.refs.map(r => '· ' + Util.esc(r)).join('<br>')}</div>` : '';
+      const refs = m.refs && m.refs.length ? `<div class="bubble-refs">${m.refs.map(r => {
+        const id = (r && typeof r === 'object') ? r.id : '';
+        const t = (r && typeof r === 'object') ? (r.title || '') : (typeof r === 'string' ? r : '');
+        return id ? `<span class="bubble-ref" onclick="Notes.openDetail('${id}')">↩︎ ${Util.esc(t)}</span>` : `<span class="bubble-ref">↩︎ ${Util.esc(t)}</span>`;
+      }).join(' ')}</div>` : '';
       return bubble + refs;
     }).join('');
     box.scrollTop = box.scrollHeight;
@@ -4189,7 +4195,7 @@ const Companion = {
   },
   now(){ return new Date().toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}); },
   /* 从经验摘录里找相关条目：关键词 > 标签 > 正文 */
-  matchNotes(q, limit = 4){
+  matchNotes(q, limit = 2){
     const s = String(q || '').toLowerCase();
     const plain = s.replace(/\s+/g, '');
     if(!plain) return [];
@@ -4204,7 +4210,7 @@ const Companion = {
       words.forEach(w => { if(hay.includes(w)) score += 2; });
       grams.forEach(g => { if(hay.includes(g)) score += 1; });
       return {n, score};
-    }).filter(x => x.score >= 3).sort((a, b) => b.score - a.score).slice(0, limit).map(x => x.n);
+    }).filter(x => x.score >= 5).sort((a, b) => b.score - a.score).slice(0, limit).map(x => x.n);
   },
   /* 给 AI 的近期生活快照，保持精简 */
   context(){
@@ -4217,6 +4223,7 @@ const Companion = {
     const moods = Mood.collect(14).slice(0, 4).map(x => `${x.date} ${x.symbol} ${x.text.slice(0, 80)}`);
     return `【最近追踪】\n${track.join('\n') || '暂无'}\n【最近感恩日记】\n${wins.join('\n') || '暂无'}\n【最近情绪日记】\n${moods.join('\n') || '暂无'}`;
   },
+  citedToday(){ return Store.getDaily('companion_cited', []); },
   async send(){
     const input = document.getElementById('chatInput');
     const q = input.value.trim();
@@ -4226,15 +4233,17 @@ const Companion = {
     const box = document.getElementById('chatLog');
     if(box){ box.innerHTML += '<div class="bubble ai">……在想怎么回你</div>'; box.scrollTop = box.scrollHeight; }
     try{
-      let out = '', refs = [];
-      const hits = this.matchNotes(q);
-      refs = hits.map(n => `${n.title || Util.firstSentence(n.text)}：${String(n.text||'').slice(0, 60)}`);
+      let out = '';
+      const cited = new Set(this.citedToday());
+      const hits = this.matchNotes(q).filter(n => n.id && !cited.has(n.id));
+      const refs = hits.map(n => ({id:n.id, title:(n.title || Util.firstSentence(n.text) || '摘录').slice(0,24)}));
       const ctx = hits.length ? hits.map(n => `[${n.tags||'未分类'}${n.keywords ? ' | ' + n.keywords : ''}] ${n.title || ''}\n${n.text}`).join('\n\n') : '';
+      if(refs.length) Store.setDaily('companion_cited', [...new Set([...cited, ...refs.map(r => r.id)])]);
       out = await AI.ask(
-        (ctx ? `我的相关经验摘录：\n${ctx}\n\n` : '我的经验库里没有找到相关内容。\n\n') + `问题 / 想说的话：${q}\n\n（下面是我最近的记录，只在需要时参考，不要复述）\n${this.context()}`,
+        (ctx ? `以下是一些相关的经验摘录，如用得上就自然地融入回答（像朋友随口提「我记得你在XX那篇里写过…」），不要正式地说「根据XX经验」；用不到就别硬塞：\n${ctx}\n\n` : '') + `问题 / 想说的话：${q}\n\n（下面是我最近的记录，只在需要时参考，不要复述）\n${this.context()}`,
         {
           threadKey:'companion_main',
-          system:'你是小彘的私人陪伴者，也兼任她的经验顾问。规则：1 先接住情绪，再说事；2 如果给了经验摘录，优先基于摘录回答，并说明哪一条支持你的判断；3 如果没给摘录，就用你自己的判断回答，必要时开头写「（经验库里没相关记录，下面是我的判断）」；4 回复控制在 3 到 6 句，不喊口号、不空话；5 如果她提到具体困难，给一个今天就能做的小动作；6 允许沉默式共情。'
+          system:'你是小彘的私人陪伴者。规则：1 先接住情绪，再聊事；像朋友一样自然，别像助手念稿。2 她只是在闲聊、打招呼、或单纯发泄情绪时，不要硬挂引用，直接回人话就行。3 只有当她问具体问题时才参考我给的「经验摘录」，最多引 1 条最相关的、且只引其中 1-2 句，绝不整段搬。4 引用口吻要日常：用「我记得你在『XX』那篇里写过…」「你之前在『XX』提过…」这种说法，不要出现「根据」「经验库」「摘录」这类词。5 回复 3-6 句，不喊口号不空话；遇到具体困难给一个今天就能做的小动作。6 允许沉默式共情，不必每句都给建议。'
         }
       );
       this.push({role:'assistant', content:out, at:this.now(), refs});
