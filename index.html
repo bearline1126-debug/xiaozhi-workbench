@@ -371,12 +371,12 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .eng-quiz-card h2{font-size:14px;margin-bottom:6px}
 .eng-q-word{font-size:18px;font-weight:700;text-align:center;padding:8px;background:rgba(107,152,79,.08);border-radius:12px;font-family:var(--title-font)}
 .eng-q-options{display:flex;flex-direction:column;gap:6px;margin-top:8px;align-items:center}
-/* v97：搜索结果两行制——第一行 词条+释义+操作按钮，第二行 例句 */
+/* v99：搜索结果三行制——第一行 词条+操作按钮，第二行 中文释义，第三行 例句（可翻译） */
 .eng-search-row{display:flex;flex-direction:column;gap:3px;padding:8px 2px;border-bottom:1px dashed rgba(38,54,40,.12)}
 .eng-search-head{display:flex;align-items:center;gap:8px}
 .eng-search-head .grow{flex:1;min-width:0}
 .eng-search-head b{font-size:14px}
-.eng-search-head .muted{font-size:13px;color:var(--text-dim);margin-left:6px}
+.eng-search-zh{font-size:13px;color:var(--text);padding-left:2px;line-height:1.5}
 .eng-search-ex{font-size:12px;color:var(--text-dim);padding-left:2px;line-height:1.5}
 .eng-q-opt{background:rgba(255,255,255,.7);border:2px solid var(--line);border-radius:12px;padding:10px 14px;font-size:14px;text-align:left;color:var(--text);transition:all .15s;width:100%;max-width:420px;white-space:normal;word-break:break-word;line-height:1.45;hyphens:auto}
 /* v74：英语「听力资源 / 播客」卡片 */
@@ -1192,7 +1192,7 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
       <div class="card" style="padding:12px 14px">
         <div class="row" style="align-items:center;gap:6px">
           <input id="engSearchInput" placeholder="搜单词 / 搭配：输英文或中文释义" style="flex:1" onkeydown="if(event.key==='Enter')English.search()">
-          <button class="icon-btn" style="width:24px;height:24px;min-height:24px;border-radius:8px;font-size:12px;padding:0" onclick="English.search()" title="搜索">🔍</button>
+          <button style="border:0;background:none;padding:2px 6px;font-size:18px;line-height:1;flex:0 0 auto" onclick="English.search()" title="搜索">🔍</button>
         </div>
         <div id="engSearchResults" style="margin-top:6px"></div>
       </div>
@@ -2558,7 +2558,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-22-v98';
+const BUILD_VERSION = '2026-08-22-v99';
 const App = {
   current:'home',
   booting:true,
@@ -5808,8 +5808,8 @@ const English = {
     const engActs = (btns) => `<div class="eng-acts">${btns}</div>`;
     englishCards.innerHTML=[
       `<div class="card"><h2>💬 每日一句</h2>${engMain(Util.esc(d.quote))}${engZh(Util.esc(d.quoteZh))}${doneFn('每日一句')?engDone():engActs(`<button class="btn small" onclick="English.playQuote()" title="朗读">🔊</button><button class="btn small ghost" onclick="English.done('每日一句')">完成学习</button>`)}</div>`,
-      `<div class="card"><h2>🔤 每日单词</h2>${engMain(Util.esc(d.word))}${engZh(Util.esc(d.wordZh))}${d.example?engEx(Util.esc(d.example)):''}${doneFn('每日单词')?engDone():`<button class="btn small eng-finish" onclick="English.done('每日单词')">完成学习</button>`}</div>`,
-      `<div class="card"><h2>🧩 固定搭配</h2>${engMain(Util.esc(d.phrase)+' · '+Util.esc(d.phraseZh))}${d.phraseEx?engEx(Util.esc(d.phraseEx)):''}${doneFn('固定搭配')?engDone():`<button class="btn small eng-finish" onclick="English.done('固定搭配')">完成学习</button>`}</div>`,
+      `<div class="card"><h2>🔤 每日单词</h2>${engMain(Util.esc(d.word))}${engZh(Util.esc(d.wordZh))}${d.example?engEx(Util.esc(d.example))+' <button class="mm-btn" title="翻译例句" onclick="English.transTodayEx(\'word\')">译</button><div class="eng-ex" id="engExZh_word">'+(this.exTransGet(d.example)?'例句翻译：'+Util.esc(this.exTransGet(d.example)):'')+'</div>':''}${doneFn('每日单词')?engDone():`<button class="btn small eng-finish" onclick="English.done('每日单词')">完成学习</button>`}</div>`,
+      `<div class="card"><h2>🧩 固定搭配</h2>${engMain(Util.esc(d.phrase)+' · '+Util.esc(d.phraseZh))}${d.phraseEx?engEx(Util.esc(d.phraseEx))+' <button class="mm-btn" title="翻译例句" onclick="English.transTodayEx(\'phrase\')">译</button><div class="eng-ex" id="engExZh_phrase">'+(this.exTransGet(d.phraseEx)?'例句翻译：'+Util.esc(this.exTransGet(d.phraseEx)):'')+'</div>':''}${doneFn('固定搭配')?engDone():`<button class="btn small eng-finish" onclick="English.done('固定搭配')">完成学习</button>`}</div>`,
       `<div class="card"><h2>🗣️ 每日对话</h2>${engMain(Util.esc(d.dialog).replace(/\n/g,'<br>'))}${engZh(Util.esc(d.dialogZh).replace(/\n/g,'<br>'))}${doneFn('每日对话')?engDone():engActs(`<button class="btn small" onclick="English.playDialog()" title="朗读对话">🔊</button><button class="btn small ghost" onclick="English.done('每日对话')">完成学习</button>`)}</div>`
     ].join('');
     /* 测试卡片 */
@@ -5978,6 +5978,52 @@ const English = {
     this.renderTest();
   },
   completeTestEmpty(){ this.renderTest(); },
+  /* ===== v99：例句中文翻译（按例句文本缓存 english_ex_zh 上限 600，卡片/搜索共用）+ 大词库词条 AI 补例句 ===== */
+  exTransGet(ex){
+    return Store.get('english_ex_zh',{})[String(ex||'').trim().toLowerCase()] || null;
+  },
+  async exTrans(ex, elId){
+    const ex2=String(ex||'').trim(); if(!ex2) return;
+    const key=ex2.toLowerCase();
+    const cache=Store.get('english_ex_zh',{});
+    const paint=(zh)=>{ const el=document.getElementById(elId); if(el&&zh) el.textContent='例句翻译：'+zh; };
+    if(cache[key]){ paint(cache[key]); return; }
+    const el0=document.getElementById(elId); if(el0) el0.textContent='例句翻译中…';
+    try{
+      const out=await AI.ask('把下面这句英文翻译成自然的中文，只输出译文本身，不要任何解释：\n'+ex2);
+      const zh=String(out||'').trim().split('\n')[0].slice(0,150);
+      if(!zh) return;
+      cache[key]=zh;
+      const ks=Object.keys(cache); if(ks.length>600) delete cache[ks[0]];
+      Store.set('english_ex_zh',cache);
+      paint(zh);
+    }catch(e){ const el1=document.getElementById(elId); if(el1) el1.textContent='翻译失败（AI 不可用）'; }
+  },
+  transSearchEx(i){
+    const h=(this._searchHits||[])[i]; if(!h) return;
+    const aiEnt=h.item?null:(Store.get('english_ai_dict',{})[h.text]||null);
+    const ex=h.item?(h.type==='word'?h.item.example:h.item.phraseEx):((aiEnt&&aiEnt.ex)||'');
+    if(ex) this.exTrans(ex,'engExZh_'+i);
+  },
+  transTodayEx(kind){
+    const d=this.today();
+    const ex=kind==='word'?d.example:d.phraseEx;
+    if(ex) this.exTrans(ex,'engExZh_'+kind);
+  },
+  /* 大词库词条补例句：结果写回 english_ai_dict（ex/exzh，失败存空串防重复请求） */
+  async aiExample(word){
+    const cache=Store.get('english_ai_dict',{});
+    const cur=cache[word]||{};
+    try{
+      const out=await AI.ask(`用英语单词或短语「${word}」造一个简短的英文例句。只输出严格 JSON：{"ex":"英文例句","exzh":"例句的中文翻译"}`, {system:'你是一个英语例句助手，只输出严格 JSON，不要任何额外文字。'});
+      const m=String(out||'').match(/\{[\s\S]*\}/);
+      const p=m?JSON.parse(m[0]):null;
+      cur.ex=(p&&p.ex)?String(p.ex).trim():'';
+      cur.exzh=(p&&p.exzh)?String(p.exzh).trim():'';
+    }catch(e){ cur.ex=cur.ex||''; cur.exzh=cur.exzh||''; }
+    cache[word]=cur;
+    Store.set('english_ai_dict',cache);
+  },
   /* ===== v94：搜索单词/搭配（输英文或中文释义），一键加入今日测试 ===== */
   extraTests(){ return Store.get('english_extra_test:'+Util.today(), []); },
   ensureDict(){
@@ -6075,12 +6121,27 @@ const English = {
         : (h.type==='word'&&h.text===t.word)||(h.type==='phrase'&&h.text===t.phrase) ? '<span class="hint">今日内容 ✓</span>'
         : this.mastered().some(x=>x.text===h.text) ? '<span class="hint">已学库 ✓</span>'
         : `<button class="icon-btn" title="加入今日测试" onclick="English.addSearchTest(${i})">✚</button>`;
-      const ex = h.item ? (h.type==='word' ? h.item.example : h.item.phraseEx) : undefined;
+      /* v99：例句与译文——种子池词条用自带例句；大词库词条用 AI 补的例句（缓存 english_ai_dict） */
+      const aiEnt = h.item ? null : (Store.get('english_ai_dict',{})[h.text]||null);
+      const ex = h.item ? (h.type==='word' ? h.item.example : h.item.phraseEx) : ((aiEnt&&aiEnt.ex)||undefined);
+      const exzh = ex ? ((aiEnt&&aiEnt.exzh) || this.exTransGet(ex) || '') : '';
       return `<div class="eng-search-row">
-        <div class="eng-search-head"><span>${h.type==='word'?'🔤':'🧩'}</span><div class="grow"><b>${Util.esc(h.text)}</b><span class="muted">${Util.esc(h.answer)}</span></div><button class="icon-btn" title="朗读" onclick="English.speakSearch(${i})">🔊</button>${state}</div>
-        ${ex?`<div class="eng-search-ex">例句：${Util.esc(ex)}</div>`:''}
+        <div class="eng-search-head"><span>${h.type==='word'?'🔤':'🧩'}</span><div class="grow"><b>${Util.esc(h.text)}</b></div><button class="icon-btn" title="朗读" onclick="English.speakSearch(${i})">🔊</button>${state}</div>
+        <div class="eng-search-zh">${Util.esc(h.answer)}</div>
+        ${ex?`<div class="eng-search-ex">例句：${Util.esc(ex)}${exzh?'':' <button class="mm-btn" style="margin-left:4px" title="翻译例句" onclick="English.transSearchEx(${i})">译</button>'}</div><div class="eng-search-ex" id="engExZh_${i}">${exzh?'例句翻译：'+Util.esc(exzh):''}</div>`:''}
       </div>`;
     }).join('');
+    /* v99：大词库命中的第一条，自动让 AI 补例句+译文（缓存后不再请求；无 key / 失败则静默跳过） */
+    if(list.length && !list[0].item){
+      const w=list[0].text;
+      const aic=Store.get('english_ai_dict',{});
+      if(!(aic[w] && aic[w].ex!==undefined) && Store.getSecret('ai')){
+        aic[w]=aic[w]||{};
+        aic[w].ex=null;   /* 占位：请求期间/失败后不再重复触发 */
+        Store.set('english_ai_dict',aic);
+        this.aiExample(w).then(()=>{ if(this._lastQuery) this.search(); });
+      }
+    }
   },
   speakSearch(i){ const h=(this._searchHits||[])[i]; if(h) this.speak(h.text); },
   addSearchTest(i){
@@ -6099,8 +6160,8 @@ const English = {
     const box=document.getElementById('engSearchResults'); if(!box) return;
     const cache=Store.get('english_ai_dict',{});
     const ck=q.toLowerCase();
-    if(cache[ck] && cache[ck].ex){
-      /* v98：v96 的旧缓存没有例句字段——不算命中，重查一次让 AI 带上例句后覆盖旧缓存 */
+    if(cache[ck] && cache[ck].ex && cache[ck].exzh){
+      /* v98→v99：旧缓存缺例句/译文字段的不算命中，重查一次补全后覆盖 */
       this._aiHit={key:'sw:'+cache[ck].en, type:/\s/.test(cache[ck].en)?'phrase':'word', text:cache[ck].en, answer:cache[ck].zh};
       this._renderAiHit(cache[ck]);
       return;
@@ -6109,15 +6170,15 @@ const English = {
     const zhInput=/[\u4e00-\u9fa5]/.test(q);
     try{
       const out=await AI.ask(
-        `用户在查英语学习词条（多为科研/学术词，这正是他查词典的原因，再偏的词也要认真给）。输入可能是英文单词/短语，也可能是中文释义。请给出对应词条：${zhInput?'输入是中文释义，给出最常用的一个英文单词或固定搭配':'输入是英文，给出简明中文释义（多个义项用；分隔，最多 2 个）'}。\n输入：${q}\n只输出严格 JSON：{"en":"英文单词或短语","zh":"中文意思","ex":"用该词写的一个简短英文例句"}`,
+        `用户在查英语学习词条（多为科研/学术词，这正是他查词典的原因，再偏的词也要认真给）。输入可能是英文单词/短语，也可能是中文释义。请给出对应词条：${zhInput?'输入是中文释义，给出最常用的一个英文单词或固定搭配':'输入是英文，给出简明中文释义（多个义项用；分隔，最多 2 个）'}。\n输入：${q}\n只输出严格 JSON：{"en":"英文单词或短语","zh":"中文意思","ex":"用该词写的一个简短英文例句","exzh":"例句的中文翻译"}`,
         {system:'你是一个英汉词典助手，只输出严格 JSON，不要任何额外文字、不要 markdown 代码块包裹。'}
       );
       const m=String(out||'').match(/\{[\s\S]*?\}/);
       if(!m) throw new Error('AI 没返回有效结果');
       const parsed=JSON.parse(m[0]);
-      const en=String(parsed.en||'').trim(), zh=String(parsed.zh||'').trim(), ex=String(parsed.ex||'').trim();
+      const en=String(parsed.en||'').trim(), zh=String(parsed.zh||'').trim(), ex=String(parsed.ex||'').trim(), exzh=String(parsed.exzh||'').trim();
       if(!en||!zh) throw new Error('AI 返回字段不全');
-      cache[ck]={en,zh,ex};
+      cache[ck]={en,zh,ex,exzh};
       const keys=Object.keys(cache);
       if(keys.length>200) delete cache[keys[0]];
       Store.set('english_ai_dict',cache);
@@ -6130,8 +6191,9 @@ const English = {
   _renderAiHit(r){
     const box=document.getElementById('engSearchResults'); if(!box) return;
     box.innerHTML=`<div class="eng-search-row">
-        <div class="eng-search-head"><span>🤖</span><div class="grow"><b>${Util.esc(r.en)}</b><span class="muted">${Util.esc(r.zh)}</span></div><button class="icon-btn" title="朗读" onclick="English.speakSearchAi()">🔊</button><button class="icon-btn" title="加入今日测试" onclick="English.addAiTest()">✚</button></div>
-        ${r.ex?`<div class="eng-search-ex">例句：${Util.esc(r.ex)}</div>`:''}
+        <div class="eng-search-head"><span>🤖</span><div class="grow"><b>${Util.esc(r.en)}</b></div><button class="icon-btn" title="朗读" onclick="English.speakSearchAi()">🔊</button><button class="icon-btn" title="加入今日测试" onclick="English.addAiTest()">✚</button></div>
+        <div class="eng-search-zh">${Util.esc(r.zh)}</div>
+        ${r.ex?`<div class="eng-search-ex">例句：${Util.esc(r.ex)}</div>${r.exzh?`<div class="eng-search-ex">例句翻译：${Util.esc(r.exzh)}</div>`:''}`:''}
       </div><p class="hint" style="margin:4px 0 0">AI 查词结果（词库没有时自动查询，结果已缓存）</p>`;
   },
   speakSearchAi(){ if(this._aiHit) this.speak(this._aiHit.text); },
