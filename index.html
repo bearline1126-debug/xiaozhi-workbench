@@ -378,6 +378,9 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .eng-search-head b{font-size:14px}
 .eng-search-zh{font-size:13px;color:var(--text);padding-left:2px;line-height:1.5}
 .eng-search-ex{font-size:12px;color:var(--text-dim);padding-left:2px;line-height:1.5}
+/* v101：每日对话逐行对齐——一句英文下跟一句中文，一行一组 */
+.eng-dl-line{padding:7px 0;border-bottom:1px dashed rgba(38,54,40,.08)}
+.eng-dl-line:last-child{border-bottom:0}
 .eng-q-opt{background:rgba(255,255,255,.7);border:2px solid var(--line);border-radius:12px;padding:10px 14px;font-size:14px;text-align:left;color:var(--text);transition:all .15s;width:100%;max-width:420px;white-space:normal;word-break:break-word;line-height:1.45;hyphens:auto}
 .eng-q-opt:active{transform:scale(.97);border-color:var(--accent)}
 .eng-block-title{font-size:14px;font-weight:700;margin:4px 0 8px;color:var(--text);display:flex;align-items:center;gap:6px}
@@ -2541,7 +2544,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-22-v100';
+const BUILD_VERSION = '2026-08-22-v101';
 const App = {
   current:'home',
   booting:true,
@@ -5770,6 +5773,18 @@ const English = {
       if(btn){ btn.disabled = false; btn.textContent = '🔄 换今日 5 项（AI 生成）'; }
     }
   },
+  /* v101：对话逐行配对——种子池的中文是挤在一行的（"…B：…A：…B：…"），按说话人标记切开与英文行对齐；
+     若 dialogZh 本身带换行且行数相等（AI 生成的内容常是这种）则直接按行配对 */
+  dialogPairs(){
+    const d=this.today();
+    const en=String(d.dialog||'').split('\n').map(x=>x.trim()).filter(Boolean);
+    let zh=String(d.dialogZh||'').split('\n').map(x=>x.trim()).filter(Boolean);
+    if(zh.length!==en.length){
+      const parts=String(d.dialogZh||'').trim().split(/(?=[AB][：:])/).map(x=>x.trim()).filter(Boolean);
+      if(parts.length===en.length) zh=parts;
+    }
+    return en.map((line,i)=>({en:line, zh:zh[i]||''}));
+  },
   render(){
     this.maybeAutoRefresh(); /* v74：进页面时若当天没有 AI 内容则后台自动生成 */
     this.ensureDict(); /* v98：后台预热离线大词库，首次搜索不用等 */
@@ -5793,7 +5808,7 @@ const English = {
       `<div class="card"><h2>💬 每日一句</h2>${engMain(Util.esc(d.quote))}${engZh(Util.esc(d.quoteZh))}${doneFn('每日一句')?engDone():engActs(`<button class="btn small" onclick="English.playQuote()" title="朗读">🔊</button><button class="btn small ghost" onclick="English.done('每日一句')">完成学习</button>`)}</div>`,
       `<div class="card"><h2>🔤 每日单词</h2>${engMain(Util.esc(d.word))}${engZh(Util.esc(d.wordZh))}${d.example?engEx(Util.esc(d.example))+'<div class="eng-ex" id="engExZh_word">'+Util.esc(this.exTransGet(d.example)||'')+'</div>':''}${doneFn('每日单词')?engDone():`<button class="btn small eng-finish" onclick="English.done('每日单词')">完成学习</button>`}</div>`,
       `<div class="card"><h2>🧩 固定搭配</h2>${engMain(Util.esc(d.phrase)+' · '+Util.esc(d.phraseZh))}${d.phraseEx?engEx(Util.esc(d.phraseEx))+'<div class="eng-ex" id="engExZh_phrase">'+Util.esc(this.exTransGet(d.phraseEx)||'')+'</div>':''}${doneFn('固定搭配')?engDone():`<button class="btn small eng-finish" onclick="English.done('固定搭配')">完成学习</button>`}</div>`,
-      `<div class="card"><h2>🗣️ 每日对话</h2>${engMain(Util.esc(d.dialog).replace(/\n/g,'<br>'))}${engZh(Util.esc(d.dialogZh).replace(/\n/g,'<br>'))}${doneFn('每日对话')?engDone():engActs(`<button class="btn small" onclick="English.playDialog()" title="朗读对话">🔊</button><button class="btn small ghost" onclick="English.done('每日对话')">完成学习</button>`)}</div>`
+      `<div class="card"><h2>🗣️ 每日对话</h2>${this.dialogPairs().map(p=>`<div class="eng-dl-line">${engMain(Util.esc(p.en))}${p.zh?engZh(Util.esc(p.zh)):''}</div>`).join('')}${doneFn('每日对话')?engDone():engActs(`<button class="btn small" onclick="English.playDialog()" title="朗读对话">🔊</button><button class="btn small ghost" onclick="English.done('每日对话')">完成学习</button>`)}</div>`
     ].join('');
     /* v100：例句翻译自动出——缓存命中直接显示，未命中后台翻一次（写缓存后填充），静默失败 */
     if(d.example && !this.exTransGet(d.example) && Store.getSecret('ai')) this.exTrans(d.example,'engExZh_word');
