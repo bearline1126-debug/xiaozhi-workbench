@@ -378,9 +378,6 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .eng-search-head b{font-size:14px}
 .eng-search-zh{font-size:13px;color:var(--text);padding-left:2px;line-height:1.5}
 .eng-search-ex{font-size:12px;color:var(--text-dim);padding-left:2px;line-height:1.5}
-/* v101：每日对话逐行对齐——一句英文下跟一句中文，一行一组 */
-.eng-dl-line{padding:7px 0;border-bottom:1px dashed rgba(38,54,40,.08)}
-.eng-dl-line:last-child{border-bottom:0}
 .eng-q-opt{background:rgba(255,255,255,.7);border:2px solid var(--line);border-radius:12px;padding:10px 14px;font-size:14px;text-align:left;color:var(--text);transition:all .15s;width:100%;max-width:420px;white-space:normal;word-break:break-word;line-height:1.45;hyphens:auto}
 .eng-q-opt:active{transform:scale(.97);border-color:var(--accent)}
 .eng-block-title{font-size:14px;font-weight:700;margin:4px 0 8px;color:var(--text);display:flex;align-items:center;gap:6px}
@@ -951,6 +948,7 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
         <h2>② 感恩日记</h2>
         <textarea id="dlWins" placeholder="今天值得感恩的事，一行一件"></textarea>
         <details class="today-must-fold" id="dlTodayMustWrap" open><summary>今日必做（可直接增删改，昨晚没规划也能补）</summary><div class="today-must" id="dlTodayMustBox"></div></details>
+        <details class="today-must-fold" id="dlGratitudeWrap" open><summary>感恩瞬间（可上传图片）</summary><div class="row" style="align-items:center;margin-top:6px"><input id="dlSuccessImgFile" type="file" accept="image/*" style="flex:1;font-size:14px"><button class="btn" onclick="DailyLog.uploadGratitude()">上传</button></div><div class="img-grid" id="dlSuccessImgs" style="margin-top:8px"></div></details>
         <label>明天必做（今晚填，明早自动变成「今日必做」）</label>
         <div id="dlMustBox" class="must-editor"></div>
       </div>
@@ -2544,7 +2542,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-22-v101';
+const BUILD_VERSION = '2026-08-22-v102';
 const App = {
   current:'home',
   booting:true,
@@ -3289,25 +3287,25 @@ const Success = {
   key(date=Util.today()){ return 'success:'+date; },
   norm(arr){ return (arr||[]).map(x => typeof x==='string' ? {text:x, questId:null} : x); },
   render(){ const d=Store.get(this.key(),{}); if(document.getElementById('successWins')) successWins.value=d.wins||''; if(document.getElementById('successMustBox')) MustEditor.mount('successMustBox', this.norm(d.tomorrow)); if(document.getElementById('successImgs')) this.renderImages(); this.history(); },
-  renderImages(){
-    const box=document.getElementById('successImgs'); if(!box) return;
-    const imgs=Store.get(this.key(),{}).images||[];
-    box.innerHTML = imgs.length ? imgs.map(id=>`<div class="img-cell"><img data-media="${id}" alt="感恩瞬间" onclick="Media.openFull('${id}')"><button class="del" onclick="Success.removeImage('${id}')">✕</button></div>`).join('') : '<div class="empty" style="font-size:13px">还没有图片，上传一张今天的感恩瞬间。</div>';
+  renderImages(boxId='successImgs', date=Util.today()){
+    const box=document.getElementById(boxId); if(!box) return;
+    const imgs=Store.get(this.key(date),{}).images||[];
+    box.innerHTML = imgs.length ? imgs.map(id=>`<div class="img-cell"><img data-media="${id}" alt="感恩瞬间" onclick="Media.openFull('${id}')"><button class="del" onclick="Success.removeImage('${id}','${boxId}','${date}')">✕</button></div>`).join('') : '<div class="empty" style="font-size:13px">还没有图片，上传一张感恩瞬间。</div>';
     Media.paint();
   },
-  async uploadGratitude(){
-    const f=document.getElementById('successImgFile')?.files?.[0]; if(!f) return UI.toast('先选一张图片');
+  async uploadGratitude(inputId='successImgFile', boxId='successImgs', date=Util.today()){
+    const f=document.getElementById(inputId)?.files?.[0]; if(!f) return UI.toast('先选一张图片');
     const rec=await Media.save(f, 'diary').catch(()=>null);
     if(!rec) return UI.toast('大仓库不可用，图片没存上');
-    const s=Store.get(this.key(),{});
-    Store.set(this.key(), {...s, images:[...(s.images||[]), rec.id]});
-    document.getElementById('successImgFile').value='';
-    this.renderImages(); UI.toast('已存原图：一张感恩瞬间');
+    const s=Store.get(this.key(date),{});
+    Store.set(this.key(date), {...s, images:[...(s.images||[]), rec.id]});
+    document.getElementById(inputId).value='';
+    this.renderImages(boxId, date); UI.toast('已存原图：一张感恩瞬间');
   },
-  removeImage(id){
-    Store.set(this.key(), {...Store.get(this.key(),{}), images:(Store.get(this.key(),{}).images||[]).filter(x=>x!==id)});
+  removeImage(id, boxId='successImgs', date=Util.today()){
+    Store.set(this.key(date), {...Store.get(this.key(date),{}), images:(Store.get(this.key(date),{}).images||[]).filter(x=>x!==id)});
     Media.del(id);
-    this.renderImages();
+    this.renderImages(boxId, date);
   },
   save(){ const old=Store.get(this.key(),{}); const tomorrow=MustEditor.collect('successMustBox'); const wins=(document.getElementById('successWins')?.value||'').trim(); Store.set(this.key(),{...old, date:Util.today(), wins, tomorrow}); UI.toast('感恩日记已保存'); Home.render(); this.history(); },
   todayTasks(){ const today=Store.get(this.key(),{}); if (today.todayTasks?.length) return this.norm(today.todayTasks); const y=Store.get(this.key(Util.dateAdd(Util.today(),-1)),{}); return this.norm(y.tomorrow || []); },
@@ -4114,6 +4112,8 @@ const DailyLog = {
       const seed = (recToday.todayTasks && recToday.todayTasks.length) ? recToday.todayTasks : Success.todayTasks();
       MustEditor.mount('dlTodayMustBox', seed, '写一件今天要做的事');
     }
+    /* v102：感恩瞬间——与感恩日记页同一份 success:<date>.images，补记模式跟随所选日期 */
+    if(document.getElementById('dlSuccessImgs')) Success.renderImages('dlSuccessImgs', d);
     if(document.getElementById('dlSleep')) dlSleep.value = s.sleepTime || '23:00';
     if(document.getElementById('dlWake')) dlWake.value = s.wakeTime || '08:00';
     /* 补记模式提示 */
@@ -4201,6 +4201,10 @@ const DailyLog = {
       dlMoodLine.placeholder = '（AI 总结会填到这里，可手动改）';
       UI.toast('已填到下方，可手动改');
     }catch(e){ dlMoodLine.placeholder = '生成失败：' + e.message + '，可手动填'; }
+  },
+  /* 感恩瞬间上传（复用 Success 的图片逻辑，写入当前补记日期的 success:<date>） */
+  uploadGratitude(){
+    Success.uploadGratitude('dlSuccessImgFile', 'dlSuccessImgs', this._pendingDate || Util.today());
   },
   /* 今日运动（直接写进 sport_logs，不重复做 Sport 页面） */
   addSport(){
@@ -5804,11 +5808,15 @@ const English = {
     const engEx = (txt) => `<div class="eng-ex">例句：${txt}</div>`;
     const engDone = () => '<div class="eng-done">✅ 已完成</div>';
     const engActs = (btns) => `<div class="eng-acts">${btns}</div>`;
+    /* v102：对话排版——先整段英文、再整段中文；中文经 dialogPairs() 逐行配对后带换行，和英文一行对一行 */
+    const dlPairs=this.dialogPairs();
+    const dlEn=Util.esc(dlPairs.map(p=>p.en).join('\n')).replace(/\n/g,'<br>');
+    const dlZh=Util.esc(dlPairs.map(p=>p.zh).filter(Boolean).join('\n')).replace(/\n/g,'<br>');
     englishCards.innerHTML=[
       `<div class="card"><h2>💬 每日一句</h2>${engMain(Util.esc(d.quote))}${engZh(Util.esc(d.quoteZh))}${doneFn('每日一句')?engDone():engActs(`<button class="btn small" onclick="English.playQuote()" title="朗读">🔊</button><button class="btn small ghost" onclick="English.done('每日一句')">完成学习</button>`)}</div>`,
       `<div class="card"><h2>🔤 每日单词</h2>${engMain(Util.esc(d.word))}${engZh(Util.esc(d.wordZh))}${d.example?engEx(Util.esc(d.example))+'<div class="eng-ex" id="engExZh_word">'+Util.esc(this.exTransGet(d.example)||'')+'</div>':''}${doneFn('每日单词')?engDone():`<button class="btn small eng-finish" onclick="English.done('每日单词')">完成学习</button>`}</div>`,
       `<div class="card"><h2>🧩 固定搭配</h2>${engMain(Util.esc(d.phrase)+' · '+Util.esc(d.phraseZh))}${d.phraseEx?engEx(Util.esc(d.phraseEx))+'<div class="eng-ex" id="engExZh_phrase">'+Util.esc(this.exTransGet(d.phraseEx)||'')+'</div>':''}${doneFn('固定搭配')?engDone():`<button class="btn small eng-finish" onclick="English.done('固定搭配')">完成学习</button>`}</div>`,
-      `<div class="card"><h2>🗣️ 每日对话</h2>${this.dialogPairs().map(p=>`<div class="eng-dl-line">${engMain(Util.esc(p.en))}${p.zh?engZh(Util.esc(p.zh)):''}</div>`).join('')}${doneFn('每日对话')?engDone():engActs(`<button class="btn small" onclick="English.playDialog()" title="朗读对话">🔊</button><button class="btn small ghost" onclick="English.done('每日对话')">完成学习</button>`)}</div>`
+      `<div class="card"><h2>🗣️ 每日对话</h2>${engMain(dlEn)}${engZh(dlZh)}${doneFn('每日对话')?engDone():engActs(`<button class="btn small" onclick="English.playDialog()" title="朗读对话">🔊</button><button class="btn small ghost" onclick="English.done('每日对话')">完成学习</button>`)}</div>`
     ].join('');
     /* v100：例句翻译自动出——缓存命中直接显示，未命中后台翻一次（写缓存后填充），静默失败 */
     if(d.example && !this.exTransGet(d.example) && Store.getSecret('ai')) this.exTrans(d.example,'engExZh_word');
