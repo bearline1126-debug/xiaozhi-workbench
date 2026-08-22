@@ -379,14 +379,6 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .eng-search-zh{font-size:13px;color:var(--text);padding-left:2px;line-height:1.5}
 .eng-search-ex{font-size:12px;color:var(--text-dim);padding-left:2px;line-height:1.5}
 .eng-q-opt{background:rgba(255,255,255,.7);border:2px solid var(--line);border-radius:12px;padding:10px 14px;font-size:14px;text-align:left;color:var(--text);transition:all .15s;width:100%;max-width:420px;white-space:normal;word-break:break-word;line-height:1.45;hyphens:auto}
-/* v74：英语「听力资源 / 播客」卡片 */
-.res-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.res-tile{display:flex;flex-direction:column;gap:2px;background:rgba(255,253,248,.92);border:1px solid var(--line);border-radius:14px;padding:10px 12px;text-decoration:none;color:inherit;transition:transform .15s ease,box-shadow .15s ease}
-.res-tile:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(20,30,18,.1)}
-.res-ico{font-size:18px;line-height:1.2}
-.res-name{font-size:13px;font-weight:700;color:var(--text)}
-.res-desc{font-size:11px;color:var(--text-dim);line-height:1.4}
-@media (max-width:480px){ .res-grid{grid-template-columns:1fr} }
 .eng-q-opt:active{transform:scale(.97);border-color:var(--accent)}
 .eng-block-title{font-size:14px;font-weight:700;margin:4px 0 8px;color:var(--text);display:flex;align-items:center;gap:6px}
 .eng-block-title .eng-count{font-size:11px;font-weight:500;color:var(--text-dim);background:rgba(0,0,0,.05);padding:2px 8px;border-radius:10px}
@@ -6181,7 +6173,7 @@ const English = {
     box.innerHTML=`<div class="eng-search-row">
         <div class="eng-search-head"><span>🤖</span><div class="grow"><b>${Util.esc(r.en)}</b></div><button class="icon-btn" title="朗读" onclick="English.speakSearchAi()">🔊</button><button class="icon-btn" title="加入今日测试" onclick="English.addAiTest()">✚</button></div>
         <div class="eng-search-zh">${Util.esc(r.zh)}</div>
-        ${r.ex?`<div class="eng-search-ex">例句：${Util.esc(r.ex)}</div>${r.exzh?`<div class="eng-search-ex">例句翻译：${Util.esc(r.exzh)}</div>`:''}`:''}
+        ${r.ex?`<div class="eng-search-ex">例句：${Util.esc(r.ex)}</div>${r.exzh?`<div class="eng-search-ex">${Util.esc(r.exzh)}</div>`:''}`:''}
       </div><p class="hint" style="margin:4px 0 0">AI 查词结果（词库没有时自动查询，结果已缓存）</p>`;
   },
   speakSearchAi(){ if(this._aiHit) this.speak(this._aiHit.text); },
