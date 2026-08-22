@@ -32,6 +32,7 @@
 ├── AGENTS.md                         ← 项目规则入口（本文件，强制读取）
 ├── 交接给另一Agent-开场说明.md         ← 项目手册（开场白/功能清单/数据结构/模块地图/风格参数/排障备忘）
 ├── index.html                        ← 单文件 PWA 主体（HTML+CSS+JS 全内联，约 4MB；搜 const BUILD_VERSION 定位版本号）
+├── dict.json                         ← 离线英汉大词库（ECDICT 筛选版约 5.9 万词条，3.2MB；英语搜索第三层兜底；由仓库外一次性生成，勿手改）
 ├── sw.js                             ← Service Worker（CACHE/BUILD 须与 index.html 同步递增）
 ├── manifest.json                     ← PWA 清单（App 名称由 sw.js 启动时动态注入）
 ├── deploy_github.sh                  ← GitHub Pages 部署脚本（唯一部署工具；含版本三处一致性校验；

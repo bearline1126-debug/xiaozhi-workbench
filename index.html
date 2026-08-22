@@ -1192,7 +1192,7 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
       <div class="card" style="padding:12px 14px">
         <div class="row" style="align-items:center;gap:6px">
           <input id="engSearchInput" placeholder="搜单词 / 搭配：输英文或中文释义" style="flex:1" onkeydown="if(event.key==='Enter')English.search()">
-          <button class="icon-btn" onclick="English.search()" title="搜索">🔍</button>
+          <button class="icon-btn" style="width:24px;height:24px;min-height:24px;border-radius:8px;font-size:12px;padding:0" onclick="English.search()" title="搜索">🔍</button>
         </div>
         <div id="engSearchResults" style="margin-top:6px"></div>
       </div>
@@ -2558,7 +2558,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-22-v97';
+const BUILD_VERSION = '2026-08-22-v98';
 const App = {
   current:'home',
   booting:true,
@@ -5789,6 +5789,7 @@ const English = {
   },
   render(){
     this.maybeAutoRefresh(); /* v74：进页面时若当天没有 AI 内容则后台自动生成 */
+    this.ensureDict(); /* v98：后台预热离线大词库，首次搜索不用等 */
     const d=this.today();
     /* v73：显示内容来源（AI 生成 vs 本地种子） */
     const sourceHint = document.getElementById('englishSourceHint');
@@ -5979,7 +5980,16 @@ const English = {
   completeTestEmpty(){ this.renderTest(); },
   /* ===== v94：搜索单词/搭配（输英文或中文释义），一键加入今日测试 ===== */
   extraTests(){ return Store.get('english_extra_test:'+Util.today(), []); },
-  search(){
+  ensureDict(){
+    /* v98：离线大词库 dict.json（ECDICT 筛选版，约 5.9 万词条：常用 + 中高考/四六级/考研/托福/GRE 词 + 词频前 5 万）
+       懒加载一次，SW 会缓存，之后离线可用 */
+    if(!this._dictPromise){
+      this._dict=this._dict||{};
+      this._dictPromise=fetch('./dict.json').then(r=>r.json()).then(d=>{Object.assign(this._dict,d);}).catch(()=>{});
+    }
+    return this._dictPromise;
+  },
+  async search(){
     const input=document.getElementById('engSearchInput');
     const box=document.getElementById('engSearchResults');
     if(!input||!box) return;
@@ -6026,13 +6036,33 @@ const English = {
       }
       list=stems.slice(0,12);
     }
+    /* v98：离线大词库兜底——种子池和词形归并都没有时查 dict.json，绝大多数词到这一层就有结果 */
+    if(!list.length){
+      if(!this._dict || !Object.keys(this._dict).length){
+        box.innerHTML='<div class="hint">正在加载离线大词库（约 3MB，只需一次，之后离线可用）…</div>';
+        await this.ensureDict();
+      }
+      if(this._dict && Object.keys(this._dict).length){
+        const dh=[]; const dseen=new Set();
+        for(const k of Object.keys(this._dict)){
+          const hay=zh?this._dict[k]:k;
+          if(hay && hay.includes(q) && !dseen.has(k)){
+            dseen.add(k);
+            dh.push({type:/\s/.test(k)?'phrase':'word', text:k, answer:this._dict[k], exact:hay===q, item:null});
+            if(dh.length>=40) break;
+          }
+        }
+        dh.sort((a,b)=>(b.exact?1:0)-(a.exact?1:0));
+        list=dh.slice(0,12);
+      }
+    }
     this._searchHits=list;
     this._lastQuery=q;
     if(!list.length){
       this._searchHits=[];
-      /* v96：全量词典体验——词库（5000 条学术词池）没有时自动走 AI 查，不用再手动点按钮；结果缓存不重复请求 */
+      /* 大词库也没有（极偏词）时自动走 AI 查；结果缓存不重复请求 */
       if(Store.getSecret('ai')){ this.aiLookup(); return; }
-      box.innerHTML=`<div class="hint">词库里没有「${Util.esc(q)}」（内置是 5000 条学术词种子池）。在 设置 → AI 分析 里配好 key 后，这里会自动调用 AI 帮你查任何词。</div>`;
+      box.innerHTML=`<div class="hint">词库里没有「${Util.esc(q)}」。在 设置 → AI 分析 里配好 key 后，这里会自动调用 AI 帮你查任何词。</div>`;
       return;
     }
     const doneMap=Store.get('english_today_test:'+Util.today(),{});
@@ -6045,7 +6075,7 @@ const English = {
         : (h.type==='word'&&h.text===t.word)||(h.type==='phrase'&&h.text===t.phrase) ? '<span class="hint">今日内容 ✓</span>'
         : this.mastered().some(x=>x.text===h.text) ? '<span class="hint">已学库 ✓</span>'
         : `<button class="icon-btn" title="加入今日测试" onclick="English.addSearchTest(${i})">✚</button>`;
-      const ex = h.type==='word' ? h.item.example : h.item.phraseEx;
+      const ex = h.item ? (h.type==='word' ? h.item.example : h.item.phraseEx) : undefined;
       return `<div class="eng-search-row">
         <div class="eng-search-head"><span>${h.type==='word'?'🔤':'🧩'}</span><div class="grow"><b>${Util.esc(h.text)}</b><span class="muted">${Util.esc(h.answer)}</span></div><button class="icon-btn" title="朗读" onclick="English.speakSearch(${i})">🔊</button>${state}</div>
         ${ex?`<div class="eng-search-ex">例句：${Util.esc(ex)}</div>`:''}
@@ -6056,7 +6086,7 @@ const English = {
   addSearchTest(i){
     const h=(this._searchHits||[])[i]; if(!h) return;
     const key='sw:'+h.text;
-    const wrong=h.type==='word'?this.wrongOption(h.answer):(h.item.phraseWrong||this.wrongZh(h.answer));
+    const wrong=h.type==='word'?this.wrongOption(h.answer):((h.item&&h.item.phraseWrong)||this.wrongZh(h.answer));
     const cur=this.extraTests().filter(x=>x.key!==key);
     cur.push({key,type:h.type,text:h.text,answer:h.answer,wrong});
     Store.set('english_extra_test:'+Util.today(),cur);
@@ -6069,7 +6099,8 @@ const English = {
     const box=document.getElementById('engSearchResults'); if(!box) return;
     const cache=Store.get('english_ai_dict',{});
     const ck=q.toLowerCase();
-    if(cache[ck]){
+    if(cache[ck] && cache[ck].ex){
+      /* v98：v96 的旧缓存没有例句字段——不算命中，重查一次让 AI 带上例句后覆盖旧缓存 */
       this._aiHit={key:'sw:'+cache[ck].en, type:/\s/.test(cache[ck].en)?'phrase':'word', text:cache[ck].en, answer:cache[ck].zh};
       this._renderAiHit(cache[ck]);
       return;
