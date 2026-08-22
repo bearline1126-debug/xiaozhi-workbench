@@ -1206,15 +1206,6 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
         <button class="btn ghost" style="margin-top:8px;width:100%" onclick="English.aiAnalyze()">🤖 让 AI 分析我的翻译</button>
         <div class="ai-box" id="englishResult"></div>
       </div>
-      <div class="card">
-        <h2>🎧 听力资源 / 播客</h2>
-        <p class="hint" style="margin-bottom:10px">点开即在新标签页收听（均为免费英语学习播客与平台）。</p>
-        <div class="res-grid">
-          <div class="res-tile" data-ext="https://www.bbc.co.uk/learningenglish/english/features/6-minute-english" role="link" tabindex="0"><span class="res-ico">📻</span><span class="res-name">BBC 6 Minute English</span><span class="res-desc">6 分钟一期，日常话题 + 地道表达，最实用</span></div>
-          <div class="res-tile" data-ext="https://www.eslpod.com/" role="link" tabindex="0"><span class="res-ico">🎙️</span><span class="res-name">ESL Pod</span><span class="res-desc">慢速讲解 + 情景对话，专练口语翻译</span></div>
-          <div class="res-tile" data-ext="https://learningenglish.voanews.com/" role="link" tabindex="0"><span class="res-ico">🗞️</span><span class="res-name">VOA Learning English</span><span class="res-desc">慢速新闻英语，打开快、打基础稳</span></div>
-        </div>
-      </div>
     </section><!-- ==== 功能：英语积累 END ==== --><!-- ==== 功能：视觉灵感 START ==== --><section class="page" id="page-visual">
       <div class="page-title">视觉灵感</div>
       <div class="card">
@@ -2558,7 +2549,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-22-v99';
+const BUILD_VERSION = '2026-08-22-v100';
 const App = {
   current:'home',
   booting:true,
@@ -5808,10 +5799,13 @@ const English = {
     const engActs = (btns) => `<div class="eng-acts">${btns}</div>`;
     englishCards.innerHTML=[
       `<div class="card"><h2>💬 每日一句</h2>${engMain(Util.esc(d.quote))}${engZh(Util.esc(d.quoteZh))}${doneFn('每日一句')?engDone():engActs(`<button class="btn small" onclick="English.playQuote()" title="朗读">🔊</button><button class="btn small ghost" onclick="English.done('每日一句')">完成学习</button>`)}</div>`,
-      `<div class="card"><h2>🔤 每日单词</h2>${engMain(Util.esc(d.word))}${engZh(Util.esc(d.wordZh))}${d.example?engEx(Util.esc(d.example))+' <button class="mm-btn" title="翻译例句" onclick="English.transTodayEx(\'word\')">译</button><div class="eng-ex" id="engExZh_word">'+(this.exTransGet(d.example)?'例句翻译：'+Util.esc(this.exTransGet(d.example)):'')+'</div>':''}${doneFn('每日单词')?engDone():`<button class="btn small eng-finish" onclick="English.done('每日单词')">完成学习</button>`}</div>`,
-      `<div class="card"><h2>🧩 固定搭配</h2>${engMain(Util.esc(d.phrase)+' · '+Util.esc(d.phraseZh))}${d.phraseEx?engEx(Util.esc(d.phraseEx))+' <button class="mm-btn" title="翻译例句" onclick="English.transTodayEx(\'phrase\')">译</button><div class="eng-ex" id="engExZh_phrase">'+(this.exTransGet(d.phraseEx)?'例句翻译：'+Util.esc(this.exTransGet(d.phraseEx)):'')+'</div>':''}${doneFn('固定搭配')?engDone():`<button class="btn small eng-finish" onclick="English.done('固定搭配')">完成学习</button>`}</div>`,
+      `<div class="card"><h2>🔤 每日单词</h2>${engMain(Util.esc(d.word))}${engZh(Util.esc(d.wordZh))}${d.example?engEx(Util.esc(d.example))+'<div class="eng-ex" id="engExZh_word">'+Util.esc(this.exTransGet(d.example)||'')+'</div>':''}${doneFn('每日单词')?engDone():`<button class="btn small eng-finish" onclick="English.done('每日单词')">完成学习</button>`}</div>`,
+      `<div class="card"><h2>🧩 固定搭配</h2>${engMain(Util.esc(d.phrase)+' · '+Util.esc(d.phraseZh))}${d.phraseEx?engEx(Util.esc(d.phraseEx))+'<div class="eng-ex" id="engExZh_phrase">'+Util.esc(this.exTransGet(d.phraseEx)||'')+'</div>':''}${doneFn('固定搭配')?engDone():`<button class="btn small eng-finish" onclick="English.done('固定搭配')">完成学习</button>`}</div>`,
       `<div class="card"><h2>🗣️ 每日对话</h2>${engMain(Util.esc(d.dialog).replace(/\n/g,'<br>'))}${engZh(Util.esc(d.dialogZh).replace(/\n/g,'<br>'))}${doneFn('每日对话')?engDone():engActs(`<button class="btn small" onclick="English.playDialog()" title="朗读对话">🔊</button><button class="btn small ghost" onclick="English.done('每日对话')">完成学习</button>`)}</div>`
     ].join('');
+    /* v100：例句翻译自动出——缓存命中直接显示，未命中后台翻一次（写缓存后填充），静默失败 */
+    if(d.example && !this.exTransGet(d.example) && Store.getSecret('ai')) this.exTrans(d.example,'engExZh_word');
+    if(d.phraseEx && !this.exTransGet(d.phraseEx) && Store.getSecret('ai')) this.exTrans(d.phraseEx,'engExZh_phrase');
     /* 测试卡片 */
     this.renderReview(); this.renderTest();
     englishWritingPrompt.textContent=d.writing;
@@ -5986,9 +5980,8 @@ const English = {
     const ex2=String(ex||'').trim(); if(!ex2) return;
     const key=ex2.toLowerCase();
     const cache=Store.get('english_ex_zh',{});
-    const paint=(zh)=>{ const el=document.getElementById(elId); if(el&&zh) el.textContent='例句翻译：'+zh; };
+    const paint=(zh)=>{ const el=document.getElementById(elId); if(el&&zh) el.textContent=zh; };
     if(cache[key]){ paint(cache[key]); return; }
-    const el0=document.getElementById(elId); if(el0) el0.textContent='例句翻译中…';
     try{
       const out=await AI.ask('把下面这句英文翻译成自然的中文，只输出译文本身，不要任何解释：\n'+ex2);
       const zh=String(out||'').trim().split('\n')[0].slice(0,150);
@@ -5997,18 +5990,13 @@ const English = {
       const ks=Object.keys(cache); if(ks.length>600) delete cache[ks[0]];
       Store.set('english_ex_zh',cache);
       paint(zh);
-    }catch(e){ const el1=document.getElementById(elId); if(el1) el1.textContent='翻译失败（AI 不可用）'; }
+    }catch(e){ /* 静默失败：下次渲染再试 */ }
   },
   transSearchEx(i){
     const h=(this._searchHits||[])[i]; if(!h) return;
     const aiEnt=h.item?null:(Store.get('english_ai_dict',{})[h.text]||null);
     const ex=h.item?(h.type==='word'?h.item.example:h.item.phraseEx):((aiEnt&&aiEnt.ex)||'');
     if(ex) this.exTrans(ex,'engExZh_'+i);
-  },
-  transTodayEx(kind){
-    const d=this.today();
-    const ex=kind==='word'?d.example:d.phraseEx;
-    if(ex) this.exTrans(ex,'engExZh_'+kind);
   },
   /* 大词库词条补例句：结果写回 english_ai_dict（ex/exzh，失败存空串防重复请求） */
   async aiExample(word){
@@ -6128,7 +6116,7 @@ const English = {
       return `<div class="eng-search-row">
         <div class="eng-search-head"><span>${h.type==='word'?'🔤':'🧩'}</span><div class="grow"><b>${Util.esc(h.text)}</b></div><button class="icon-btn" title="朗读" onclick="English.speakSearch(${i})">🔊</button>${state}</div>
         <div class="eng-search-zh">${Util.esc(h.answer)}</div>
-        ${ex?`<div class="eng-search-ex">例句：${Util.esc(ex)}${exzh?'':' <button class="mm-btn" style="margin-left:4px" title="翻译例句" onclick="English.transSearchEx(${i})">译</button>'}</div><div class="eng-search-ex" id="engExZh_${i}">${exzh?'例句翻译：'+Util.esc(exzh):''}</div>`:''}
+        ${ex?`<div class="eng-search-ex">例句：${Util.esc(ex)}${exzh?'':' <button class="mm-btn" style="margin-left:4px" title="翻译例句" onclick="English.transSearchEx(${i})">译</button>'}</div><div class="eng-search-ex" id="engExZh_${i}">${exzh?Util.esc(exzh):''}</div>`:''}
       </div>`;
     }).join('');
     /* v99：大词库命中的第一条，自动让 AI 补例句+译文（缓存后不再请求；无 key / 失败则静默跳过） */
