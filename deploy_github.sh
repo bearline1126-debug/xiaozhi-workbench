@@ -26,6 +26,28 @@ echo "✓ 已从文件中抽取到 token（前缀: ${TOKEN:0:12}..., 长度: ${#
 
 cd "$WORK_DIR"
 
+# ===== 版本号三处一致性校验（v93 加入；漏改版本号 = 手机不刷新 = 白部署）=====
+V_HTML=$(grep -oE "BUILD_VERSION = '[^']+'" index.html | head -1)
+V_HTML=${V_HTML#*\'}; V_HTML=${V_HTML%\'}
+V_SW_BUILD=$(grep -oE "const BUILD = '[^']+'" sw.js | head -1)
+V_SW_BUILD=${V_SW_BUILD#*\'}; V_SW_BUILD=${V_SW_BUILD%\'}
+V_SW_CACHE=$(grep -oE "const CACHE = '[^']+'" sw.js | head -1)
+V_SW_CACHE=${V_SW_CACHE#*\'}; V_SW_CACHE=${V_SW_CACHE%\'}
+V_EXPECT_CACHE="xiaozhi-workbench-${V_HTML##*-}"
+if [[ -z "$V_HTML" || -z "$V_SW_BUILD" || -z "$V_SW_CACHE" ]]; then
+  echo "❌ 没能从 index.html / sw.js 里提取到三处版本号（提取到：HTML='$V_HTML' SW_BUILD='$V_SW_BUILD' SW_CACHE='$V_SW_CACHE'），检查文件再试。"
+  exit 1
+fi
+if [[ "$V_HTML" != "$V_SW_BUILD" || "$V_SW_CACHE" != "$V_EXPECT_CACHE" ]]; then
+  echo "❌ 版本号三处不一致，拒绝推送（这是『部署了手机不刷新』的头号翻车点）："
+  echo "   index.html BUILD_VERSION : $V_HTML"
+  echo "   sw.js      BUILD         : $V_SW_BUILD"
+  echo "   sw.js      CACHE         : $V_SW_CACHE   （期望 $V_EXPECT_CACHE）"
+  echo "   → 三处同步递增后再部署（规则见 AGENTS.md 第 4 节）。"
+  exit 1
+fi
+echo "✓ 版本号三处一致：$V_HTML / $V_SW_CACHE"
+
 # 验证本地 token 是否能在 github 认证
 echo "🔑 正在用本地 token 验证 GitHub 访问..."
 # fine-grained PAT 用 Bearer，classic PAT 也可兼容

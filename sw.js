@@ -1,10 +1,12 @@
-/* v84：彻底修"部署了用户看不到"问题
-   1. install 立即 skipWaiting + 不预缓存任何资源
-   2. activate 强制清掉所有旧 cache（包括自己当前的 HTML 缓存）
-   3. fetch HTML 永远走网络，**永不缓存 HTML**（避免下次又命中旧版） */
-const CACHE = 'xiaozhi-workbench-v92';
+/* 缓存策略（v84 + v91 两轮血泪史的最终形态，勿改回 cache-first）：
+   1. install 立即 skipWaiting + 不预缓存 HTML，只预缓存 4 个静态资源（单个失败不阻塞）
+   2. activate 强制清掉所有旧 cache
+   3. fetch HTML：网络优先 + 缓存兜底（SWR）——网络成功回填缓存（部署立即生效），
+      失败回退缓存副本（弱网/离线不白屏。v84 的"纯不缓存"曾导致网络不稳时白屏，v91 修复）
+   4. 其他静态资源 cache-first */
+const CACHE = 'xiaozhi-workbench-v93';
 const ASSETS = ['./manifest.json', './icon.png', './icon-192.png', './assets/welcome-default.jpg'];
-const BUILD = '2026-08-22-v92';
+const BUILD = '2026-08-22-v93';
 
 const DEFAULT_MANIFEST = {
   name: '小彘的工作台', short_name: '小彘',
@@ -30,7 +32,7 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('activate', event => {
-  /* 强制清掉所有旧 cache（包括当前 scope 里所有非 v84 的 cache） */
+  /* 强制清掉所有旧 cache（只保留当前版本 CACHE） */
   event.waitUntil(
     caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
   );
