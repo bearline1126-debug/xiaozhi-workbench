@@ -2542,7 +2542,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-22-v102';
+const BUILD_VERSION = '2026-08-22-v103';
 const App = {
   current:'home',
   booting:true,
@@ -3290,7 +3290,7 @@ const Success = {
   renderImages(boxId='successImgs', date=Util.today()){
     const box=document.getElementById(boxId); if(!box) return;
     const imgs=Store.get(this.key(date),{}).images||[];
-    box.innerHTML = imgs.length ? imgs.map(id=>`<div class="img-cell"><img data-media="${id}" alt="感恩瞬间" onclick="Media.openFull('${id}')"><button class="del" onclick="Success.removeImage('${id}','${boxId}','${date}')">✕</button></div>`).join('') : '<div class="empty" style="font-size:13px">还没有图片，上传一张感恩瞬间。</div>';
+    box.innerHTML = imgs.length ? imgs.map(id=>`<div class="img-cell"><img data-media="${id}" alt="感恩瞬间" onclick="Media.openFull('${id}')"><button class="del" onclick="Success.removeImage('${id}','${boxId}','${date}')">✕</button></div>`).join('') : '';
     Media.paint();
   },
   async uploadGratitude(inputId='successImgFile', boxId='successImgs', date=Util.today()){
@@ -5778,7 +5778,8 @@ const English = {
     }
   },
   /* v101：对话逐行配对——种子池的中文是挤在一行的（"…B：…A：…B：…"），按说话人标记切开与英文行对齐；
-     若 dialogZh 本身带换行且行数相等（AI 生成的内容常是这种）则直接按行配对 */
+     若 dialogZh 本身带换行且行数相等（AI 生成的内容常是这种）则直接按行配对。
+     v103：源数据中文首句通常省略说话人标记（"周末怎么样？B：…"），配对时按英文行的 A:/B: 补齐 */
   dialogPairs(){
     const d=this.today();
     const en=String(d.dialog||'').split('\n').map(x=>x.trim()).filter(Boolean);
@@ -5787,7 +5788,12 @@ const English = {
       const parts=String(d.dialogZh||'').trim().split(/(?=[AB][：:])/).map(x=>x.trim()).filter(Boolean);
       if(parts.length===en.length) zh=parts;
     }
-    return en.map((line,i)=>({en:line, zh:zh[i]||''}));
+    return en.map((line,i)=>{
+      const sp=line.match(/^([AB])[：:]/);
+      let z=zh[i]||'';
+      if(sp && z && !/^[AB][：:]/.test(z)) z=sp[1]+'：'+z;
+      return {en:line, zh:z};
+    });
   },
   render(){
     this.maybeAutoRefresh(); /* v74：进页面时若当天没有 AI 内容则后台自动生成 */
