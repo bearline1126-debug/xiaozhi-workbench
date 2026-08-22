@@ -948,7 +948,7 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
       <div class="card">
         <h2>② 感恩日记</h2>
         <textarea id="dlWins" placeholder="今天值得感恩的事，一行一件"></textarea>
-        <details class="today-must-fold" id="dlTodayMustWrap"><summary>今日必做（来自昨晚的计划）</summary><div class="today-must" id="dlTodayMust"></div></details>
+        <details class="today-must-fold" id="dlTodayMustWrap" open><summary>今日必做（可直接增删改，昨晚没规划也能补）</summary><div class="today-must" id="dlTodayMustBox"></div></details>
         <label>明天必做（今晚填，明早自动变成「今日必做」）</label>
         <div id="dlMustBox" class="must-editor"></div>
       </div>
@@ -2544,7 +2544,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-20-v91';
+const BUILD_VERSION = '2026-08-22-v92';
 const App = {
   current:'home',
   booting:true,
@@ -2962,7 +2962,7 @@ const Home = {
   quote(localOnly = false){
     const today = Util.today();
     const last = Store.get('welcome_quote_cache', {});
-    if(last.date === today && last.text && !localOnly) return last.text;
+    if(last.date === today && last.text) return last.text;
     const pickFrom = (arr) => arr && arr.length ? arr[Math.floor(Math.random()*arr.length)] : '';
     /* v88：230 条内置鸡汤/名言/鼓气语录（涵盖自我、行动、休息、坚持、关系、记录、时间、选择、心态、习惯） */
     const builtin = [
@@ -3306,11 +3306,11 @@ const Success = {
 /* ==== 功能：感恩日记 END ==== */
 /* ==== 功能：明日必做结构化编辑器 START ==== */
 const MustEditor = {
-  mount(boxId, items){
+  mount(boxId, items, ph){
     const box = document.getElementById(boxId);
     if(!box) return;
     box.innerHTML = `<div class="must-list" id="${boxId}_list"></div>
-      <div class="row must-add"><input id="${boxId}_input" placeholder="写一件明天必做的事"><button class="btn" onclick="MustEditor.add('${boxId}')">添加</button></div>`;
+      <div class="row must-add"><input id="${boxId}_input" placeholder="${ph||'写一件明天必做的事'}"><button class="btn" onclick="MustEditor.add('${boxId}')">添加</button></div>`;
     this.paint(boxId, items || []);
   },
   paint(boxId, items){
@@ -4081,12 +4081,13 @@ const DailyLog = {
     dlMoodLine.value = rec.line || '';
     const s = Store.get(Success.key(d), {});
     dlWins.value = s.wins||''; if(document.getElementById('dlMustBox')) MustEditor.mount('dlMustBox', Success.norm(s.tomorrow));
-    /* 只读展示「今日必做」（来自昨天规划的明日必做），折叠在「今日必做」标题下，默认收起 */
-    const tm = document.getElementById('dlTodayMust');
-    if(tm){
-      const t = Success.todayTasks();
-      const done = Store.getDaily('task_done', []);
-      tm.innerHTML = (t.length ? t.map((x,i)=>`<div class="tm-item"><span class="tm-check">${done.includes(i)?'✓':''}</span><span>${Util.esc(x.text||'')}</span></div>`).join('') : '<div class="tm-empty">今天还没计划，下面填「明天必做」吧</div>');
+    /* 今日必做改为可编辑：直接挂载结构化编辑器，忘了昨晚规划也能补；
+       首次打开用 todayTasks() 兜底（含昨晚计划），写回 today.todayTasks，不与昨天的 tomorrow 混淆 */
+    const tmBox = document.getElementById('dlTodayMustBox');
+    if(tmBox){
+      const recToday = Store.get(Success.key(d), {});
+      const seed = (recToday.todayTasks && recToday.todayTasks.length) ? recToday.todayTasks : Success.todayTasks();
+      MustEditor.mount('dlTodayMustBox', seed, '写一件今天要做的事');
     }
     if(document.getElementById('dlSleep')) dlSleep.value = s.sleepTime || '23:00';
     if(document.getElementById('dlWake')) dlWake.value = s.wakeTime || '08:00';
@@ -4117,7 +4118,7 @@ const DailyLog = {
     const cur = Store.get(Tracker.dayKey(d), {habits:{}, mood:'😊', line:''});
     Store.set(Tracker.dayKey(d), {...cur, date:d, habits, mood:dlMood.value, line:dlMoodLine.value.trim()});
     const old = Store.get(Success.key(d), {});
-    Store.set(Success.key(d), {...old, date:d, wins:dlWins.value.trim(), tomorrow:MustEditor.collect('dlMustBox'), sleepTime:document.getElementById('dlSleep')?.value||'23:00', wakeTime:document.getElementById('dlWake')?.value||'08:00'});
+    Store.set(Success.key(d), {...old, date:d, wins:dlWins.value.trim(), todayTasks:MustEditor.collect('dlTodayMustBox'), tomorrow:MustEditor.collect('dlMustBox'), sleepTime:document.getElementById('dlSleep')?.value||'23:00', wakeTime:document.getElementById('dlWake')?.value||'08:00'});
     const hint=document.getElementById('dailyAutoSaveHint'); if(hint) hint.textContent='已自动保存到本机 · '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
   },
   toggleMood(){ Store.set('daily_mood_collapsed', !Store.get('daily_mood_collapsed', true)); this.applyMoodCollapse(); },
@@ -4132,7 +4133,7 @@ const DailyLog = {
     Store.set(Tracker.dayKey(d), {...cur, date:d, habits, mood:dlMood.value, line:dlMoodLine.value.trim()});
     /* 2. 感恩日记 */
     const old = Store.get(Success.key(d), {});
-    Store.set(Success.key(d), {...old, date:d, wins:dlWins.value.trim(), tomorrow:MustEditor.collect('dlMustBox'), sleepTime:document.getElementById('dlSleep')?.value||'23:00', wakeTime:document.getElementById('dlWake')?.value||'08:00'});
+    Store.set(Success.key(d), {...old, date:d, wins:dlWins.value.trim(), todayTasks:MustEditor.collect('dlTodayMustBox'), tomorrow:MustEditor.collect('dlMustBox'), sleepTime:document.getElementById('dlSleep')?.value||'23:00', wakeTime:document.getElementById('dlWake')?.value||'08:00'});
     /* 3. 情绪日记，写了才存 */
     let extra = '';
     const text = dlMoodText.value.trim();
@@ -4304,20 +4305,18 @@ const Companion = {
         {
           threadKey:'companion_'+Util.today(),
           temperature:.3,
-          system:`你是一个真了解她的朋友。她正在读博（博二升博三），最近在写论文；会自省也容易内耗；情绪/感恩日记里有大量真实情绪和事件。
+          system:`你是她的一个真朋友，很了解她：博二升博三、在写论文、会自省也容易内耗，情绪和感恩日记里有很多真实心事。
 
-# 回复铁律（违反任何一条就是不合格回复）
-
-1. **第一句必须是具体问句（？结尾）或具体可执行动作（动词开头）**——这是最硬的规则，没有例外。模型常见的"先来一句抒情共情"是错的：不要"心累比身体累磨人"、不要"看不到头的那种累最熬人"、不要"其实/说真的/确实/抱抱/嗯嗯"开头。第一句直接进问题或动作。
-2. **禁止把她的话换种说法复述**（「你很累论文卡着知识库烦」「这事确实累」=复读机，没意义）。回复必须包含她没说的话。
-3. **禁止"复述清单"**：不要把她说的两三件事逐条列出来（"论文没思路、知识库一篇篇导、诉讼又卡着——确实都磨人"=复读机）。挑一件往深里问或给动作。
-4. **她给了具体困难就给最小动作**或拆卡点（"卡在结构还是卡在文献"），不要只共情不接招。
-5. **闲聊/打招呼/发泄**：1-3 句，不硬挂引用。
-6. **context 里的近况可以自然带一句**，但别编她没说出口的事（禁"你今天做了很多事"）。
-7. **引用她以前提过的事最多 1 条 1-2 句**；引用不出就别引。
-8. **真不知道**回"嗯"或"这事我说不好"比瞎编强。
-9. 现在是 ${nowStr}，按此时辰说早晚/下午。
-10. 3-6 句；不喊口号不空话。`
+怎么回，把握这几个方向就行，别把它当死规矩：
+- 像真人朋友那样说话，自然、不端着、不谄媚、不喊口号。
+- 开口先接招：第一句尽量是个具体问题或能做的动作，少搞纯抒情共情。
+- 别把她的话换种说法再念一遍（那是复读机），要补点她没说出来的东西。
+- 她给了具体困难，就给个最小的下一步或帮她拆卡点，别只共情不接招。
+- 提到她以前说过的某件事，像朋友随口一提，最多 1 条；提不出就别硬引。
+- 别编她没说出口的事，尤其别凭空说"你今天做了很多事"之类。
+- 真不知道就说不知道，比瞎编强。
+- 按现在的时辰（${nowStr}）自然地打招呼（早晚/下午）。
+- 篇幅 3–6 句，轻松点。`
         }
       );
       this.push({role:'assistant', content:out, at:this.now(), refs});
