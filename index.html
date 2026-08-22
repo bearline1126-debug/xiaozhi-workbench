@@ -371,10 +371,13 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .eng-quiz-card h2{font-size:14px;margin-bottom:6px}
 .eng-q-word{font-size:18px;font-weight:700;text-align:center;padding:8px;background:rgba(107,152,79,.08);border-radius:12px;font-family:var(--title-font)}
 .eng-q-options{display:flex;flex-direction:column;gap:6px;margin-top:8px;align-items:center}
-.eng-search-row{display:flex;align-items:center;gap:8px;padding:7px 2px;border-bottom:1px dashed rgba(38,54,40,.12)}
-.eng-search-row .grow{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.eng-search-row b{font-size:14px}
-.eng-search-row .muted{font-size:12px;color:var(--text-dim)}
+/* v97：搜索结果两行制——第一行 词条+释义+操作按钮，第二行 例句 */
+.eng-search-row{display:flex;flex-direction:column;gap:3px;padding:8px 2px;border-bottom:1px dashed rgba(38,54,40,.12)}
+.eng-search-head{display:flex;align-items:center;gap:8px}
+.eng-search-head .grow{flex:1;min-width:0}
+.eng-search-head b{font-size:14px}
+.eng-search-head .muted{font-size:13px;color:var(--text-dim);margin-left:6px}
+.eng-search-ex{font-size:12px;color:var(--text-dim);padding-left:2px;line-height:1.5}
 .eng-q-opt{background:rgba(255,255,255,.7);border:2px solid var(--line);border-radius:12px;padding:10px 14px;font-size:14px;text-align:left;color:var(--text);transition:all .15s;width:100%;max-width:420px;white-space:normal;word-break:break-word;line-height:1.45;hyphens:auto}
 /* v74：英语「听力资源 / 播客」卡片 */
 .res-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
@@ -1187,9 +1190,9 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
         <span class="hint" id="englishSourceHint" style="margin-left:4px"></span>
       </div>
       <div class="card" style="padding:12px 14px">
-        <div class="row" style="align-items:center;gap:8px">
+        <div class="row" style="align-items:center;gap:6px">
           <input id="engSearchInput" placeholder="搜单词 / 搭配：输英文或中文释义" style="flex:1" onkeydown="if(event.key==='Enter')English.search()">
-          <button class="btn small" onclick="English.search()">🔍 查</button>
+          <button class="icon-btn" onclick="English.search()" title="搜索">🔍</button>
         </div>
         <div id="engSearchResults" style="margin-top:6px"></div>
       </div>
@@ -2555,7 +2558,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-22-v96';
+const BUILD_VERSION = '2026-08-22-v97';
 const App = {
   current:'home',
   booting:true,
@@ -5791,7 +5794,7 @@ const English = {
     const sourceHint = document.getElementById('englishSourceHint');
     if(sourceHint){
       const isAi = d._source === 'ai';
-      sourceHint.textContent = isAi ? `📡 今日内容来源：AI 生成（${(d._ts?new Date(d._ts).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}):'') }）` : '🌱 今日内容来源：本地种子';
+      sourceHint.textContent = isAi ? `📡 来源：AI 生成（${(d._ts?new Date(d._ts).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}):'') }）` : '🌱 来源：本地种子';
       sourceHint.style.color = isAi ? 'var(--accent)' : 'var(--text-dim)';
     }
     const doneList=Store.getDaily('english_done',[]);
@@ -6038,11 +6041,15 @@ const English = {
     box.innerHTML=list.map((h,i)=>{
       const key='sw:'+h.text;
       const state = doneMap[key] ? '<span class="hint">已测 '+(doneMap[key].isCorrect?'✅':'❌')+'</span>'
-        : added.has(key) ? '<span class="hint">已在今日测试 ✓</span>'
-        : (h.type==='word'&&h.text===t.word)||(h.type==='phrase'&&h.text===t.phrase) ? '<span class="hint">就是今日学习内容 ✓</span>'
-        : this.mastered().some(x=>x.text===h.text) ? '<span class="hint">已入已学库 ✓</span>'
-        : `<button class="btn small" onclick="English.addSearchTest(${i})">🧪 加入今日测试</button>`;
-      return `<div class="eng-search-row"><span>${h.type==='word'?'🔤':'🧩'}</span><div class="grow"><b>${Util.esc(h.text)}</b><span class="muted"> ${Util.esc(h.answer)}</span></div><button class="icon-btn" title="朗读" onclick="English.speakSearch(${i})">🔊</button>${state}</div>`;
+        : added.has(key) ? '<span class="hint">已加入 ✓</span>'
+        : (h.type==='word'&&h.text===t.word)||(h.type==='phrase'&&h.text===t.phrase) ? '<span class="hint">今日内容 ✓</span>'
+        : this.mastered().some(x=>x.text===h.text) ? '<span class="hint">已学库 ✓</span>'
+        : `<button class="icon-btn" title="加入今日测试" onclick="English.addSearchTest(${i})">✚</button>`;
+      const ex = h.type==='word' ? h.item.example : h.item.phraseEx;
+      return `<div class="eng-search-row">
+        <div class="eng-search-head"><span>${h.type==='word'?'🔤':'🧩'}</span><div class="grow"><b>${Util.esc(h.text)}</b><span class="muted">${Util.esc(h.answer)}</span></div><button class="icon-btn" title="朗读" onclick="English.speakSearch(${i})">🔊</button>${state}</div>
+        ${ex?`<div class="eng-search-ex">例句：${Util.esc(ex)}</div>`:''}
+      </div>`;
     }).join('');
   },
   speakSearch(i){ const h=(this._searchHits||[])[i]; if(h) this.speak(h.text); },
@@ -6071,27 +6078,30 @@ const English = {
     const zhInput=/[\u4e00-\u9fa5]/.test(q);
     try{
       const out=await AI.ask(
-        `用户在查英语学习词条（多为科研/学术词，这正是他查词典的原因，再偏的词也要认真给）。输入可能是英文单词/短语，也可能是中文释义。请给出对应词条：${zhInput?'输入是中文释义，给出最常用的一个英文单词或固定搭配':'输入是英文，给出简明中文释义（多个义项用；分隔，最多 2 个）'}。\n输入：${q}\n只输出严格 JSON：{"en":"英文单词或短语","zh":"中文意思"}`,
+        `用户在查英语学习词条（多为科研/学术词，这正是他查词典的原因，再偏的词也要认真给）。输入可能是英文单词/短语，也可能是中文释义。请给出对应词条：${zhInput?'输入是中文释义，给出最常用的一个英文单词或固定搭配':'输入是英文，给出简明中文释义（多个义项用；分隔，最多 2 个）'}。\n输入：${q}\n只输出严格 JSON：{"en":"英文单词或短语","zh":"中文意思","ex":"用该词写的一个简短英文例句"}`,
         {system:'你是一个英汉词典助手，只输出严格 JSON，不要任何额外文字、不要 markdown 代码块包裹。'}
       );
       const m=String(out||'').match(/\{[\s\S]*?\}/);
       if(!m) throw new Error('AI 没返回有效结果');
       const parsed=JSON.parse(m[0]);
-      const en=String(parsed.en||'').trim(), zh=String(parsed.zh||'').trim();
+      const en=String(parsed.en||'').trim(), zh=String(parsed.zh||'').trim(), ex=String(parsed.ex||'').trim();
       if(!en||!zh) throw new Error('AI 返回字段不全');
-      cache[ck]={en,zh};
+      cache[ck]={en,zh,ex};
       const keys=Object.keys(cache);
       if(keys.length>200) delete cache[keys[0]];
       Store.set('english_ai_dict',cache);
       this._aiHit={key:'sw:'+en, type:/\s/.test(en)?'phrase':'word', text:en, answer:zh};
-      this._renderAiHit({en,zh});
+      this._renderAiHit({en,zh,ex});
     }catch(e){
       box.innerHTML=`<div class="hint">AI 查询失败：${Util.esc(e.message||String(e))}　<button class="btn small" style="margin-left:6px" onclick="English.aiLookup()">重试</button></div>`;
     }
   },
   _renderAiHit(r){
     const box=document.getElementById('engSearchResults'); if(!box) return;
-    box.innerHTML=`<div class="eng-search-row"><span>🤖</span><div class="grow"><b>${Util.esc(r.en)}</b><span class="muted"> ${Util.esc(r.zh)}</span></div><button class="icon-btn" title="朗读" onclick="English.speakSearchAi()">🔊</button><button class="btn small" onclick="English.addAiTest()">🧪 加入今日测试</button></div><p class="hint" style="margin:4px 0 0">AI 查词结果（词库没有时自动查询，结果已缓存）</p>`;
+    box.innerHTML=`<div class="eng-search-row">
+        <div class="eng-search-head"><span>🤖</span><div class="grow"><b>${Util.esc(r.en)}</b><span class="muted">${Util.esc(r.zh)}</span></div><button class="icon-btn" title="朗读" onclick="English.speakSearchAi()">🔊</button><button class="icon-btn" title="加入今日测试" onclick="English.addAiTest()">✚</button></div>
+        ${r.ex?`<div class="eng-search-ex">例句：${Util.esc(r.ex)}</div>`:''}
+      </div><p class="hint" style="margin:4px 0 0">AI 查词结果（词库没有时自动查询，结果已缓存）</p>`;
   },
   speakSearchAi(){ if(this._aiHit) this.speak(this._aiHit.text); },
   addAiTest(){
