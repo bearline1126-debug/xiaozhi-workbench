@@ -75,9 +75,9 @@
 ## 4. 版本号与缓存策略（部署三件套）
 
 - **版本号三处必须同步递增**（一次部署三处一起 +1）：
-  1. `index.html` 顶部 `const BUILD_VERSION = '2026-08-20-v90';`
-  2. `sw.js` 顶部 `const CACHE = 'xiaozhi-workbench-v90';`
-  3. `sw.js` 顶部 `const BUILD = '2026-08-20-v90';`
+  1. `index.html` 顶部 `const BUILD_VERSION = '2026-08-22-v92';`
+  2. `sw.js` 顶部 `const CACHE = 'xiaozhi-workbench-v92';`
+  3. `sw.js` 顶部 `const BUILD = '2026-08-22-v92';`
 - **sw.js 缓存策略（v84 血泪史，勿改）**：
   - install：立即 `skipWaiting`，**不预缓存 HTML**（只预缓存静态资源，单个 `cache.add` 失败不阻塞）
   - activate：**强制清掉所有旧 cache**
