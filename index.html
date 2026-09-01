@@ -876,6 +876,13 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
 .today-must-fold>summary::before{content:'▸ '}
 .today-must-fold[open]>summary::before{content:'▾ '}
 .today-must-fold .today-must{margin-bottom:0;border:0;background:transparent;padding:0 10px 8px}
+.md-body{line-height:1.75;color:var(--text)}
+.md-body .md-h{display:block;font-size:15px;font-weight:700;color:var(--text);margin:10px 0 4px}
+.md-body .md-p{margin:4px 0}
+.md-body .md-li{margin:2px 0 2px 12px}
+.md-body .md-gap{height:8px}
+.md-body p{margin:4px 0}
+.md-body b{color:var(--accent);font-weight:700}
 </style>
 </head>
 <body>
@@ -1919,6 +1926,34 @@ const Media = {
     if(!url) return UI.toast('原件找不到了');
     window.open(url, '_blank');
   },
+  /* v104：一组图片的全屏翻页查看器（日记本感动瞬间等）——左右按钮循环切换上/下一张，样式复用视觉灵感的 .visual-viewer */
+  _g:null,
+  gallery(ids, idx=0){
+    if(!ids || !ids.length) return UI.toast('这里还没有图片');
+    this._g = {ids: ids.slice(), idx: Math.max(0, idx) % ids.length};
+    this._galRender();
+  },
+  async _galRender(){
+    const g = this._g; if(!g) return;
+    let box = document.getElementById('mediaViewer');
+    if(!box){
+      box = document.createElement('div'); box.id = 'mediaViewer'; box.className = 'visual-viewer';
+      box.innerHTML = `<button class="vv-close" onclick="Media.galClose()">×</button><button class="vv-prev" onclick="Media.galNav(-1)">‹</button><div class="vv-stage" id="vvStage2"></div><button class="vv-next" onclick="Media.galNav(1)">›</button><div class="vv-bar"><span class="vv-info" id="vvInfo2"></span></div>`;
+      document.body.appendChild(box);
+    }
+    box.style.display = 'flex';
+    const stage = document.getElementById('vvStage2');
+    const url = await this.objectUrl(g.ids[g.idx]);
+    stage.innerHTML = url ? `<img src="${url}" style="max-width:96%;max-height:80vh;object-fit:contain">` : '<div class="vv-info">这张图片原图找不到了</div>';
+    const info = document.getElementById('vvInfo2');
+    if(info) info.textContent = (g.idx+1) + ' / ' + g.ids.length;
+  },
+  galNav(delta){
+    const g = this._g; if(!g) return;
+    g.idx = (g.idx + delta + g.ids.length) % g.ids.length;
+    this._galRender();
+  },
+  galClose(){ const box = document.getElementById('mediaViewer'); if(box) box.style.display = 'none'; this._g = null; },
   async usage(){
     let quota = 0, usage = 0;
     if(navigator.storage?.estimate){ const e = await navigator.storage.estimate().catch(()=>null); if(e){ quota = e.quota || 0; usage = e.usage || 0; } }
@@ -2542,7 +2577,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-08-22-v103';
+const BUILD_VERSION = '2026-09-01-v104';
 const App = {
   current:'home',
   booting:true,
@@ -3529,7 +3564,7 @@ const DiaryBook = {
     }
     const out=[];
     if(d.winLines.length) out.push(this.section('感恩日记', d.winLines.map(x=>Util.esc(x))));
-    if(d.images.length) out.push(`<div class="db-sec"><h3>感恩瞬间</h3><div class="img-grid">${d.images.map(id=>`<img data-media="${id}" alt="" onclick="Media.openFull('${id}')">`).join('')}</div></div>`);
+    if(d.images.length){ Media._diaryImgs = d.images; out.push(`<div class="db-sec"><h3>感恩瞬间</h3><div class="img-grid">${d.images.map((id,i)=>`<img data-media="${id}" alt="感动瞬间 ${i+1}" onclick="Media.gallery(Media._diaryImgs, ${i})">`).join('')}</div></div>`); }
     if(d.moodDiary.length) out.push(this.section('情绪日记', d.moodDiary.map(x=>`${Util.esc(x.symbol||'')} ${Util.esc(x.text)}`)));
     if(d.whispers.length) out.push(this.section('碎碎念', d.whispers.map(x=>Util.esc(x))));
     if(d.doneTasks.length) out.push(this.section('今日必做完成', d.doneTasks.map(x=>Util.esc(x.text))));
@@ -4612,8 +4647,10 @@ const Review = {
   async aiGenerate(){
     reviewOutput.textContent='生成中...';
     try{
-      const out=await AI.ask(this.prompt(),{threadKey:'review_growth'});
-      reviewOutput.textContent=out;
+      /* v104：去掉共享线程 review_growth（它会把最近 10 条同类周报问答塞进上下文，模型顺着旧文复读得到雷同结果）；
+         改为每次基于本次数据独立生成 + 提高温度，让不同记录必然产出不同总结 */
+      const out=await AI.ask(this.prompt(),{temperature:1.1});
+      reviewOutput.innerHTML=this.md(out);
       Store.set('review_last_'+this.mode,{date:Util.today(),out});
       Store.set('review_results',[{id:Util.uid(),date:Util.today(),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),mode:this.mode,out},...this.results()]);
       this.history();
@@ -4621,10 +4658,27 @@ const Review = {
   },
   saveNote(){ const text=reviewNote.value.trim(); if(!text)return; Store.set('review_notes',[{id:Util.uid(),date:Util.today(),text},...Store.get('review_notes',[])]); reviewNote.value=''; this.notes(); },
   notes(){ const list=Store.get('review_notes',[]); reviewNotes.innerHTML=list.map(x=>UI.item(x.date,x.text,`<button class="del" onclick="Review.delNote('${x.id}')">✕</button>`)).join(''); },
-  history(){ const list=this.results(); reviewHistory.innerHTML=list.length?list.map(x=>UI.item(`${x.date} ${x.time} · ${this.label(x.mode)}`,x.out,`<button class="del" onclick="Review.delResult('${x.id}')">✕</button>`)).join(''):'<div class="empty">还没有复盘结果</div>'; },
+  history(){ const list=this.results(); reviewHistory.innerHTML=list.length?list.map(x=>`<div class="item"><div class="grow"><div class="title">${x.date} ${x.time} · ${this.label(x.mode)}</div><div class="desc md-body">${this.md(x.out)}</div></div><button class="del" onclick="Review.delResult('${x.id}')">✕</button></div>`).join(''):'<div class="empty">还没有复盘结果</div>'; },
   label(m){ return {week:'周总结',month:'月总结',year:'年总结',plan:'计划复盘'}[m]||m; },
   delResult(id){ Store.set('review_results',this.results().filter(x=>x.id!==id)); this.history(); },
-  delNote(id){ Store.set('review_notes',Store.get('review_notes',[]).filter(x=>x.id!==id)); this.notes(); }
+  delNote(id){ Store.set('review_notes',Store.get('review_notes',[]).filter(x=>x.id!==id)); this.notes(); },
+  /* v104：把 AI 输出的 markdown 转成干净可读的 HTML（去掉 ## / ** / - 等符号）。先整体转义防注入，再行内还原加粗。 */
+  md(t){
+    if(!t) return '';
+    let h='';
+    String(t).split(/\r?\n/).forEach(line=>{
+      line=Util.esc(line);
+      let m=line.match(/^(#{1,4})\s+(.*)$/);
+      if(m){ h+='<span class="md-h">'+m[2]+'</span>'; return; }
+      m=line.match(/^[-*+]\s+(.*)$/);
+      if(m){ h+='<div class="md-li">· '+m[1]+'</div>'; return; }
+      m=line.match(/^\d+[.、]\s+(.*)$/);
+      if(m){ h+='<div class="md-li">'+m[1]+'</div>'; return; }
+      if(!line.trim()){ h+='<div class="md-gap"></div>'; return; }
+      h+='<div class="md-p">'+line+'</div>';
+    });
+    return h.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\*/g,'').replace(/`/g,'');
+  }
 };
 /* ==== 功能：复盘中心 END ==== */
 /* ==== 功能：个人认知库 START ==== */
@@ -5538,6 +5592,17 @@ const WishShop = {
     }
   },
   del(id){ Store.set('wish_shop', this.list().filter(x => x.id !== id)); this.render(); },
+  /* v104：撤回星愿瓶里的一颗星星——恢复成未兑换(未完成) + 退回当时扣掉的金币 */
+  restoreStar(id){
+    const item = this.list().find(x => x.id === id);
+    if(!item || !item.done) return;
+    if(!confirm('撤回心愿「' + item.name + '」？\n将恢复成未完成的心愿，并退回 ' + item.cost + ' 枚金币。')) return;
+    Coin.refund(item.cost, '撤回心愿：' + item.name);
+    Store.set('wish_shop', this.list().map(x => x.id === id ? {...x, done:false, redeemedAt:''} : x));
+    this.render(); Home.render();
+  },
+  /* v104：星愿瓶已兑换卡片的统一渲染（含撤回入口） */
+  starCard(x){ return `<div class="star-card"><div class="star-card-name">⭐ ${Util.esc(x.name)}</div><div class="star-card-date">${x.cost? (x.cost + ' 枚') : ''}${x.redeemedAt? (' · ' + x.redeemedAt) : ''}<button class="del" style="font-size:13px;color:var(--accent);margin-left:8px" onclick="WishShop.restoreStar('${x.id}')" title="撤回心愿并退回金币">↺</button></div></div>`; },
   /* 星星落入瓶子动画 */
   flyStar(name){
     const area=document.getElementById('wishBottleArea');
@@ -5660,14 +5725,14 @@ const WishShop = {
       /* 当年心愿星星 */
       if(curYearDone.length){
         doneHtml+=`<div style="margin-bottom:10px"><div style="font-size:13px;font-weight:700;color:#8a7a5c;margin-bottom:6px;display:flex;align-items:center;gap:6px"><span style="background:#6b984f;color:#fff;padding:2px 10px;border-radius:6px;font-size:12px">✨ ${curYear}年</span></div>`;
-        doneHtml+=`<div class="star-cards">${curYearDone.map(x=>`<div class="star-card"><div class="star-card-name">⭐ ${Util.esc(x.name)}</div><div class="star-card-date">${x.redeemedAt||''}</div></div>`).join('')}</div>`;
+        doneHtml+=`<div class="star-cards">${curYearDone.map(x=>this.starCard(x)).join('')}</div>`;
       }
       /* 往年汇总 */
       pastYears.forEach(y=>{
         const items=years[y]||[];
         if(!items.length) return;
         doneHtml+=`<div style="margin-bottom:10px"><div style="font-size:13px;font-weight:700;color:#8a7a5c;margin-bottom:6px">🫙 ${y}年 · ${items.length} 颗星</div>`;
-        doneHtml+=`<div class="star-cards">${items.map(x=>`<div class="star-card"><div class="star-card-name">⭐ ${Util.esc(x.name)}</div><div class="star-card-date">${x.cost} 枚 · ${x.redeemedAt||''}</div></div>`).join('')}</div>`;
+        doneHtml+=`<div class="star-cards">${items.map(x=>this.starCard(x)).join('')}</div>`;
       });
       if(!hasAnyContent) doneHtml+=`<div style="text-align:center;color:#aaa;padding:16px 0;font-size:13px">还没有完成的心愿星，继续加油～</div>`;
       doneHtml+=`</div></details>`;
@@ -5683,7 +5748,7 @@ const WishShop = {
     el.style.display=visible?'none':'block';
     if(!visible){
       el.innerHTML=`<div style="margin-top:12px"><div style="font-size:13px;font-weight:600;color:#8a7a5c;margin-bottom:8px">🫙 ${year}年 · ${items.length} 颗星</div>
-      <div class="star-cards">${items.map(x=>`<div class="star-card"><div class="star-card-name">⭐ ${Util.esc(x.name)}</div><div class="star-card-date">${x.cost} 枚 · ${x.redeemedAt||''}</div></div>`).join('')}</div></div>`;
+      <div class="star-cards">${items.map(x=>this.starCard(x)).join('')}</div></div>`;
     }
   }
 };
@@ -5820,7 +5885,7 @@ const English = {
     const dlZh=Util.esc(dlPairs.map(p=>p.zh).filter(Boolean).join('\n')).replace(/\n/g,'<br>');
     englishCards.innerHTML=[
       `<div class="card"><h2>💬 每日一句</h2>${engMain(Util.esc(d.quote))}${engZh(Util.esc(d.quoteZh))}${doneFn('每日一句')?engDone():engActs(`<button class="btn small" onclick="English.playQuote()" title="朗读">🔊</button><button class="btn small ghost" onclick="English.done('每日一句')">完成学习</button>`)}</div>`,
-      `<div class="card"><h2>🔤 每日单词</h2>${engMain(Util.esc(d.word))}${engZh(Util.esc(d.wordZh))}${d.example?engEx(Util.esc(d.example))+'<div class="eng-ex" id="engExZh_word">'+Util.esc(this.exTransGet(d.example)||'')+'</div>':''}${doneFn('每日单词')?engDone():`<button class="btn small eng-finish" onclick="English.done('每日单词')">完成学习</button>`}</div>`,
+      `<div class="card"><h2>🔤 每日单词</h2>${engMain(Util.esc(d.word))}${engZh(Util.esc(d.wordZh))}${d.example?engEx(Util.esc(d.example))+'<div class="eng-ex" id="engExZh_word">'+Util.esc(this.exTransGet(d.example)||'')+'</div>':''}${doneFn('每日单词')?engDone():engActs(`<button class="btn small" onclick="English.playWord()" title="朗读单词">🔊</button><button class="btn small ghost" onclick="English.done('每日单词')">完成学习</button>`)}</div>`,
       `<div class="card"><h2>🧩 固定搭配</h2>${engMain(Util.esc(d.phrase)+' · '+Util.esc(d.phraseZh))}${d.phraseEx?engEx(Util.esc(d.phraseEx))+'<div class="eng-ex" id="engExZh_phrase">'+Util.esc(this.exTransGet(d.phraseEx)||'')+'</div>':''}${doneFn('固定搭配')?engDone():`<button class="btn small eng-finish" onclick="English.done('固定搭配')">完成学习</button>`}</div>`,
       `<div class="card"><h2>🗣️ 每日对话</h2>${engMain(dlEn)}${engZh(dlZh)}${doneFn('每日对话')?engDone():engActs(`<button class="btn small" onclick="English.playDialog()" title="朗读对话">🔊</button><button class="btn small ghost" onclick="English.done('每日对话')">完成学习</button>`)}</div>`
     ].join('');
@@ -6252,14 +6317,32 @@ const English = {
     const vs=(window.speechSynthesis && speechSynthesis.getVoices()) || [];
     return this._voice = vs.find(v=>/en[-_]US/i.test(v.lang) && /(Google|Natural|Premium|Samantha|Microsoft|Female)/i.test(v.name)) || vs.find(v=>/en[-_]US/i.test(v.lang)) || vs.find(v=>/^en/i.test(v.lang)) || null;
   },
-  speak(text){
-    if(!('speechSynthesis' in window)) return UI.toast('当前浏览器不支持朗读');
+  /* v104：真人级语音优先——联网走 Google 神经网络 TTS（只发送要读的英文文本）；失败/断网自动回落本机系统语音，不打断不报错 */
+  speak(text, lang='en-US'){
+    if(!text) return;
+    if(navigator.onLine!==false){ this.txtToAudio(text, lang).then(ok=>{ if(!ok) this.speakLocal(text, lang); }); }
+    else this.speakLocal(text, lang);
+  },
+  txtToAudio(text, lang){
+    return new Promise(res=>{
+      try{
+        const url='https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&q='+encodeURIComponent(text)+'&tl='+(lang.split('-')[0]||'en');
+        const a=new Audio(url);
+        a.onerror=()=>res(false);
+        a.play().then(()=>{ if('speechSynthesis' in window) speechSynthesis.cancel(); res(true); }).catch(()=>res(false));
+      }catch(e){ res(false); }
+    });
+  },
+  speakLocal(text, lang='en-US'){
+    if(!('speechSynthesis' in window)) return;
     speechSynthesis.cancel();
     const u=new SpeechSynthesisUtterance(text);
     const v=this.pickVoice(); if(v) u.voice=v;
-    u.lang='en-US'; u.rate=.95; u.pitch=1;
+    u.lang=lang; u.rate=.95; u.pitch=1;
     speechSynthesis.speak(u);
   },
+  /* v104：每日单词朗读喇叭 */
+  playWord(){ this.speak(this.today().word); },
   playDialog(){ this.speak(this.today().dialog.replace(/^[AB]:/gm,'')); },
   playQuote(){ this.speak(this.today().quote); },
   done(name){
@@ -6325,6 +6408,15 @@ const Coin = {
     const coin={id:Util.uid(),date:Util.today(),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),source:'spend',name:note||'兑换',icon:'🛍️',amount:-amount};
     Store.set('coin_history',[coin,...this.history()]);
     UI.toast('🛍️ 已用掉 ' + amount + ' 枚金币');
+    return true;
+  },
+  /* v104：撤回兑换/心愿时退回金币（正数入账，和 spend 的负数记录相抵，总额归零） */
+  refund(amount, note){
+    amount = Number(amount) || 0;
+    if(amount <= 0) return false;
+    const coin={id:Util.uid(),date:Util.today(),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),source:'refund',name:note||'退回',icon:'↩️',amount};
+    Store.set('coin_history',[coin,...this.history()]);
+    UI.toast('↩️ 已退回 ' + amount + ' 枚金币');
     return true;
   },
   /* 在各功能完成后调用 */
