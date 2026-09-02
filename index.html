@@ -2577,7 +2577,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-09-01-v104';
+const BUILD_VERSION = '2026-09-02-v105';
 const App = {
   current:'home',
   booting:true,
@@ -4642,7 +4642,18 @@ const Review = {
   },
   markRead(){ Store.set('lastWeeklyReview', Util.today()); this.render(); },
   setMode(m,btn){ this.mode=m; document.querySelectorAll('#page-review .tab').forEach(x=>x.classList.remove('on')); btn.classList.add('on'); },
-  prompt(){ const data={success:Success.collect(31),mood:Mood.collect(31),tracker:Util.rangeDays(31).map(d=>({date:d,track:Store.get(Tracker.dayKey(d),{})})),notes:Store.get('review_notes',[]),plans:this.plans()}; const ask={week:'请做周总结：从我这周的记录里，你看到一个怎样的我？想对我说什么？请分析生活状态和优化点。',month:'请做月总结，提炼本月模式、进步、消耗源和下月建议。',year:'请做年总结框架，提炼长期主题和下一阶段方向。',plan:'请做计划复盘：看看我的年度计划是否过载、哪些更值得保留；并参考「每日记录」里关联到各计划的投入天数，判断推进节奏。我的年度计划：\n'+(data.plans.length?data.plans.map(p=>`· ${p.title}（${p.desc||'无说明'}）今年已关联 ${this.planDays(p.id)} 天`).join('\n'):'（还没列年度计划）')}[this.mode]; return ask+'\n数据：\n'+JSON.stringify(data); },
+  prompt(){
+    /* v105：按复盘模式裁剪数据范围（周报只发本周 7 天，不再像旧版那样一律发 31 天）；
+       并把上一次同类复盘结论喂给 AI 做承接——比「靠同一个对话线程让 AI 自动记住」更可靠，
+       因为独立请求+可裁剪+明确承接，既避免重复发全部原始记录，又不触发 AI 顺着旧文复读雷同 */
+    const m=this.mode;
+    const days = m==='week'?7 : m==='month'?30 : m==='year'?366 : 30;
+    const data={success:Success.collect(days),mood:Mood.collect(days),tracker:Util.rangeDays(days).map(d=>({date:d,track:Store.get(Tracker.dayKey(d),{})})),notes:Store.get('review_notes',[]),plans:this.plans()};
+    const prior=this.results().filter(r=>r.mode===m).slice(0,2).map(r=>r.out).join('\n--\n');
+    const priorHint = prior ? `\n\n[请参考上次${this.label(m)}的结论文档，在此基础上做更高一层提炼，不要复述它的话]：\n${prior}` : '';
+    const ask={week:'请做周总结：从本周(近7天)的记录里，你看到一个怎样的我？分析本周生活状态、变化与卡点，给出 3 条下周能落地的建议。',month:'请做月总结：从本月(近30天)的记录提炼本月模式、进步、消耗源，给出 3 条下月能执行的点。',year:'请做年总结框架：从今年记录提炼长期主题、主要进步与消耗源，给出下一阶段的 2-3 个方向。',plan:'请做计划复盘：看看我的年度计划是否过载、哪些更值得保留；并参考「每日记录」里关联到各计划的投入天数，判断推进节奏。我的年度计划：\n'+(data.plans.length?data.plans.map(p=>`· ${p.title}（${p.desc||'无说明'}）今年已关联 ${this.planDays(p.id)} 天`).join('\n'):'（还没列年度计划）')}[m];
+    return ask+priorHint+'\n数据：\n'+JSON.stringify(data);
+  },
   results(){ return Store.get('review_results',[]); },
   async aiGenerate(){
     reviewOutput.textContent='生成中...';
@@ -5886,7 +5897,7 @@ const English = {
     englishCards.innerHTML=[
       `<div class="card"><h2>💬 每日一句</h2>${engMain(Util.esc(d.quote))}${engZh(Util.esc(d.quoteZh))}${doneFn('每日一句')?engDone():engActs(`<button class="btn small" onclick="English.playQuote()" title="朗读">🔊</button><button class="btn small ghost" onclick="English.done('每日一句')">完成学习</button>`)}</div>`,
       `<div class="card"><h2>🔤 每日单词</h2>${engMain(Util.esc(d.word))}${engZh(Util.esc(d.wordZh))}${d.example?engEx(Util.esc(d.example))+'<div class="eng-ex" id="engExZh_word">'+Util.esc(this.exTransGet(d.example)||'')+'</div>':''}${doneFn('每日单词')?engDone():engActs(`<button class="btn small" onclick="English.playWord()" title="朗读单词">🔊</button><button class="btn small ghost" onclick="English.done('每日单词')">完成学习</button>`)}</div>`,
-      `<div class="card"><h2>🧩 固定搭配</h2>${engMain(Util.esc(d.phrase)+' · '+Util.esc(d.phraseZh))}${d.phraseEx?engEx(Util.esc(d.phraseEx))+'<div class="eng-ex" id="engExZh_phrase">'+Util.esc(this.exTransGet(d.phraseEx)||'')+'</div>':''}${doneFn('固定搭配')?engDone():`<button class="btn small eng-finish" onclick="English.done('固定搭配')">完成学习</button>`}</div>`,
+      `<div class="card"><h2>🧩 固定搭配</h2>${engMain(Util.esc(d.phrase)+' · '+Util.esc(d.phraseZh))}${d.phraseEx?engEx(Util.esc(d.phraseEx))+'<div class="eng-ex" id="engExZh_phrase">'+Util.esc(this.exTransGet(d.phraseEx)||'')+'</div>':''}${doneFn('固定搭配')?engDone():engActs(`<button class="btn small" onclick="English.playPhrase()" title="朗读搭配">🔊</button><button class="btn small ghost" onclick="English.done('固定搭配')">完成学习</button>`)}</div>`,
       `<div class="card"><h2>🗣️ 每日对话</h2>${engMain(dlEn)}${engZh(dlZh)}${doneFn('每日对话')?engDone():engActs(`<button class="btn small" onclick="English.playDialog()" title="朗读对话">🔊</button><button class="btn small ghost" onclick="English.done('每日对话')">完成学习</button>`)}</div>`
     ].join('');
     /* v100：例句翻译自动出——缓存命中直接显示，未命中后台翻一次（写缓存后填充），静默失败 */
@@ -6317,32 +6328,21 @@ const English = {
     const vs=(window.speechSynthesis && speechSynthesis.getVoices()) || [];
     return this._voice = vs.find(v=>/en[-_]US/i.test(v.lang) && /(Google|Natural|Premium|Samantha|Microsoft|Female)/i.test(v.name)) || vs.find(v=>/en[-_]US/i.test(v.lang)) || vs.find(v=>/^en/i.test(v.lang)) || null;
   },
-  /* v104：真人级语音优先——联网走 Google 神经网络 TTS（只发送要读的英文文本）；失败/断网自动回落本机系统语音，不打断不报错 */
+  /* v105：纯本机语音（秒响）。v104 曾做「在线真人优先」，但墙内连不上会让点按后迟迟才回落本机音，体验太差，
+     改回直接 speechSynthesis；音色取决于设备系统里已装的 TTS（要更真的音，需去设备设置装语音包，脚本无法代装） */
   speak(text, lang='en-US'){
     if(!text) return;
-    if(navigator.onLine!==false){ this.txtToAudio(text, lang).then(ok=>{ if(!ok) this.speakLocal(text, lang); }); }
-    else this.speakLocal(text, lang);
-  },
-  txtToAudio(text, lang){
-    return new Promise(res=>{
-      try{
-        const url='https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&q='+encodeURIComponent(text)+'&tl='+(lang.split('-')[0]||'en');
-        const a=new Audio(url);
-        a.onerror=()=>res(false);
-        a.play().then(()=>{ if('speechSynthesis' in window) speechSynthesis.cancel(); res(true); }).catch(()=>res(false));
-      }catch(e){ res(false); }
-    });
-  },
-  speakLocal(text, lang='en-US'){
-    if(!('speechSynthesis' in window)) return;
+    if(!('speechSynthesis' in window)) return UI.toast('当前浏览器不支持朗读');
     speechSynthesis.cancel();
     const u=new SpeechSynthesisUtterance(text);
     const v=this.pickVoice(); if(v) u.voice=v;
     u.lang=lang; u.rate=.95; u.pitch=1;
     speechSynthesis.speak(u);
   },
-  /* v104：每日单词朗读喇叭 */
+  /* v105：每日单词朗读喇叭 */
   playWord(){ this.speak(this.today().word); },
+  /* v105：固定搭配朗读喇叭 */
+  playPhrase(){ this.speak(this.today().phrase); },
   playDialog(){ this.speak(this.today().dialog.replace(/^[AB]:/gm,'')); },
   playQuote(){ this.speak(this.today().quote); },
   done(name){
