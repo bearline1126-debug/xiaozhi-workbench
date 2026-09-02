@@ -804,11 +804,11 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
 .db-sec .img-row{display:flex;gap:4px;margin:6px 0}
 .db-sec .img-row img{flex:1;min-width:0;aspect-ratio:1;object-fit:cover;border-radius:8px;border:1px solid #efe6d8;background:#f7f3ea}
 /* 周记录：日期在左、内容在右，紧凑 */
-.db-sum-day{display:grid;grid-template-columns:38px 1fr;gap:3px;align-items:start;padding:3px 0}
+.db-sum-day{display:grid;grid-template-columns:26px 1fr;gap:2px;align-items:start;padding:3px 0}
 .db-sum-day .db-sum-day-head{display:flex;flex-direction:column;align-items:center;gap:1px;padding:2px 0}
 .db-sum-day-date{font-size:13px;font-weight:600;color:#6b7d63}
 .db-sum-day-wd{font-size:11px;color:#aaa;font-weight:400}
-.db-sum-day-body{border-left:1px dashed #e6dcc6;padding-left:5px;min-width:0}
+.db-sum-day-body{border-left:1px dashed #e6dcc6;padding-left:2px;min-width:0}
 .db-sum-items li.done span.t{text-decoration:line-through;color:#bfb6a0}
 .db-sum-habit-li{padding:1.5px 0}
 .db-sum-habit{color:#8a5a9e;font-size:12.5px}
@@ -931,7 +931,14 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
 .review-blk + .review-blk{border-top:1px dashed #ece6d8;margin-top:14px;padding-top:8px}
 .review-blk-title{font-family:var(--title-font);font-size:15px;font-weight:700;color:#4d633f;display:flex;align-items:center;gap:6px;margin:2px 0 4px}
 .review-blk-title::before{content:'';width:4px;height:14px;border-radius:2px;background:#6b984f;display:inline-block}
-.review-blk .note-cat-card{cursor:pointer}
+.review-mini-grid{display:flex;flex-wrap:wrap;gap:7px;margin-top:6px}
+.review-mini{flex:0 0 calc((100% - 14px)/3);box-sizing:border-box;background:#fffef8;border:1px solid #ece6d8;border-radius:10px;padding:6px 7px;cursor:pointer;display:flex;flex-direction:column;gap:4px;min-width:0;position:relative}
+.review-mini:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(20,30,18,.08)}
+.review-mini .rm-top{display:flex;justify-content:space-between;align-items:center;gap:3px}
+.review-mini .rm-title{font-size:12px;font-weight:700;color:#5a6e52;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.review-mini .rm-date{font-size:9.5px;color:#a89a7c}
+.review-mini .rm-prev{font-size:10px;color:#55574f;line-height:1.4;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.review-mini .nc-see-all{font-size:10px;color:#6b984f;text-align:right;margin-top:2px}
 .rc-del{font-size:11px;color:#cbb;border:0;background:transparent;cursor:pointer;padding:0;line-height:1}
 .raw-body{font-size:12px;line-height:1.55;color:#55574f;white-space:pre-wrap;word-break:break-word;max-height:56vh;overflow-y:auto;margin:2px 0 6px}
 /* v110：查看发给 AI 的指令 —— 单张面板，可收起、可左右翻页 */
@@ -2648,7 +2655,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-09-02-v115';
+const BUILD_VERSION = '2026-09-02-v116';
 /* 版本自愈：一旦读到的 HTML 比上次更新（BUILD_VERSION 变了），立即清空 caches 里的旧副本并 reload。
    避免 SWR 回退到陈旧缓存、让旧界面永远赖着不走（中国网络访问 github.io 不稳时尤其多发：联网经常失败→回退旧缓存） */
 (function(){try{
@@ -4827,6 +4834,7 @@ const Review = {
       const s=l.trim();
       if(!s){ if(out.length&&out[out.length-1]!=='') out.push(''); return; }
       if(/^[{}[\]",'\\]+$/.test(s)) return;                          /* 纯括号/标点行 */
+      if(/"[A-Za-z][A-Za-z0-9_.-]*"\s*:/.test(l)) return;            /* JSON 字段行（"英文键":值），含中文值也删 —— 旧数据残留在这种行上带出英文键，是'一堆英文代码'的根因 */
       if(/[A-Za-z][A-Za-z0-9_.-]*\s*:\s*"{0,1}[^"{\s]/.test(l) && !/[\u4e00-\u9fa5]/.test(l)) return; /* 全英文键:值行 */
       if(/["{}]/.test(l) && !/[\u4e00-\u9fa5]/.test(l) && /[A-Za-z]/.test(l)) return;               /* 无中文的引号/花括号行 */
       out.push(l);
@@ -4907,28 +4915,31 @@ const Review = {
     if(x.mode==='month') return Number(d.slice(5,7)) + '月';
     return d.slice(0,4) + '年';   /* year 与 plan 都用年份 */
   },
-  /* v115：四个内容框（周/月/年/计划）纵向排布，每框复用经验摘录同款小卡片（.note-cat-grid/.note-cat-card） */
+  /* v116：每栏取最新3张「小卡片」（flex 三列并排）+ 超过3张走「查看更多」进入下一层全量列表 */
+  _resultsBy(key){ return this.results().filter(x=>x.mode===key).sort((a,b)=>String(b.date).localeCompare(String(a.date))); },
+  _card(x){
+    return `<div class="review-mini" onclick="Review.openResult('${x.id}')">
+      <div class="rm-top"><span class="rm-title">${this.periodTitle(x)}</span>
+        <button class="rc-del" onclick="event.stopPropagation();Review.delResult('${x.id}')" title="删除">✕</button></div>
+      <div class="rm-date">${String(x.date).replace(/^(\d{4})-(\d{2})-(\d{2})$/,'$2.$3')}</div>
+      <div class="rm-prev">${Util.esc(String(x.out||'').replace(/\s+/g,' ').trim())}</div>
+      <div class="nc-see-all">查看全文 →</div>
+    </div>`;
+  },
+  _grid(cards){ return `<div class="review-mini-grid">${cards.join('')}</div>`; },
+  openBlock(key,lbl){
+    const arr=this._resultsBy(key);
+    UI.openFull(lbl + `（共 ${arr.length} 条）`, this._grid(arr.map(x=>this._card(x))), '← 返回复盘中心');
+  },
   history(){
-    const all=this.results();
-    const cards=(key)=>all.filter(x=>x.mode===key).map(x=>`
-      <div class="note-cat-card" onclick="Review.openResult('${x.id}')">
-        <div class="nc-head">
-          <span class="nc-title">${this.periodTitle(x)}</span>
-          <span style="display:flex;align-items:center;gap:4px">
-            <span class="nc-count">${String(x.date).replace(/^(\d{4})-(\d{2})-(\d{2})$/,'$2.$3')}</span>
-            <button class="rc-del" onclick="event.stopPropagation();Review.delResult('${x.id}')" title="删除">✕</button>
-          </span>
-        </div>
-        <div class="nc-preview">${Util.esc(String(x.out||'').replace(/\s+/g,' ').trim())}</div>
-        <div class="nc-see-all">查看全文 →</div>
-      </div>`).join('');
-    const block=(key,lbl)=>`
-      <div class="review-blk">
+    const block=(key,lbl)=>{ const arr=this._resultsBy(key); const total=arr.length;
+      const more = total>3 ? `<button class="btn ghost" style="margin-top:8px;width:100%;border-radius:10px" onclick="Review.openBlock('${key}','${lbl}')">查看更多 · 共 ${total} 条</button>` : '';
+      return `<div class="review-blk">
         <div class="review-blk-title">${lbl}</div>
-        ${all.some(x=>x.mode===key)
-          ? `<div class="note-cat-grid">${cards(key)}</div>`
-          : `<div class="db-empty">还没有${lbl}，点上面「AI 生成当前复盘」。</div>`}
+        ${ total ? this._grid(arr.slice(0,3).map(x=>this._card(x))) + more
+                : `<div class="db-empty">还没有${lbl}，点上面「AI 生成当前复盘」。</div>` }
       </div>`;
+    };
     reviewHistory.innerHTML = block('week','周总结')+block('month','月总结')+block('year','年总结')+block('plan','计划复盘');
   },
   /* v110：点某期卡片 → 弹窗看该期完整总结 */
