@@ -1161,24 +1161,14 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
         <div class="ai-box" id="careManual"></div>
       </div>
     </section><!-- ==== 功能：零时闲话铺 END ==== --><!-- ==== 功能：复盘中心 START ==== --><section class="page" id="page-review">
-      <div class="page-title">复盘中心</div><div class="page-sub">周总结、月总结、年总结、计划复盘，以及你的年度计划。</div>
+      <div class="page-title">复盘中心</div>
       <div class="card" id="weeklyNotice"></div>
       <div class="card">
-        <h2>我的年度计划</h2>
-        <p class="hint">列几个今年想推进的方向，每日记录里可勾选关联到某项计划。</p>
-        <div class="row"><input id="planTitle" placeholder="计划标题，如：把身体底子养好"></div>
-        <textarea id="planDesc" placeholder="一两句说明，比如：今年重点是睡眠和力量训练" style="margin-top:8px"></textarea>
-        <button class="btn" style="margin-top:8px;width:100%" onclick="Review.addPlan()">添加计划</button>
-        <div id="planList" style="margin-top:10px"></div>
-      </div>
-      <div class="card">
-        <div class="row" style="margin-top:4px">
-          <select id="reviewModeSel" onchange="Review.setMode(this.value)" style="flex:1">
-            <option value="week">生成：本周总结</option>
-            <option value="month">生成：本月总结</option>
-            <option value="year">生成：今年总结</option>
-            <option value="plan">生成：计划复盘</option>
-          </select>
+        <div class="tabs" id="reviewModes">
+          <button class="tab on" data-mode="week" onclick="Review.setMode('week')">周总结</button>
+          <button class="tab" data-mode="month" onclick="Review.setMode('month')">月总结</button>
+          <button class="tab" data-mode="year" onclick="Review.setMode('year')">年总结</button>
+          <button class="tab" data-mode="plan" onclick="Review.setMode('plan')">计划复盘</button>
         </div>
         <button class="btn" style="margin-top:10px;width:100%" onclick="Review.aiGenerate()">AI 生成当前复盘</button>
         <div class="ai-box" id="reviewOutput"></div>
@@ -1190,10 +1180,12 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
         <div id="reviewHistory"></div>
       </div>
       <div class="card">
-        <h2>手动补充</h2>
-        <textarea id="reviewNote" placeholder="你也可以自己写几句补充，保存到复盘中心。"></textarea>
-        <button class="btn ghost" style="margin-top:10px;width:100%" onclick="Review.saveNote()">保存补充</button>
-        <div id="reviewNotes"></div>
+        <h2>我的年度计划</h2>
+        <p class="hint">列几个今年想推进的方向，每日记录里可勾选关联到某项计划。</p>
+        <div class="row"><input id="planTitle" placeholder="计划标题，如：把身体底子养好"></div>
+        <textarea id="planDesc" placeholder="一两句说明，比如：今年重点是睡眠和力量训练" style="margin-top:8px"></textarea>
+        <button class="btn" style="margin-top:8px;width:100%" onclick="Review.addPlan()">添加计划</button>
+        <div id="planList" style="margin-top:10px"></div>
       </div>
     </section><!-- ==== 功能：复盘中心 END ==== --><!-- ==== 功能：日记本 START ==== --><section class="page" id="page-diarybook">
       <div class="page-title">日记本</div><div class="page-sub">频繁记录是为了让幸福可以翻阅。</div>
@@ -2655,7 +2647,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-09-02-v116';
+const BUILD_VERSION = '2026-09-02-v117';
 /* 版本自愈：一旦读到的 HTML 比上次更新（BUILD_VERSION 变了），立即清空 caches 里的旧副本并 reload。
    避免 SWR 回退到陈旧缓存、让旧界面永远赖着不走（中国网络访问 github.io 不稳时尤其多发：联网经常失败→回退旧缓存） */
 (function(){try{
@@ -4753,7 +4745,7 @@ const AutoBackup = {
 /* ==== 功能：复盘中心 START ==== */
 const Review = {
   mode:'week',
-  render(){ const last=Store.get('lastWeeklyReview'); weeklyNotice.innerHTML = last===Util.today()?'<h2>本周复盘已看</h2><p class="hint">今天已经打开过周复盘。</p>':'<h2>该看周复盘了</h2><p class="hint">每周打开这里，看一眼：从这周记录里，你看到一个怎样的自己？生活状态哪里可以优化？</p><button class="btn small" onclick="Review.markRead()">今天看过了</button>'; this.renderPlans(); this.notes(); this.history(); },
+  render(){ const last=Store.get('lastWeeklyReview'); weeklyNotice.innerHTML = last===Util.today()?'<h2>本周复盘已看</h2><p class="hint">今天已经打开过周复盘。</p>':'<h2>该看周复盘了</h2><p class="hint">每周打开这里，看一眼：从这周记录里，你看到一个怎样的自己？生活状态哪里可以优化？</p><button class="btn small" onclick="Review.markRead()">今天看过了</button>'; this.renderPlans(); this.history(); },
   plans(){ return Store.get('annual_plans', []); },
   planDays(id){ const year = Util.today().slice(0, 4); return Store.keyList().filter(k => k.startsWith('daily_plans:' + year) && (Store.get(k, []) || []).includes(id)).length; },
   addPlan(){ const title = planTitle.value.trim(); if(!title) return UI.toast('先写个标题'); const desc = planDesc.value.trim(); Store.set('annual_plans', [...this.plans(), {id:Util.uid(), title, desc}]); planTitle.value=''; planDesc.value=''; this.renderPlans(); UI.toast('已添加年度计划'); },
@@ -4767,7 +4759,7 @@ const Review = {
     }).join('') : '<div class="empty">还没有年度计划，上面加一个。</div>';
   },
   markRead(){ Store.set('lastWeeklyReview', Util.today()); this.render(); },
-  setMode(m){ this.mode=m; },   /* v115：去掉标签栏后，仅作「生成类型」下拉用；记录四栏全量渲染 */
+  setMode(m){ this.mode=m; document.querySelectorAll('#reviewModes .tab').forEach(b=>b.classList.toggle('on', b.dataset.mode===m)); },   /* v117：四个直接点选的生成类型按钮，点中即高亮 */
   /* v105：把某日期范围内每天的「一手文字记录」拼成文本（含情绪/今日完成/习惯/主线任务/开心小事/情绪日记/碎碎念/作息，图片一律排除） */
   rangeText(start, end){
     const lines=[];
@@ -4899,8 +4891,6 @@ const Review = {
       this.history();
     }catch(e){ reviewOutput.textContent=e.message; }
   },
-  saveNote(){ const text=reviewNote.value.trim(); if(!text)return; Store.set('review_notes',[{id:Util.uid(),date:Util.today(),text},...Store.get('review_notes',[])]); reviewNote.value=''; this.notes(); },
-  notes(){ const list=Store.get('review_notes',[]); reviewNotes.innerHTML=list.map(x=>UI.item(x.date,x.text,`<button class="del" onclick="Review.delNote('${x.id}')">✕</button>`)).join(''); },
   /* v110：按日期/gen 日期推导「期别标题」：周→「M月第W周」、月→「M月」、年/计划→「YYYY年」
      给定一句生成的结果 x，用 x.date 反推期别 */
   periodTitle(x){
@@ -4949,7 +4939,6 @@ const Review = {
   },
   label(m){ return {week:'周总结',month:'月总结',year:'年总结',plan:'计划复盘'}[m]||m; },
   delResult(id){ Store.set('review_results',this.results().filter(x=>x.id!==id)); this.history(); },
-  delNote(id){ Store.set('review_notes',Store.get('review_notes',[]).filter(x=>x.id!==id)); this.notes(); },
   /* v104：把 AI 输出的 markdown 转成干净可读的 HTML（去掉 ## / ** / - 等符号）。先整体转义防注入，再行内还原加粗。 */
   md(t){
     if(!t) return '';
