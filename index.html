@@ -756,28 +756,30 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
 .book-edge-btn.left-edge{left:-8px}
 .book-edge-btn.right-edge{right:-8px}
 .book-spine{width:3px;background:linear-gradient(180deg,#d4c5a9,#e8dcc8,#d4c5a9);flex-shrink:0;border-radius:1px;box-shadow:0 0 8px rgba(0,0,0,.08),inset 0 0 3px rgba(0,0,0,.06);z-index:2}
-.book-left,.book-right{flex:1;background:#fffdf8;overflow-y:auto;padding:12px 12px;min-height:62vh;box-shadow:0 2px 12px rgba(0,0,0,.06);position:relative;font-size:13px;line-height:1.55;font-family:var(--font);color:#3a3a34}
+.book-left,.book-right{flex:1;background:#fffdf8;overflow-y:auto;padding:10px 10px;min-height:62vh;box-shadow:0 2px 12px rgba(0,0,0,.06);position:relative;font-size:12.5px;line-height:1.5;font-family:var(--font);color:#3a3a34}
 .book-left{border-radius:12px 0 0 12px;border:1px solid #ece6d8;border-right:none}
 .book-right{border-radius:0 12px 12px 0;border:1px solid #ece6d8;border-left:none}
-/* v107：翻回「翻书感」——新对开页绕书脊揭页覆盖（clip-path，文字随页不缩放、不闪白、不卡顿）；
-   不再是 v105 的整页平移滑入，也不是旧版会「字放大+背景瞬时变白」的 3D rotateY */
-.book-spread{position:relative}
-.book-flip-overlay{position:absolute;inset:0;display:flex;z-index:22;background:#fffdf8;border-radius:12px;overflow:hidden;box-shadow:-6px 0 18px rgba(60,50,30,.18);transition:clip-path .42s cubic-bezier(.6,.05,.35,1);pointer-events:none}
-.book-flip-overlay .book-left,.book-flip-overlay .book-right{flex:1;min-height:100%;overflow-y:auto;padding:12px 12px;font-size:13px;line-height:1.55;color:#3a3a34}
-.book-flip-overlay .book-left{border-radius:12px 0 0 12px;background:#fffdf8}
-.book-flip-overlay .book-right{border-radius:0 12px 12px 0;background:#fffdf8}
-.book-flip-overlay.from-right{clip-path:inset(0 0 0 100%);transform-origin:left center}
-.book-flip-overlay.from-left{clip-path:inset(0 100% 0 0);transform-origin:right center}
-.book-flip-overlay.in{clip-path:inset(0 0 0 0)}
+/* 日记本 - 真实翻书动画（v110 恢复最初 v39 手感）：一页纸绕书脊(中缝) rotateY 旋转翻走，背面是下一页。
+   用 preserve-3d + backface-visibility 避免旧 3D rotateY 的字放大/闪白；transform-origin 定向翻页 */
+.book-leaf{position:absolute;top:0;bottom:0;z-index:20;pointer-events:none;transform-style:preserve-3d;transition:transform .58s cubic-bezier(.45,.05,.3,1)}
+.book-leaf.next{left:50%;right:0;transform-origin:left center;backface-visibility:hidden}
+.book-leaf.prev{left:0;right:50%;transform-origin:right center;backface-visibility:hidden}
+.book-leaf-front,.book-leaf-back{position:absolute;inset:0;overflow:hidden;background:#fffdf8;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.book-leaf-front{box-shadow:inset -22px 0 32px -22px rgba(60,50,30,.30);border-radius:0 12px 12px 0}
+.book-leaf-back{transform:rotateY(180deg);box-shadow:inset 22px 0 32px -22px rgba(60,50,30,.30);border-radius:12px 0 0 12px}
+.book-leaf.next.turn{transform:rotateY(-177deg)}
+.book-leaf.prev.turn{transform:rotateY(177deg)}
+.book-leaf::after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(0,0,0,0) 55%,rgba(0,0,0,.16));opacity:0;transition:opacity .55s}
+.book-leaf.turn::after{opacity:1}
 /* 手账：主模块卡片框（不滚动）。
    今日完成/@一日总结/打卡/开心小事 用框；习惯/情绪/碎碎念/作息 用 @ 弱化放底部；图片并排 */
-.db-box{background:#fffef8;border:1px solid #eee5d2;border-radius:12px;padding:7px 9px;margin:7px 0;box-shadow:0 1px 4px rgba(160,140,90,.06)}
-.db-box h3{font-size:13px;color:#8a7a5c;margin:0 0 5px;font-weight:700;letter-spacing:.5px}
-.db-sec .db-list{margin:0;padding-left:16px;list-style:none}
-.db-box .db-list li{margin:2px 0;font-size:13px;line-height:1.55;color:#4a4a44;list-style:none}
-.db-box.num .db-list{counter-reset:none;list-style:decimal;padding-left:20px}
+.db-box{background:#fffef8;border:1px solid #eee5d2;border-radius:10px;padding:6px 8px;margin:6px 0;box-shadow:0 1px 3px rgba(160,140,90,.06)}
+.db-box h3{font-size:12px;color:#8a7a5c;margin:0 0 4px;font-weight:700;letter-spacing:.5px}
+.db-sec .db-list{margin:0;padding-left:14px;list-style:none}
+.db-box .db-list li{margin:1.5px 0;font-size:12px;line-height:1.5;color:#4a4a44;list-style:none}
+.db-box.num .db-list{counter-reset:none;list-style:decimal;padding-left:18px}
 .db-box.num .db-list li{list-style:decimal}
-.db-box p{font-size:13px;line-height:1.55;color:#4a4a44;margin:0}
+.db-box p{font-size:12px;line-height:1.5;color:#4a4a44;margin:0}
 /* v107 手账固定配色：@一日总结=紫(白字) / 打卡=浅黄(黑字) / 开心小事=粉 / 吐槽区=青色 */
 .db-box.purple{background:#8b6fc7;border-color:#8b6fc7;box-shadow:0 2px 8px rgba(139,111,199,.25)}
 .db-box.purple h3{color:#fff}
@@ -792,11 +794,11 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
 .db-box.cyan h3{color:#35707e}
 .db-box.cyan .db-list li{color:#28505a}
 /* 情绪日记 / 碎碎念：不加框，正文用黑色同正文（不再是咖色弱化），碎碎念合并成一段 */
-.db-plain{margin:7px 0;font-size:13px;line-height:1.6;color:#2e2e29}
+.db-plain{margin:6px 0;font-size:12px;line-height:1.55;color:#2e2e29}
 .db-plain b{color:#8a7a5c;font-weight:600;margin-right:4px}
 .db-plain p{margin:0}
-.db-weak{margin:10px 0;padding-top:6px;border-top:1px dashed #eee2cc;display:flex;flex-direction:column;gap:3px}
-.db-weak-item{font-size:12.5px;color:#a89a7c;line-height:1.6}
+.db-weak{margin:8px 0;padding-top:6px;border-top:1px dashed #eee2cc;display:flex;flex-direction:column;gap:3px}
+.db-weak-item{font-size:11.5px;color:#a89a7c;line-height:1.55}
 .db-weak-item b{color:#8a7a5c;font-weight:600;margin-right:2px}
 /* 感恩瞬间图片并排成一行 */
 .db-sec .img-row{display:flex;gap:4px;margin:6px 0}
@@ -925,6 +927,11 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
 .md-body .md-gap{height:8px}
 .md-body p{margin:4px 0}
 .md-body b{color:var(--accent);font-weight:700}
+/* v110：复盘历史分栏 —— 周/月/年/计划复盘各一栏，栏标题带色块 */
+.review-blk{margin:10px 0;padding:9px 10px;background:#faf8f3;border:1px solid #ece6d8;border-radius:12px}
+.review-blk-title{font-size:13px;font-weight:700;color:#5a6e52;margin-bottom:6px;padding-left:8px;border-left:4px solid #6b984f}
+.review-blk .item{border-bottom:1px dashed #ece6d8;padding:6px 0}
+.review-blk .item:last-child{border-bottom:none}
 </style>
 </head>
 <body>
@@ -2628,7 +2635,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-09-02-v109';
+const BUILD_VERSION = '2026-09-02-v110';
 const App = {
   current:'home',
   booting:true,
@@ -3372,14 +3379,32 @@ const Home = {
 const Success = {
   key(date=Util.today()){ return 'success:'+date; },
   norm(arr){ return (arr||[]).map(x => typeof x==='string' ? {text:x, questId:null} : x); },
-  render(){ const d=Store.get(this.key(),{}); if(document.getElementById('successWins')) successWins.value=d.wins||''; if(document.getElementById('successMustBox')) MustEditor.mount('successMustBox', this.norm(d.tomorrow)); if(document.getElementById('successImgs')) this.renderImages(); this.history(); },
-  renderImages(boxId='successImgs', date=Util.today()){
+  /* v110：支持按指定日期编辑某天的感恩日记（从日记本「开心小事」跳转来）；_editDate=null 表示编辑今天 */
+  _editDate:null,
+  _edit(){ return this._editDate || Util.today(); },
+  render(){ const date=this._edit(); const d=Store.get(this.key(date),{}); if(document.getElementById('successWins')) successWins.value=d.wins||''; if(document.getElementById('successMustBox')) MustEditor.mount('successMustBox', this.norm(d.tomorrow)); if(document.getElementById('successImgs')) this.renderImages('successImgs', date); this.renderEditHint(); this.history(); },
+  /* 跳转到感恩日记并加载指定日期进行编辑 */
+  openDay(date){
+    this._editDate=date;
+    App.go('success');
+    this.render();
+    UI.toast(date===Util.today()?'正在编辑今天':'正在编辑 '+date+' 的记录');
+  },
+  /* 回今编辑：恢复 _editDate 为今天 */
+  backToday(){ this._editDate=null; this.render(); },
+  renderEditHint(){
+    const el=document.querySelector('#page-success .page-title'); if(!el) return;
+    const d=this._edit();
+    el.innerHTML = d===Util.today() ? '感恩日记'
+      : '感恩日记 · 编辑 ' + d.replace(/-/g,'/') + ' <button class="btn ghost small" style="margin-left:6px;vertical-align:middle" onclick="Success.backToday()">← 回到今天</button>';
+  },
+  renderImages(boxId='successImgs', date=this._edit()){
     const box=document.getElementById(boxId); if(!box) return;
     const imgs=Store.get(this.key(date),{}).images||[];
     box.innerHTML = imgs.length ? imgs.map(id=>`<div class="img-cell"><img data-media="${id}" alt="感恩瞬间" onclick="Media.openFull('${id}')"><button class="del" onclick="Success.removeImage('${id}','${boxId}','${date}')">✕</button></div>`).join('') : '';
     Media.paint();
   },
-  async uploadGratitude(inputId='successImgFile', boxId='successImgs', date=Util.today()){
+  async uploadGratitude(inputId='successImgFile', boxId='successImgs', date=this._edit()){
     const f=document.getElementById(inputId)?.files?.[0]; if(!f) return UI.toast('先选一张图片');
     const rec=await Media.save(f, 'diary').catch(()=>null);
     if(!rec) return UI.toast('大仓库不可用，图片没存上');
@@ -3388,12 +3413,19 @@ const Success = {
     document.getElementById(inputId).value='';
     this.renderImages(boxId, date); UI.toast('已存原图：一张感恩瞬间');
   },
-  removeImage(id, boxId='successImgs', date=Util.today()){
+  removeImage(id, boxId='successImgs', date=this._edit()){
     Store.set(this.key(date), {...Store.get(this.key(date),{}), images:(Store.get(this.key(date),{}).images||[]).filter(x=>x!==id)});
     Media.del(id);
     this.renderImages(boxId, date);
   },
-  save(){ const old=Store.get(this.key(),{}); const tomorrow=MustEditor.collect('successMustBox'); const wins=(document.getElementById('successWins')?.value||'').trim(); Store.set(this.key(),{...old, date:Util.today(), wins, tomorrow}); UI.toast('感恩日记已保存'); Home.render(); this.history(); },
+  save(){
+    const date=this._edit();
+    const old=Store.get(this.key(date),{});
+    const tomorrow=MustEditor.collect('successMustBox');
+    const wins=(document.getElementById('successWins')?.value||'').trim();
+    Store.set(this.key(date),{...old, date, wins, tomorrow});
+    UI.toast(date===Util.today()?'感恩日记已保存':'已保存 '+date+' 的感恩日记'); Home.render(); this.history();
+  },
   todayTasks(){ const today=Store.get(this.key(),{}); if (today.todayTasks?.length) return this.norm(today.todayTasks); const y=Store.get(this.key(Util.dateAdd(Util.today(),-1)),{}); return this.norm(y.tomorrow || []); },
   tasksFor(date){ const d=Store.get(this.key(date),{}); if(d.todayTasks?.length) return this.norm(d.todayTasks); const y=Store.get(this.key(Util.dateAdd(date,-1)),{}); return this.norm(y.tomorrow || []); },
   todayWinCount(){ return Util.lines(Store.get(this.key(),{}).wins || '').length; },
@@ -3619,7 +3651,7 @@ const DiaryBook = {
        之后 @情绪日记/@碎碎念 用黑色正文无框段（碎碎念合并成一段话），@习惯打卡/@作息 咖色弱化放最底部；感恩瞬间图并排无标题 */
     if(d.doneTasks.length) out.push(`<div class="db-box"><h3>🏆 今日完成</h3><ul class="db-list">${d.doneTasks.map(x=>`<li>✓ ${Util.esc(x.text)}</li>`).join('')}</ul></div>`);
     if(d.mood) out.push(`<div class="db-box purple"><h3>☀️ 一日总结</h3><p>${Util.esc(d.mood)}${d.moodLine?(' · '+Util.esc(d.moodLine)):''}</p></div>`);
-    if(d.winLines.length) out.push(`<div class="db-box pink num"><h3>⭐ 开心小事</h3><ul class="db-list">${d.winLines.map(x=>`<li>${Util.esc(x)}</li>`).join('')}</ul></div>`);
+    if(d.winLines.length) out.push(`<div class="db-box pink num" style="cursor:pointer" title="点击去修改这天的开心小事" onclick="Success.openDay('${date}')"><h3>⭐ 开心小事</h3><ul class="db-list">${d.winLines.map(x=>`<li>${Util.esc(x)}</li>`).join('')}</ul></div>`);
     /* 感动瞬间图片并排无标题，紧跟「开心小事」下方 */
     if(d.images.length){ Media._diaryImgs = d.images; out.push(`<div class="db-sec"><div class="img-row">${d.images.map((id,i)=>`<img data-media="${id}" alt="" onclick="Media.gallery(Media._diaryImgs, ${i})">`).join('')}</div></div>`); }
     if(d.rantLines.length) out.push(`<div class="db-box cyan"><h3>💬 吐槽区</h3><ul class="db-list">${d.rantLines.map(x=>`<li>${Util.esc(x)}</li>`).join('')}</ul></div>`);
@@ -3718,19 +3750,24 @@ const DiaryBook = {
       : `<div class="db-date">${rightDate} · 周${wd[new Date(rightDate+'T00:00:00').getDay()]}</div>`+this.pageHtml(this.dayData(rightDate),rightDate);
     const dir=this._flipDir; this._flipDir=0;
     if(dir && spread){
-      /* v107：翻页揭页（clip-path），新对开绕书脊翻开覆盖旧页——文字不缩放、不闪白、不卡顿；方向 from-right/from-left 由 clip 反向隐藏决定 */
+      /* v110 真实翻书：旧页作为 book-leaf 绕书脊 rotateY 旋转翻走，背面即是下一页内容，下方已铺好新对开页 */
+      const oldLeftHtml=left.innerHTML, oldRightHtml=right.innerHTML;
+      const leafHtml=dir>0?oldRightHtml:oldLeftHtml;
+      const leaf=document.createElement('div');
+      leaf.className='book-leaf '+(dir>0?'next':'prev');
+      const f=document.createElement('div'); f.className='book-leaf-front';
+      const b=document.createElement('div'); b.className='book-leaf-back';
+      f.innerHTML=leafHtml; b.innerHTML=leafHtml;
+      leaf.appendChild(f); leaf.appendChild(b);
+      spread.appendChild(leaf);
+      Media.paint(f); Media.paint(b);
       left.innerHTML=leftHtml; right.innerHTML=rightHtml;
       Media.paint(left); Media.paint(right);
-      const ov=document.createElement('div');
-      ov.className='book-flip-overlay from-'+(dir>0?'right':'left');
-      ov.innerHTML=`<div class="book-left">${leftHtml}</div><div class="book-spine"></div><div class="book-right">${rightHtml}</div>`;
-      spread.appendChild(ov);
-      Media.paint(ov);
-      void ov.offsetWidth;
-      requestAnimationFrame(()=>ov.classList.add('in'));
-      const done=()=>{ if(ov.isConnected) ov.remove(); };
-      ov.addEventListener('transitionend', done, {once:true});
-      setTimeout(done, 460);
+      void leaf.offsetWidth;
+      requestAnimationFrame(()=>leaf.classList.add('turn'));
+      const done=()=>{ if(leaf.isConnected) leaf.remove(); };
+      leaf.addEventListener('transitionend', done, {once:true});
+      setTimeout(done, 700);
     } else {
       left.innerHTML=leftHtml; right.innerHTML=rightHtml;
       Media.paint(left); Media.paint(right);
@@ -4773,7 +4810,18 @@ const Review = {
   },
   saveNote(){ const text=reviewNote.value.trim(); if(!text)return; Store.set('review_notes',[{id:Util.uid(),date:Util.today(),text},...Store.get('review_notes',[])]); reviewNote.value=''; this.notes(); },
   notes(){ const list=Store.get('review_notes',[]); reviewNotes.innerHTML=list.map(x=>UI.item(x.date,x.text,`<button class="del" onclick="Review.delNote('${x.id}')">✕</button>`)).join(''); },
-  history(){ const list=this.results(); reviewHistory.innerHTML=list.length?list.map(x=>`<div class="item"><div class="grow"><div class="title">${x.date} ${x.time} · ${this.label(x.mode)}</div><div class="desc md-body">${this.md(x.out)}</div></div><button class="del" onclick="Review.delResult('${x.id}')">✕</button></div>`).join(''):'<div class="empty">还没有复盘结果</div>'; },
+  history(){
+    /* v110：复盘历史按 周/月/年/计划复盘 分4栏展示，不再所有类型混在一起 */
+    const list=this.results();
+    const groups=[['week','周总结'],['month','月总结'],['year','年总结'],['plan','计划复盘']];
+    reviewHistory.innerHTML = groups.map(([m,lbl])=>{
+      const items=list.filter(x=>x.mode===m);
+      const body=items.length
+        ? items.map(x=>`<div class="item"><div class="grow"><div class="title">${x.date} ${x.time}</div><div class="desc md-body">${this.md(x.out)}</div></div><button class="del" onclick="Review.delResult('${x.id}')">✕</button></div>`).join('')
+        : '<div class="db-empty">还没有'+lbl+'</div>';
+      return `<section class="review-blk"><div class="review-blk-title">${lbl}</div>${body}</section>`;
+    }).join('');
+  },
   label(m){ return {week:'周总结',month:'月总结',year:'年总结',plan:'计划复盘'}[m]||m; },
   delResult(id){ Store.set('review_results',this.results().filter(x=>x.id!==id)); this.history(); },
   delNote(id){ Store.set('review_notes',Store.get('review_notes',[]).filter(x=>x.id!==id)); this.notes(); },
