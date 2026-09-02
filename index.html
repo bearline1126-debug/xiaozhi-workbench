@@ -2647,7 +2647,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-09-02-v117';
+const BUILD_VERSION = '2026-09-02-v118';
 /* 版本自愈：一旦读到的 HTML 比上次更新（BUILD_VERSION 变了），立即清空 caches 里的旧副本并 reload。
    避免 SWR 回退到陈旧缓存、让旧界面永远赖着不走（中国网络访问 github.io 不稳时尤其多发：联网经常失败→回退旧缓存） */
 (function(){try{
@@ -3672,11 +3672,11 @@ const DiaryBook = {
       return `<div class="db-empty big clickable" onclick="DiaryBook.goDaily('${date}')">这一天还没有记录。<br><span style="color:#6b984f;font-weight:600">点击这里 → 去补记每日记录</span></div>`;
     }
     const out=[];
-    /* v107 手账固定配色+顺序：🏆今日完成 → @一日总结(紫白字) → 打卡(浅黄黑字) → ⭐开心小事(粉) → 💬吐槽区(青)；
+    /* v107 手账固定配色+顺序：🏆今日完成 → @一日总结(紫白字) → 打卡(浅黄黑字) → ⭐开心小事(淡黄) → 💬吐槽区(青)；
        之后 @情绪日记/@碎碎念 用黑色正文无框段（碎碎念合并成一段话），@习惯打卡/@作息 咖色弱化放最底部；感恩瞬间图并排无标题 */
     if(d.doneTasks.length) out.push(`<div class="db-box"><h3>🏆 今日完成</h3><ul class="db-list">${d.doneTasks.map(x=>`<li>✓ ${Util.esc(x.text)}</li>`).join('')}</ul></div>`);
     if(d.mood) out.push(`<div class="db-box purple"><h3>☀️ 一日总结</h3><p>${Util.esc(d.mood)}${d.moodLine?(' · '+Util.esc(d.moodLine)):''}</p></div>`);
-    if(d.winLines.length) out.push(`<div class="db-box pink num" style="cursor:pointer" title="点击去修改这天的开心小事" onclick="Success.openDay('${date}')"><h3>⭐ 开心小事</h3><ul class="db-list">${d.winLines.map(x=>`<li>${Util.esc(x)}</li>`).join('')}</ul></div>`);
+    if(d.winLines.length) out.push(`<div class="db-box yellow num" style="cursor:pointer" title="点击去修改这天的开心小事" onclick="Success.openDay('${date}')"><h3>⭐ 开心小事</h3><ul class="db-list">${d.winLines.map(x=>`<li>${Util.esc(x)}</li>`).join('')}</ul></div>`);
     /* 感动瞬间图片并排无标题，紧跟「开心小事」下方 */
     if(d.images.length){ Media._diaryImgs = d.images; out.push(`<div class="db-sec"><div class="img-row">${d.images.map((id,i)=>`<img data-media="${id}" alt="" onclick="Media.gallery(Media._diaryImgs, ${i})">`).join('')}</div></div>`); }
     if(d.rantLines.length) out.push(`<div class="db-box cyan"><h3>💬 吐槽区</h3><ul class="db-list">${d.rantLines.map(x=>`<li>${Util.esc(x)}</li>`).join('')}</ul></div>`);
@@ -3775,24 +3775,27 @@ const DiaryBook = {
       : `<div class="db-date">${rightDate} · 周${wd[new Date(rightDate+'T00:00:00').getDay()]}</div>`+this.pageHtml(this.dayData(rightDate),rightDate);
     const dir=this._flipDir; this._flipDir=0;
     if(dir && spread){
-      /* v110 真实翻书：旧页作为 book-leaf 绕书脊 rotateY 旋转翻走，背面即是下一页内容，下方已铺好新对开页 */
+      /* v110 真实翻书：旧页作为 book-leaf 绕书脊 rotateY 旋转翻走，背面即是下一页内容，下方已铺好新对开页
+         v117 修「翻过去那页先显示旧内容、约1秒后才跳新内容」：老做法正/背面都塞旧页 leafHtml，移动端 double-side
+         3D 渲染不稳，背面旧内容盖着新页约0.6s 再突跳。现改为叶子只放正面旧页、背面留白 —— 翻页只见纸页翻走，
+         下方新对开页始终铺好，翻完立即露出新页（先空白→直接更新），不再有旧页残影。 */
       const oldLeftHtml=left.innerHTML, oldRightHtml=right.innerHTML;
-      const leafHtml=dir>0?oldRightHtml:oldLeftHtml;
       const leaf=document.createElement('div');
       leaf.className='book-leaf '+(dir>0?'next':'prev');
       const f=document.createElement('div'); f.className='book-leaf-front';
       const b=document.createElement('div'); b.className='book-leaf-back';
-      f.innerHTML=leafHtml; b.innerHTML=leafHtml;
+      f.innerHTML=dir>0?oldRightHtml:oldLeftHtml;   /* 正面=即将翻走的那一页（翻书前半真实可见） */
+      /* b 背面留白：消除“旧内容盖住新页约0.6s再做再跳”的残影 */
       leaf.appendChild(f); leaf.appendChild(b);
       spread.appendChild(leaf);
-      Media.paint(f); Media.paint(b);
+      Media.paint(f);
       left.innerHTML=leftHtml; right.innerHTML=rightHtml;
       Media.paint(left); Media.paint(right);
       void leaf.offsetWidth;
       requestAnimationFrame(()=>leaf.classList.add('turn'));
       const done=()=>{ if(leaf.isConnected) leaf.remove(); };
       leaf.addEventListener('transitionend', done, {once:true});
-      setTimeout(done, 700);
+      setTimeout(done, 620);
     } else {
       left.innerHTML=leftHtml; right.innerHTML=rightHtml;
       Media.paint(left); Media.paint(right);
