@@ -750,7 +750,7 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
 .quest-meta{display:flex;justify-content:space-between;font-size:13px}
 /* 日记本 */
 /* 日记本 - 双页翻书 */
-.book-spread{display:flex;align-items:stretch;margin-top:10px;perspective:1200px;position:relative;min-height:62vh}
+.book-spread{display:flex;align-items:stretch;margin-top:10px;perspective:3000px;position:relative;min-height:62vh}
 .book-edge-btn{position:absolute;top:50%;transform:translateY(-50%);width:36px;height:56px;display:flex;align-items:center;justify-content:center;font-size:26px;color:#b3a98f;background:rgba(243,240,234,.85);border-radius:10px;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;border:1px solid #e6e0d0;flex-shrink:0;z-index:5;backdrop-filter:blur(4px);transition:background .15s,transform .15s}
 .book-edge-btn:active{background:#e7e4db;transform:translateY(-50%) scale(.92)}
 .book-edge-btn.left-edge{left:-8px}
@@ -761,9 +761,9 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
 .book-right{border-radius:0 12px 12px 0;border:1px solid #ece6d8;border-left:none}
 /* 日记本 - 真实翻书动画（v110 恢复最初 v39 手感）：一页纸绕书脊(中缝) rotateY 旋转翻走，背面是下一页。
    用 preserve-3d + backface-visibility 避免旧 3D rotateY 的字放大/闪白；transform-origin 定向翻页 */
-.book-leaf{position:absolute;top:0;bottom:0;z-index:20;pointer-events:none;transform-style:preserve-3d;transition:transform .58s cubic-bezier(.45,.05,.3,1)}
-.book-leaf.next{left:50%;right:0;transform-origin:left center;backface-visibility:hidden}
-.book-leaf.prev{left:0;right:50%;transform-origin:right center;backface-visibility:hidden}
+.book-leaf{position:absolute;top:0;bottom:0;z-index:20;pointer-events:none;transform-style:preserve-3d;transition:transform .58s cubic-bezier(.45,.05,.3,1);will-change:transform}
+.book-leaf.next{left:50%;right:0;transform-origin:left center;backface-visibility:hidden;transform:rotateY(0)}
+.book-leaf.prev{left:0;right:50%;transform-origin:right center;backface-visibility:hidden;transform:rotateY(0)}
 .book-leaf-front,.book-leaf-back{position:absolute;inset:0;overflow:hidden;background:#fffdf8;backface-visibility:hidden;-webkit-backface-visibility:hidden}
 .book-leaf-front{box-shadow:inset -22px 0 32px -22px rgba(60,50,30,.30);border-radius:0 12px 12px 0}
 .book-leaf-back{transform:rotateY(180deg);box-shadow:inset 22px 0 32px -22px rgba(60,50,30,.30);border-radius:12px 0 0 12px}
@@ -807,8 +807,7 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
 .db-sum-day{display:grid;grid-template-columns:42px 1fr;gap:8px;align-items:start;padding:3px 0}
 .db-sum-day .db-sum-day-head{display:flex;flex-direction:column;align-items:center;gap:1px;padding:2px 0}
 .db-sum-day-date{font-size:13px;font-weight:600;color:#6b7d63}
-.db-sum-day-line{display:block;width:100%;border-top:1px solid #e6dcc6}
-.db-sum-day-wd{font-size:11px;color:#aaa}
+.db-sum-day-wd{font-size:11px;color:#aaa;font-weight:400}
 .db-sum-day-body{border-left:1px dashed #e6dcc6;padding-left:8px;min-width:0}
 .db-sum-items li.done span.t{text-decoration:line-through;color:#bfb6a0}
 .db-sum-habit-li{padding:1.5px 0}
@@ -845,13 +844,13 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
 /* 「本周汇总」对开页右页：更轻的纸色 + 更紧的字距 + 紧凑间距，减少"翻页撞墙"感 */
 .book-right.summary{background:linear-gradient(180deg,#fff7e6 0%,#fffdf8 60%);box-shadow:inset 4px 0 12px -8px rgba(168,141,108,.18)}
 .book-right.summary .db-date{font-weight:700;color:#a07a4f;letter-spacing:1px}
-.book-right.summary .db-sum-title{font-size:17px}
+.book-right.summary .db-sum-title{font-size:15px}
 .book-right.summary{padding:12px 14px}
 .db-sum-week{display:flex;flex-direction:column;gap:8px;max-height:calc(100% - 48px);overflow-y:auto;-webkit-overflow-scrolling:touch}
 .db-sum-day{padding:2px 0}
-.db-sum-day-head{display:flex;align-items:baseline;gap:8px;margin-bottom:4px;padding-bottom:3px;border-bottom:1px dashed #ece6d8}
-.db-sum-day-date{font-size:17px;font-weight:700;color:#5a6e52}
-.db-sum-day-wd{font-size:11px;color:#8a7a5c}
+.db-sum-day-head{display:flex;align-items:baseline;gap:6px;margin-bottom:2px}
+.db-sum-day-date{font-size:13px;font-weight:600;color:#5a6e52}
+.db-sum-day-wd{font-size:10.5px;color:#8a7a5c;font-weight:400}
 .db-sum-items{margin:0;padding-left:0;list-style:none}
 .db-sum-items li{font-size:12px;line-height:1.5;padding:1.5px 0;display:flex;align-items:center;gap:7px;color:#55574f}
 .db-sum-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;display:inline-block}
@@ -927,11 +926,24 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
 .md-body .md-gap{height:8px}
 .md-body p{margin:4px 0}
 .md-body b{color:var(--accent);font-weight:700}
-/* v110：复盘历史分栏 —— 周/月/年/计划复盘各一栏，栏标题带色块 */
-.review-blk{margin:10px 0;padding:9px 10px;background:#faf8f3;border:1px solid #ece6d8;border-radius:12px}
-.review-blk-title{font-size:13px;font-weight:700;color:#5a6e52;margin-bottom:6px;padding-left:8px;border-left:4px solid #6b984f}
-.review-blk .item{border-bottom:1px dashed #ece6d8;padding:6px 0}
-.review-blk .item:last-child{border-bottom:none}
+/* v110：复盘历史分栏 —— 每期总结一张小卡片，并排三个；点开看详情 */
+.review-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:6px}
+.review-card{position:relative;background:#fffef8;border:1px solid #ece6d8;border-radius:12px;padding:8px 9px;cursor:pointer;text-align:left;color:inherit;transition:transform .15s ease,box-shadow .15s ease;display:flex;flex-direction:column;gap:3px}
+.review-card:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(20,30,18,.08)}
+.review-card .rc-top{display:flex;justify-content:space-between;align-items:center;gap:4px}
+.review-card .rc-period{font-size:12px;font-weight:700;color:#5a6e52;line-height:1.25}
+.review-card .rc-del{font-size:11px;color:#cbb;border:0;background:transparent;cursor:pointer;padding:0 1px;line-height:1}
+.review-card .rc-date{font-size:10px;color:#a89a7c}
+.review-card .rc-prev{font-size:10px;color:#55574f;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+/* v110：查看发给 AI 的指令 —— 单张面板，可收起、可左右翻页 */
+.raw-card{background:#faf8f3;border:1px solid #ece6d8;border-radius:12px;padding:8px 10px}
+.raw-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+.raw-period{font-size:12px;font-weight:700;color:#5a6e52}
+.raw-x{font-size:11px;color:#a89a7c;border:0;background:transparent;cursor:pointer;padding:2px 4px}
+.raw-body{font-size:11.5px;color:#3a3a34;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+.raw-foot{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-top:8px}
+.raw-count{font-size:11px;color:#a89a7c}
+.btn:disabled,.btn[disabled]{opacity:.4;cursor:default}
 </style>
 </head>
 <body>
@@ -1162,8 +1174,8 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
         </div>
         <button class="btn" style="margin-top:12px;width:100%" onclick="Review.aiGenerate()">AI 生成当前复盘</button>
         <div class="ai-box" id="reviewOutput"></div>
-        <button class="btn ghost" style="margin-top:8px;width:100%" onclick="Review.viewRaw()">查看发给 AI 的对话</button>
-        <div class="ai-box" id="reviewRaw" style="margin-top:8px;white-space:pre-wrap"></div>
+        <button class="btn ghost" id="reviewRawBtn" style="margin-top:8px;width:100%" onclick="Review.rawToggle()">查看发给 AI 的对话</button>
+        <div id="reviewRaw" style="margin-top:8px;display:none"></div>
       </div>
       <div class="card">
         <h2>复盘记录</h2>
@@ -2635,7 +2647,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-09-02-v110';
+const BUILD_VERSION = '2026-09-02-v111';
 const App = {
   current:'home',
   booting:true,
@@ -3718,7 +3730,7 @@ const DiaryBook = {
     const daysHtml=week.map(dt=>{
       const d=this.dayData(dt);
       const dow=new Date(dt+'T00:00:00').getDay();
-      const head=`<div class="db-sum-day-head"><span class="db-sum-day-date">${dt.slice(8)}</span><span class="db-sum-day-line"></span><span class="db-sum-day-wd">周${wd[dow]}</span></div>`;
+      const head=`<div class="db-sum-day-head"><span class="db-sum-day-date">${dt.slice(8)}</span><span class="db-sum-day-wd">周${wd[dow]}</span></div>`;
       /* v105：必做全列上（完成划线、未完成不划线）；习惯用 ♪ 区分，不与必做圆点雷同 */
       const taskHtml = (d.tasks||[]).map((t,i)=>`<li class="${d.doneTasks.includes(t)?'done':''}"><span class="db-sum-dot" style="background:${palette[i%palette.length]}"></span><span class="t">${Util.esc(t.text)}</span></li>`).join('');
       const habitHtml = d.habitsDone.map(h=>`<li class="db-sum-habit-li"><span class="db-sum-habit">${Util.esc(h.name)}</span></li>`).join('');
@@ -4734,7 +4746,7 @@ const Review = {
     }).join('') : '<div class="empty">还没有年度计划，上面加一个。</div>';
   },
   markRead(){ Store.set('lastWeeklyReview', Util.today()); this.render(); },
-  setMode(m,btn){ this.mode=m; document.querySelectorAll('#page-review .tab').forEach(x=>x.classList.remove('on')); btn.classList.add('on'); },
+  setMode(m,btn){ this.mode=m; document.querySelectorAll('#page-review .tab').forEach(x=>x.classList.remove('on')); btn.classList.add('on'); this.history(); this.renderRawList(); },
   /* v105：把某日期范围内每天的「一手文字记录」拼成文本（含情绪/今日完成/习惯/主线任务/开心小事/情绪日记/碎碎念/作息，图片一律排除） */
   rangeText(start, end){
     const lines=[];
@@ -4782,16 +4794,59 @@ const Review = {
     const plans=this.plans();
     const planBlock=plans.length?plans.map(p=>`· ${p.title}（${p.desc||'无说明'}）今年已关联 ${this.planDays(p.id)} 天`).join('\n'):'（还没列年度计划）';
     const ask={week:'请做周总结：下面的记录是我【本周】的完整一手记录（已去图片，仅文字）。请只针对本次数据范围提炼：本周主要做什么、状态如何、有什么进步和卡点，给 3 条下周能落地的建议。严格基于本次范围，不要沿用之前对话里旧周的内容。',month:'请做月总结：下面的记录是我【本月】的完整一手记录（仅文字，已去图）。请针对本月提炼：本月模式、主要进展、消耗源、情绪起伏，给 3 条下月能执行的点。严格基于本次范围，不要沿用旧月的结论。',year:'请做年总结框架：下面的记录是我【今年】的完整一手记录（仅文字）。请提炼全年长期主题、主要进步与消耗源、阶段起伏，给出下一阶段 2-3 个方向。严格基于今年范围。',plan:'请做计划复盘：针对我今年的年度计划，结合下面每日记录里各计划的投入，判断是否过载、哪些值得保留、节奏怎么调。我的年度计划：\n'+planBlock}[m];
-    return ask+'\n\n【数据范围】'+unit+'：'+start+' ~ '+end+'\n【记录内容】\n'+(records||'（这个范围内还没有记录）')+'\n\n【年度计划】\n'+planBlock;
+    /* v110：开头加一行「期别标题」（【2026年9月第1周周总结】）供「查看发给 AI 的指令」提取显示 */
+    let period;
+    if(m==='week'){ const dom=Number(today.slice(8)); period=Number(today.slice(5,7))+'月第'+Math.max(1,Math.ceil(dom/7))+'周'; }
+    else if(m==='month') period=Number(today.slice(5,7))+'月';
+    else period=today.slice(0,4)+'年';
+    return '【'+period+' '+this.label(m)+'】\n'+ask+'\n\n【数据范围】'+unit+'：'+start+' ~ '+end+'\n【记录内容】\n'+(records||'（这个范围内还没有记录）')+'\n\n【年度计划】\n'+planBlock;
   },
-  /* v105：查看发给 AI 的复盘对话原文（同一对话累积在 ai_thread_review_growth；显示最近几轮，含完整一手记录条目） */
-  viewRaw(){
-    const h=Store.get('ai_thread_review_growth',[]);
-    const box=document.getElementById('reviewRaw');
-    if(!box) return;
-    if(!h.length){ box.innerHTML='<div class="db-empty">还没有生成过 AI 复盘对话。</div>'; return; }
-    box.innerHTML='<div class="md-body">'+h.slice(-8).reverse().map(x=>`<div class="db-weak-item" style="margin:6px 0"><b>${x.role==='user'?'➤ 你发给 AI':'✧ AI 回复'}（${x.role==='user'?'记录与指令':'总结'}）</b><br>${Util.esc(String(x.content||x.text||''))}</div>`).join('')+'</div>';
+  /* v110：查看发给 AI 的对话——只列「我发出的每条指令」，可折叠逐条看，可左右翻页；
+     只显示指令（含期别标题行），不显示 AI 回复（回复已在各期总结卡片里） */
+  _rawIdx:0, _rawOpen:false,
+  _rawKeys(){ return Store.get('ai_thread_review_growth',[]).filter(x=>x.role==='user'); },
+  renderRawList(){
+    const box=document.getElementById('reviewRaw'); if(!box) return;
+    if(!this._rawOpen){ box.style.display='none'; return; }
+    const users=this._rawKeys();
+    const idx=Math.min(Math.max(0,this._rawIdx), Math.max(0,users.length-1));
+    const total=users.length;
+    if(!total){ box.innerHTML='<div class="db-empty">还没有生成过 AI 复盘。</div>'; box.style.display='block'; return; }
+    const u=users[idx];
+    let text=String(u.content||'');
+    /* 期别标题：取第一行【...】或由记录日期推导 */
+    let period='';
+    const first=text.split('\n')[0]||'';
+    const m=first.match(/【([^】]+)】/);
+    if(m) period=m[1];
+    text=text.replace(/^【[^】]+】\s*\n?/,'').split('\n')[0];   /* 只看指令第一行，后面的记录数据不显示 */
+    box.innerHTML=`
+      <div class="raw-card">
+        <div class="raw-head">
+          <span class="raw-period">${Util.esc(period||'对话记录')}</span>
+          <button class="raw-x" onclick="Review.rawToggle()">收起 ✕</button>
+        </div>
+        <div class="raw-body">${Util.esc(text)}</div>
+        <div class="raw-foot">
+          <button class="btn ghost small" ${idx===0?'disabled':''} onclick="Review.rawNav(-1)">‹ 上一条</button>
+          <span class="raw-count">${idx+1} / ${total}</span>
+          <button class="btn ghost small" ${idx>=total-1?'disabled':''} onclick="Review.rawNav(1)">下一条 ›</button>
+        </div>
+      </div>`;
+    box.style.display='block';
   },
+  rawNav(d){
+    const users=this._rawKeys(); if(!users.length) return;
+    this._rawIdx=Math.min(Math.max(0,this._rawIdx+d), users.length-1);
+    this.renderRawList();
+  },
+  rawToggle(){
+    this._rawOpen=!this._rawOpen;
+    const btn=document.getElementById('reviewRawBtn');
+    if(btn) btn.textContent=this._rawOpen?'收起发给 AI 的指令':'查看发给 AI 的对话';
+    this.renderRawList();
+  },
+  viewRaw(){ this._rawOpen=true; this.renderRawList(); },   /* 兼容保留 */
   /* 上面是 rangeText/prompt/viewRaw，下面保持原接口 */
   results(){ return Store.get('review_results',[]); },
   async aiGenerate(){
@@ -4810,17 +4865,41 @@ const Review = {
   },
   saveNote(){ const text=reviewNote.value.trim(); if(!text)return; Store.set('review_notes',[{id:Util.uid(),date:Util.today(),text},...Store.get('review_notes',[])]); reviewNote.value=''; this.notes(); },
   notes(){ const list=Store.get('review_notes',[]); reviewNotes.innerHTML=list.map(x=>UI.item(x.date,x.text,`<button class="del" onclick="Review.delNote('${x.id}')">✕</button>`)).join(''); },
+  /* v110：按日期/gen 日期推导「期别标题」：周→「M月第W周」、月→「M月」、年/计划→「YYYY年」
+     给定一句生成的结果 x，用 x.date 反推期别 */
+  periodTitle(x){
+    if(!x || !x.date) return '';
+    const d=x.date;
+    if(x.mode==='week'){
+      /* 该周日期的所在月 + 本月第几周 */
+      const dom=Number(d.slice(8));
+      const w=Math.max(1,Math.ceil(dom/7));
+      return Number(d.slice(5,7)) + '月第' + w + '周';
+    }
+    if(x.mode==='month') return Number(d.slice(5,7)) + '月';
+    return d.slice(0,4) + '年';   /* year 与 plan 都用年份 */
+  },
+  /* v110：复盘的「各期卡片」——按当前 mode 过滤，每个总结一张小卡片并排放进该栏，标题=期别 */
   history(){
-    /* v110：复盘历史按 周/月/年/计划复盘 分4栏展示，不再所有类型混在一起 */
-    const list=this.results();
-    const groups=[['week','周总结'],['month','月总结'],['year','年总结'],['plan','计划复盘']];
-    reviewHistory.innerHTML = groups.map(([m,lbl])=>{
-      const items=list.filter(x=>x.mode===m);
-      const body=items.length
-        ? items.map(x=>`<div class="item"><div class="grow"><div class="title">${x.date} ${x.time}</div><div class="desc md-body">${this.md(x.out)}</div></div><button class="del" onclick="Review.delResult('${x.id}')">✕</button></div>`).join('')
-        : '<div class="db-empty">还没有'+lbl+'</div>';
-      return `<section class="review-blk"><div class="review-blk-title">${lbl}</div>${body}</section>`;
-    }).join('');
+    const list=this.results().filter(x=>x.mode===this.mode);
+    const lbl=this.label(this.mode);
+    reviewHistory.innerHTML = list.length
+      ? `<div class="review-cards">` + list.map(x=>`
+          <button class="review-card" onclick="Review.openResult('${x.id}')">
+            <div class="rc-top">
+              <span class="rc-period">${this.periodTitle(x)}</span>
+              <button class="rc-del" onclick="event.stopPropagation();Review.delResult('${x.id}')" title="删除">✕</button>
+            </div>
+            <div class="rc-date">${x.date}</div>
+            <div class="rc-prev">${Util.esc(String(x.out||'').replace(/\s+/g,' ').slice(0,42))}…</div>
+          </button>`).join('')
+        + `</div>`
+      : `<div class="db-empty">还没有${lbl}，点上面「AI 生成当前复盘」。</div>`;
+  },
+  /* v110：点某期卡片 → 弹窗看该期完整总结 */
+  openResult(id){
+    const x=this.results().find(r=>r.id===id); if(!x) return;
+    UI.openFull(this.periodTitle(x) + ' · ' + x.date, `<div class="md-body">${this.md(x.out)}</div>`, '← 返回复盘中心');
   },
   label(m){ return {week:'周总结',month:'月总结',year:'年总结',plan:'计划复盘'}[m]||m; },
   delResult(id){ Store.set('review_results',this.results().filter(x=>x.id!==id)); this.history(); },
