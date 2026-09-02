@@ -756,27 +756,28 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
 .book-edge-btn.left-edge{left:-8px}
 .book-edge-btn.right-edge{right:-8px}
 .book-spine{width:3px;background:linear-gradient(180deg,#d4c5a9,#e8dcc8,#d4c5a9);flex-shrink:0;border-radius:1px;box-shadow:0 0 8px rgba(0,0,0,.08),inset 0 0 3px rgba(0,0,0,.06);z-index:2}
-.book-left,.book-right{flex:1;background:#fffdf8;overflow-y:auto;padding:14px 16px;min-height:62vh;box-shadow:0 2px 12px rgba(0,0,0,.06);position:relative;font-size:14px;line-height:1.62;font-family:var(--font);color:#3a3a34}
+.book-left,.book-right{flex:1;background:#fffdf8;overflow-y:auto;padding:12px 12px;min-height:62vh;box-shadow:0 2px 12px rgba(0,0,0,.06);position:relative;font-size:13px;line-height:1.55;font-family:var(--font);color:#3a3a34}
 .book-left{border-radius:12px 0 0 12px;border:1px solid #ece6d8;border-right:none}
 .book-right{border-radius:0 12px 12px 0;border:1px solid #ece6d8;border-left:none}
-/* v105 翻页改为「整页平滑滑入」——不再用 3D rotateY（会字放大+背景瞬时变白）。内容随整页平移、不缩放不变色 */
+/* v107：翻回「翻书感」——新对开页绕书脊揭页覆盖（clip-path，文字随页不缩放、不闪白、不卡顿）；
+   不再是 v105 的整页平移滑入，也不是旧版会「字放大+背景瞬时变白」的 3D rotateY */
 .book-spread{position:relative}
-.book-flip-overlay{position:absolute;inset:0;display:flex;z-index:22;background:#fffdf8;border-radius:12px;overflow:hidden;box-shadow:-6px 0 18px rgba(60,50,30,.18);transition:transform .38s cubic-bezier(.4,.1,.3,1),opacity .38s;pointer-events:none}
-.book-flip-overlay .book-left,.book-flip-overlay .book-right{flex:1;min-height:100%;overflow-y:auto;padding:14px 16px;font-size:14px;line-height:1.62;color:#3a3a34}
+.book-flip-overlay{position:absolute;inset:0;display:flex;z-index:22;background:#fffdf8;border-radius:12px;overflow:hidden;box-shadow:-6px 0 18px rgba(60,50,30,.18);transition:clip-path .42s cubic-bezier(.6,.05,.35,1);pointer-events:none}
+.book-flip-overlay .book-left,.book-flip-overlay .book-right{flex:1;min-height:100%;overflow-y:auto;padding:12px 12px;font-size:13px;line-height:1.55;color:#3a3a34}
 .book-flip-overlay .book-left{border-radius:12px 0 0 12px;background:#fffdf8}
 .book-flip-overlay .book-right{border-radius:0 12px 12px 0;background:#fffdf8}
-.book-flip-overlay.from-right{transform:translateX(104%);opacity:.5}
-.book-flip-overlay.from-left{transform:translateX(-104%);opacity:.5}
-.book-flip-overlay.in{transform:translateX(0);opacity:1}
+.book-flip-overlay.from-right{clip-path:inset(0 0 0 100%);transform-origin:left center}
+.book-flip-overlay.from-left{clip-path:inset(0 100% 0 0);transform-origin:right center}
+.book-flip-overlay.in{clip-path:inset(0 0 0 0)}
 /* 手账：主模块卡片框（不滚动）。
    今日完成/@一日总结/打卡/开心小事 用框；习惯/情绪/碎碎念/作息 用 @ 弱化放底部；图片并排 */
-.db-box{background:#fffef8;border:1px solid #eee5d2;border-radius:12px;padding:9px 12px;margin:8px 0;box-shadow:0 1px 4px rgba(160,140,90,.06)}
+.db-box{background:#fffef8;border:1px solid #eee5d2;border-radius:12px;padding:7px 9px;margin:7px 0;box-shadow:0 1px 4px rgba(160,140,90,.06)}
 .db-box h3{font-size:13px;color:#8a7a5c;margin:0 0 5px;font-weight:700;letter-spacing:.5px}
 .db-sec .db-list{margin:0;padding-left:16px;list-style:none}
-.db-box .db-list li{margin:2px 0;font-size:14px;line-height:1.62;color:#4a4a44;list-style:none}
+.db-box .db-list li{margin:2px 0;font-size:13px;line-height:1.55;color:#4a4a44;list-style:none}
 .db-box.num .db-list{counter-reset:none;list-style:decimal;padding-left:20px}
 .db-box.num .db-list li{list-style:decimal}
-.db-box p{font-size:14px;line-height:1.62;color:#4a4a44;margin:0}
+.db-box p{font-size:13px;line-height:1.55;color:#4a4a44;margin:0}
 /* v107 手账固定配色：@一日总结=紫(白字) / 打卡=浅黄(黑字) / 开心小事=粉 / 吐槽区=青色 */
 .db-box.purple{background:#8b6fc7;border-color:#8b6fc7;box-shadow:0 2px 8px rgba(139,111,199,.25)}
 .db-box.purple h3{color:#fff}
@@ -791,7 +792,7 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
 .db-box.cyan h3{color:#35707e}
 .db-box.cyan .db-list li{color:#28505a}
 /* 情绪日记 / 碎碎念：不加框，正文用黑色同正文（不再是咖色弱化），碎碎念合并成一段 */
-.db-plain{margin:8px 0;font-size:14px;line-height:1.72;color:#2e2e29}
+.db-plain{margin:7px 0;font-size:13px;line-height:1.6;color:#2e2e29}
 .db-plain b{color:#8a7a5c;font-weight:600;margin-right:4px}
 .db-plain p{margin:0}
 .db-weak{margin:10px 0;padding-top:6px;border-top:1px dashed #eee2cc;display:flex;flex-direction:column;gap:3px}
@@ -993,7 +994,7 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
         <div id="dlSportList" class="hint" style="margin-top:8px"></div>
       </div>
       <div class="card">
-        <h2>② 感恩日记</h2>
+        <h2>③ 感恩日记</h2>
         <textarea id="dlWins" placeholder="今天值得感恩的事，一行一件"></textarea>
         <details class="today-must-fold" id="dlTodayMustWrap" open><summary>今日必做（可直接增删改，昨晚没规划也能补）</summary><div class="today-must" id="dlTodayMustBox"></div></details>
         <details class="today-must-fold" id="dlGratitudeWrap" open><summary>感恩瞬间（可上传图片）</summary><div class="row" style="align-items:center;margin-top:6px"><input id="dlSuccessImgFile" type="file" accept="image/*" style="flex:1;font-size:14px"><button class="btn" onclick="DailyLog.uploadGratitude()">上传</button></div><div class="img-grid" id="dlSuccessImgs" style="margin-top:8px"></div></details>
@@ -1001,11 +1002,11 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
         <div id="dlMustBox" class="must-editor"></div>
       </div>
       <div class="card">
-        <h2>② 吐槽区</h2>
+        <h2>④ 吐槽区</h2>
         <textarea id="dlRants" placeholder="今天有没有想吐槽的人或事？写出来，别憋着，一行一件"></textarea>
       </div>
       <div class="card">
-        <h2>③ 今天的习惯与情绪</h2>
+        <h2>⑤ 今天的习惯与情绪</h2>
         <div class="pill-row pill-row-compact" id="dlHabits"></div>
         <label>今日情绪符号</label>
         <select id="dlMood">
@@ -1016,7 +1017,7 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
       </div>
       <div class="card">
         <div class="collapsible-head" onclick="DailyLog.toggleMood()">
-          <h2 style="margin:0">③ 情绪日记 <span class="muted" style="font-size:12px;font-weight:400">（可留空，点开写）</span></h2>
+          <h2 style="margin:0">⑥ 情绪日记 <span class="muted" style="font-size:12px;font-weight:400">（可留空，点开写）</span></h2>
           <span id="moodCaret" style="transition:transform .2s">▾</span>
         </div>
         <div id="dlMoodBox">
@@ -2627,7 +2628,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-09-02-v107';
+const BUILD_VERSION = '2026-09-02-v109';
 const App = {
   current:'home',
   booting:true,
@@ -3616,24 +3617,26 @@ const DiaryBook = {
     const out=[];
     /* v107 手账固定配色+顺序：🏆今日完成 → @一日总结(紫白字) → 打卡(浅黄黑字) → ⭐开心小事(粉) → 💬吐槽区(青)；
        之后 @情绪日记/@碎碎念 用黑色正文无框段（碎碎念合并成一段话），@习惯打卡/@作息 咖色弱化放最底部；感恩瞬间图并排无标题 */
-    if(d.doneTasks.length) out.push(`<div class="db-box"><h3>🏆 今日完成</h3><ul class="db-list">${d.doneTasks.map(x=>`<li>${Util.esc(x.text)}</li>`).join('')}</ul></div>`);
-    if(d.mood) out.push(`<div class="db-box purple"><h3>@一日总结</h3><p>${Util.esc(d.mood)}${d.moodLine?(' · '+Util.esc(d.moodLine)):''}</p></div>`);
+    if(d.doneTasks.length) out.push(`<div class="db-box"><h3>🏆 今日完成</h3><ul class="db-list">${d.doneTasks.map(x=>`<li>✓ ${Util.esc(x.text)}</li>`).join('')}</ul></div>`);
+    if(d.mood) out.push(`<div class="db-box purple"><h3>☀️ 一日总结</h3><p>${Util.esc(d.mood)}${d.moodLine?(' · '+Util.esc(d.moodLine)):''}</p></div>`);
+    if(d.winLines.length) out.push(`<div class="db-box pink num"><h3>⭐ 开心小事</h3><ul class="db-list">${d.winLines.map(x=>`<li>${Util.esc(x)}</li>`).join('')}</ul></div>`);
+    /* 感动瞬间图片并排无标题，紧跟「开心小事」下方 */
+    if(d.images.length){ Media._diaryImgs = d.images; out.push(`<div class="db-sec"><div class="img-row">${d.images.map((id,i)=>`<img data-media="${id}" alt="" onclick="Media.gallery(Media._diaryImgs, ${i})">`).join('')}</div></div>`); }
+    if(d.rantLines.length) out.push(`<div class="db-box cyan"><h3>💬 吐槽区</h3><ul class="db-list">${d.rantLines.map(x=>`<li>${Util.esc(x)}</li>`).join('')}</ul></div>`);
+    /* @情绪日记 / @碎碎念：无框、黑色正文，排在主框后；碎碎念合并成一段话 */
+    if(d.moodDiary.length) out.push(`<div class="db-plain"><b>@情绪日记</b><p>${d.moodDiary.map(x=>`${Util.esc(x.symbol||'')} ${Util.esc(x.text)}`).join('；')}</p></div>`);
+    if(d.whispers.length) out.push(`<div class="db-plain"><b>@碎碎念</b><p>${d.whispers.map(x=>Util.esc(x)).join('，')}</p></div>`);
+    /* 打卡去框（不再彩色卡）、往下放：排在习惯打卡上面 */
     if(d.questEvents.length){
       const byQ={}; d.questEvents.forEach(e=>{ byQ[e.questId]=(byQ[e.questId]||0)+1; });
       const list=MainQuest.list();
-      out.push(`<div class="db-box yellow"><h3>打卡</h3><ul class="db-list">${Object.entries(byQ).map(([qid,n])=>{ const q=list.find(x=>x.id===qid); return `<li>${q?Util.esc(q.name):'已删任务'} +${n}</li>`; }).join('')}</ul></div>`);
+      out.push(`<div class="db-plain"><b>打卡</b><p>${Object.entries(byQ).map(([qid,n])=>{ const q=list.find(x=>x.id===qid); return `${q?Util.esc(q.name):'已删任务'} +${n}`; }).join('；')}</p></div>`);
     }
-    if(d.winLines.length) out.push(`<div class="db-box pink num"><h3>⭐ 开心小事</h3><ul class="db-list">${d.winLines.map(x=>`<li>${Util.esc(x)}</li>`).join('')}</ul></div>`);
-    if(d.rantLines.length) out.push(`<div class="db-box cyan"><h3>💬 吐槽区</h3><ul class="db-list">${d.rantLines.map(x=>`<li>${Util.esc(x)}</li>`).join('')}</ul></div>`);
-    /* @情绪日记 / @碎碎念：无框、黑色正文同正文，排在主框后；碎碎念合并成一段话 */
-    if(d.moodDiary.length) out.push(`<div class="db-plain"><b>@情绪日记</b><p>${d.moodDiary.map(x=>`${Util.esc(x.symbol||'')} ${Util.esc(x.text)}`).join('；')}</p></div>`);
-    if(d.whispers.length) out.push(`<div class="db-plain"><b>@碎碎念</b><p>${d.whispers.map(x=>Util.esc(x)).join('，')}</p></div>`);
     /* 咖色弱化（放最底部）：@习惯打卡 / @作息 */
     const weak=[];
     if(d.habitsDone.length) weak.push(`<span class="db-weak-item"><b>@习惯打卡</b>${d.habitsDone.map(it=>Util.esc(it.name)).join('、')}</span>`);
     if(d.s.sleepTime||d.s.wakeTime) weak.push(`<span class="db-weak-item"><b>@作息</b> 入睡 ${Util.esc(d.s.sleepTime||'—')} · 起床 ${Util.esc(d.s.wakeTime||'—')}</span>`);
     if(weak.length) out.push(`<div class="db-sec db-weak">${weak.join('')}</div>`);
-    if(d.images.length){ Media._diaryImgs = d.images; out.push(`<div class="db-sec"><div class="img-row">${d.images.map((id,i)=>`<img data-media="${id}" alt="" onclick="Media.gallery(Media._diaryImgs, ${i})">`).join('')}</div></div>`); }
     return out.join('');
   },
   /* 左页：迷你日历 */
@@ -3715,8 +3718,7 @@ const DiaryBook = {
       : `<div class="db-date">${rightDate} · 周${wd[new Date(rightDate+'T00:00:00').getDay()]}</div>`+this.pageHtml(this.dayData(rightDate),rightDate);
     const dir=this._flipDir; this._flipDir=0;
     if(dir && spread){
-      /* v105：翻页改为「新对开页整页从侧滑入」——不再用 3D 叶子翻转（会字放大+背景瞬时变白）；
-         内容随整页平移、不缩放不变色，更接近实体书的柔和带入 */
+      /* v107：翻页揭页（clip-path），新对开绕书脊翻开覆盖旧页——文字不缩放、不闪白、不卡顿；方向 from-right/from-left 由 clip 反向隐藏决定 */
       left.innerHTML=leftHtml; right.innerHTML=rightHtml;
       Media.paint(left); Media.paint(right);
       const ov=document.createElement('div');
