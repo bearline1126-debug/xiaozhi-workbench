@@ -804,11 +804,11 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
 .db-sec .img-row{display:flex;gap:4px;margin:6px 0}
 .db-sec .img-row img{flex:1;min-width:0;aspect-ratio:1;object-fit:cover;border-radius:8px;border:1px solid #efe6d8;background:#f7f3ea}
 /* 周记录：日期在左、内容在右，紧凑 */
-.db-sum-day{display:grid;grid-template-columns:38px 1fr;gap:4px;align-items:start;padding:3px 0}
+.db-sum-day{display:grid;grid-template-columns:38px 1fr;gap:3px;align-items:start;padding:3px 0}
 .db-sum-day .db-sum-day-head{display:flex;flex-direction:column;align-items:center;gap:1px;padding:2px 0}
 .db-sum-day-date{font-size:13px;font-weight:600;color:#6b7d63}
 .db-sum-day-wd{font-size:11px;color:#aaa;font-weight:400}
-.db-sum-day-body{border-left:1px dashed #e6dcc6;padding-left:6px;min-width:0}
+.db-sum-day-body{border-left:1px dashed #e6dcc6;padding-left:5px;min-width:0}
 .db-sum-items li.done span.t{text-decoration:line-through;color:#bfb6a0}
 .db-sum-habit-li{padding:1.5px 0}
 .db-sum-habit{color:#8a5a9e;font-size:12.5px}
@@ -927,9 +927,9 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
 .md-body p{margin:4px 0}
 .md-body b{color:var(--accent);font-weight:700}
 /* v110：复盘历史分栏 —— 每期总结一张小卡片，并排三个；点开看详情 */
-.review-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
+.review-cards{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;align-items:stretch}
 .raw-body{font-size:12px;line-height:1.55;color:#55574f;white-space:pre-wrap;word-break:break-word;max-height:56vh;overflow-y:auto;margin:2px 0 6px}
-.review-card{position:relative;background:#fffef8;border:1px solid #ece6d8;border-radius:12px;padding:8px 9px;cursor:pointer;text-align:left;color:inherit;transition:transform .15s ease,box-shadow .15s ease;display:flex;flex-direction:column;gap:3px}
+.review-card{position:relative;flex:0 0 calc((100% - 16px)/3);min-width:0;box-sizing:border-box;background:#fffef8;border:1px solid #ece6d8;border-radius:12px;padding:7px 8px;cursor:pointer;text-align:left;color:inherit;transition:transform .15s ease,box-shadow .15s ease;display:flex;flex-direction:column;gap:3px}
 .review-card:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(20,30,18,.08)}
 .review-card .rc-top{display:flex;justify-content:space-between;align-items:center;gap:4px}
 .review-card .rc-period{font-size:12px;font-weight:700;color:#5a6e52;line-height:1.25}
@@ -2648,7 +2648,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-09-02-v112';
+const BUILD_VERSION = '2026-09-02-v113';
 const App = {
   current:'home',
   booting:true,
