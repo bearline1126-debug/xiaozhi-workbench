@@ -804,11 +804,11 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
 .db-sec .img-row{display:flex;gap:4px;margin:6px 0}
 .db-sec .img-row img{flex:1;min-width:0;aspect-ratio:1;object-fit:cover;border-radius:8px;border:1px solid #efe6d8;background:#f7f3ea}
 /* 周记录：日期在左、内容在右，紧凑 */
-.db-sum-day{display:grid;grid-template-columns:42px 1fr;gap:8px;align-items:start;padding:3px 0}
+.db-sum-day{display:grid;grid-template-columns:38px 1fr;gap:4px;align-items:start;padding:3px 0}
 .db-sum-day .db-sum-day-head{display:flex;flex-direction:column;align-items:center;gap:1px;padding:2px 0}
 .db-sum-day-date{font-size:13px;font-weight:600;color:#6b7d63}
 .db-sum-day-wd{font-size:11px;color:#aaa;font-weight:400}
-.db-sum-day-body{border-left:1px dashed #e6dcc6;padding-left:8px;min-width:0}
+.db-sum-day-body{border-left:1px dashed #e6dcc6;padding-left:6px;min-width:0}
 .db-sum-items li.done span.t{text-decoration:line-through;color:#bfb6a0}
 .db-sum-habit-li{padding:1.5px 0}
 .db-sum-habit{color:#8a5a9e;font-size:12.5px}
@@ -927,7 +927,8 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
 .md-body p{margin:4px 0}
 .md-body b{color:var(--accent);font-weight:700}
 /* v110：复盘历史分栏 —— 每期总结一张小卡片，并排三个；点开看详情 */
-.review-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:6px}
+.review-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
+.raw-body{font-size:12px;line-height:1.55;color:#55574f;white-space:pre-wrap;word-break:break-word;max-height:56vh;overflow-y:auto;margin:2px 0 6px}
 .review-card{position:relative;background:#fffef8;border:1px solid #ece6d8;border-radius:12px;padding:8px 9px;cursor:pointer;text-align:left;color:inherit;transition:transform .15s ease,box-shadow .15s ease;display:flex;flex-direction:column;gap:3px}
 .review-card:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(20,30,18,.08)}
 .review-card .rc-top{display:flex;justify-content:space-between;align-items:center;gap:4px}
@@ -2647,7 +2648,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-09-02-v111';
+const BUILD_VERSION = '2026-09-02-v112';
 const App = {
   current:'home',
   booting:true,
@@ -4805,6 +4806,20 @@ const Review = {
      只显示指令（含期别标题行），不显示 AI 回复（回复已在各期总结卡片里） */
   _rawIdx:0, _rawOpen:false,
   _rawKeys(){ return Store.get('ai_thread_review_growth',[]).filter(x=>x.role==='user'); },
+  /* 只保留可读文字记录：去掉旧数据里混入的英文代码/JSON（纯英文键冒号行、含引号大括号的字段行、裸 JSON 段） */
+  _cleanRaw(t){
+    if(!t) return '';
+    const out=[];
+    String(t).split(/\r?\n/).forEach(l=>{
+      const s=l.trim();
+      if(!s){ if(out.length&&out[out.length-1]!=='') out.push(''); return; }
+      if(/^[{}[\]",'\\]+$/.test(s)) return;                          /* 纯括号/标点行 */
+      if(/[A-Za-z][A-Za-z0-9_.-]*\s*:\s*"{0,1}[^"{\s]/.test(l) && !/[\u4e00-\u9fa5]/.test(l)) return; /* 全英文键:值行 */
+      if(/["{}]/.test(l) && !/[\u4e00-\u9fa5]/.test(l) && /[A-Za-z]/.test(l)) return;               /* 无中文的引号/花括号行 */
+      out.push(l);
+    });
+    return out.join('\n').replace(/\n{3,}/g,'\n\n');
+  },
   renderRawList(){
     const box=document.getElementById('reviewRaw'); if(!box) return;
     if(!this._rawOpen){ box.style.display='none'; return; }
@@ -4814,12 +4829,12 @@ const Review = {
     if(!total){ box.innerHTML='<div class="db-empty">还没有生成过 AI 复盘。</div>'; box.style.display='block'; return; }
     const u=users[idx];
     let text=String(u.content||'');
-    /* 期别标题：取第一行【...】或由记录日期推导 */
     let period='';
     const first=text.split('\n')[0]||'';
     const m=first.match(/【([^】]+)】/);
     if(m) period=m[1];
-    text=text.replace(/^【[^】]+】\s*\n?/,'').split('\n')[0];   /* 只看指令第一行，后面的记录数据不显示 */
+    /* 完整显示指令+记录正文，去掉旧数据残留的英文代码/JSON（questId、sleepTime、{ "wins":... } 之类） */
+    text=this._cleanRaw(text.replace(/^【[^】]+】\s*\n?/,''));
     box.innerHTML=`
       <div class="raw-card">
         <div class="raw-head">
