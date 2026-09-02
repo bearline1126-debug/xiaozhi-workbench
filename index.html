@@ -2647,7 +2647,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-09-02-v119';
+const BUILD_VERSION = '2026-09-02-v120';
 /* 版本自愈：一旦读到的 HTML 比上次更新（BUILD_VERSION 变了），立即清空 caches 里的旧副本并 reload。
    避免 SWR 回退到陈旧缓存、让旧界面永远赖着不走（中国网络访问 github.io 不稳时尤其多发：联网经常失败→回退旧缓存） */
 (function(){try{
@@ -6656,7 +6656,9 @@ const Coin = {
     streak7:{name:'连续7天',icon:'⭐',desc:'连续打开工作台 7 天'}
   },
   DAILY_CAP: 10,
-  history(){ return Store.get('coin_history',[]); },
+  /* v120 容错：coin_history 一旦在存储里变成非数组（某次写入/恢复把 key 写成对象等），earn 里的 .filter/.find/.reduce
+     会抛 TypeError，整条金币链路静默失效。这里归一化成数组并剔除脏元素，正常数据不受任何影响。 */
+  history(){ const raw = Store.get('coin_history', []); return Array.isArray(raw) ? raw.filter(x => x && typeof x === 'object') : []; },
   total(){ return this.history().filter(x=>typeof x.amount==='number').reduce((s,x)=>s+x.amount,0); },
   todayTotal(){ const t=Util.today(); return this.history().filter(x=>x.date===t).reduce((s,x)=>s+x.amount,0); },
   /* 今天「赚到」的金币（只算正数入账，不含兑换花掉的），用于每日上限判断 */
