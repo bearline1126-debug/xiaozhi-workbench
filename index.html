@@ -759,18 +759,6 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
 .book-left,.book-right{flex:1;background:#fffdf8;overflow-y:auto;padding:14px 16px;min-height:62vh;box-shadow:0 2px 12px rgba(0,0,0,.06);position:relative;font-size:14px;line-height:1.62;font-family:var(--font);color:#3a3a34}
 .book-left{border-radius:12px 0 0 12px;border:1px solid #ece6d8;border-right:none}
 .book-right{border-radius:0 12px 12px 0;border:1px solid #ece6d8;border-left:none}
-/* 手机竖屏（用户主投诉点）：两页左右并排会窄到一行只能放几个字、像清单不像书。
-   改为上下堆叠、每页整行全宽，像一本书的单页——一行能排更多字，阅读更舒服。翻页动画不受影响。
-   （桌面宽屏仍保持经典双页对开） */
-@media (max-width:760px){
-  .book-spread{flex-direction:column;align-items:stretch;min-height:0}
-  .book-spine{width:100%;height:4px;margin:4px 0;border-radius:2px}
-  .book-left,.book-right{min-height:0;border:1px solid #ece6d8;border-radius:10px}
-  .book-left{margin-bottom:6px}
-  .book-flip-overlay{flex-direction:column}
-  .book-flip-overlay .book-left,.book-flip-overlay .book-right{min-height:0;border:1px solid #ece6d8;border-radius:10px}
-  .book-flip-overlay .book-left{margin-bottom:6px}
-}
 /* v105 翻页改为「整页平滑滑入」——不再用 3D rotateY（会字放大+背景瞬时变白）。内容随整页平移、不缩放不变色 */
 .book-spread{position:relative}
 .book-flip-overlay{position:absolute;inset:0;display:flex;z-index:22;background:#fffdf8;border-radius:12px;overflow:hidden;box-shadow:-6px 0 18px rgba(60,50,30,.18);transition:transform .38s cubic-bezier(.4,.1,.3,1),opacity .38s;pointer-events:none}
@@ -789,6 +777,23 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
 .db-box.num .db-list{counter-reset:none;list-style:decimal;padding-left:20px}
 .db-box.num .db-list li{list-style:decimal}
 .db-box p{font-size:14px;line-height:1.62;color:#4a4a44;margin:0}
+/* v107 手账固定配色：@一日总结=紫(白字) / 打卡=浅黄(黑字) / 开心小事=粉 / 吐槽区=青色 */
+.db-box.purple{background:#8b6fc7;border-color:#8b6fc7;box-shadow:0 2px 8px rgba(139,111,199,.25)}
+.db-box.purple h3{color:#fff}
+.db-box.purple p,.db-box.purple .db-list li{color:#fff}
+.db-box.yellow{background:#fdf3c9;border-color:#f0e2a4;box-shadow:0 1px 5px rgba(212,180,80,.18)}
+.db-box.yellow h3{color:#8a7a4a}
+.db-box.yellow .db-list li{color:#4a4533}
+.db-box.pink{background:#fadce9;border-color:#f3c6da;box-shadow:0 1px 5px rgba(230,130,175,.18)}
+.db-box.pink h3{color:#b95a86}
+.db-box.pink .db-list li{color:#6f3c57}
+.db-box.cyan{background:#d9f0f3;border-color:#b6dadd;box-shadow:0 1px 5px rgba(90,170,185,.18)}
+.db-box.cyan h3{color:#35707e}
+.db-box.cyan .db-list li{color:#28505a}
+/* 情绪日记 / 碎碎念：不加框，正文用黑色同正文（不再是咖色弱化），碎碎念合并成一段 */
+.db-plain{margin:8px 0;font-size:14px;line-height:1.72;color:#2e2e29}
+.db-plain b{color:#8a7a5c;font-weight:600;margin-right:4px}
+.db-plain p{margin:0}
 .db-weak{margin:10px 0;padding-top:6px;border-top:1px dashed #eee2cc;display:flex;flex-direction:column;gap:3px}
 .db-weak-item{font-size:12.5px;color:#a89a7c;line-height:1.6}
 .db-weak-item b{color:#8a7a5c;font-weight:600;margin-right:2px}
@@ -797,7 +802,10 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
 .db-sec .img-row img{flex:1;min-width:0;aspect-ratio:1;object-fit:cover;border-radius:8px;border:1px solid #efe6d8;background:#f7f3ea}
 /* 周记录：日期在左、内容在右，紧凑 */
 .db-sum-day{display:grid;grid-template-columns:42px 1fr;gap:8px;align-items:start;padding:3px 0}
-.db-sum-day .db-sum-day-head{display:flex;align-items:baseline;gap:5px;padding:2px 0}
+.db-sum-day .db-sum-day-head{display:flex;flex-direction:column;align-items:center;gap:1px;padding:2px 0}
+.db-sum-day-date{font-size:13px;font-weight:600;color:#6b7d63}
+.db-sum-day-line{display:block;width:100%;border-top:1px solid #e6dcc6}
+.db-sum-day-wd{font-size:11px;color:#aaa}
 .db-sum-day-body{border-left:1px dashed #e6dcc6;padding-left:8px;min-width:0}
 .db-sum-items li.done span.t{text-decoration:line-through;color:#bfb6a0}
 .db-sum-habit-li{padding:1.5px 0}
@@ -991,6 +999,10 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
         <details class="today-must-fold" id="dlGratitudeWrap" open><summary>感恩瞬间（可上传图片）</summary><div class="row" style="align-items:center;margin-top:6px"><input id="dlSuccessImgFile" type="file" accept="image/*" style="flex:1;font-size:14px"><button class="btn" onclick="DailyLog.uploadGratitude()">上传</button></div><div class="img-grid" id="dlSuccessImgs" style="margin-top:8px"></div></details>
         <label>明天必做（今晚填，明早自动变成「今日必做」）</label>
         <div id="dlMustBox" class="must-editor"></div>
+      </div>
+      <div class="card">
+        <h2>② 吐槽区</h2>
+        <textarea id="dlRants" placeholder="今天有没有想吐槽的人或事？写出来，别憋着，一行一件"></textarea>
       </div>
       <div class="card">
         <h2>③ 今天的习惯与情绪</h2>
@@ -2615,7 +2627,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-09-02-v106';
+const BUILD_VERSION = '2026-09-02-v107';
 const App = {
   current:'home',
   booting:true,
@@ -3581,14 +3593,15 @@ const DiaryBook = {
     const doneTasks=tasks.filter((_,i)=>done.includes(i));
     const habitsDone=Tracker.items().filter(it=>t.habits?.[it.id]);
     const winLines=Util.lines(s.wins||'');
+    const rantLines=Util.lines(s.rants||'');
     const moodDiary=Mood.list().filter(x=>x.date===date);
     const whispers=Companion.dailyWhispers(date);
     const questEvents=MainQuest.dayLog(date);
     const images=s.images||[];
-    return {s,t,tasks,doneTasks,habitsDone,winLines,moodDiary,whispers,questEvents,images,
+    return {s,t,tasks,doneTasks,habitsDone,winLines,rantLines,moodDiary,whispers,questEvents,images,
       habitDoneN:habitsDone.length,
       mood:t.mood, moodLine:t.line,
-      has: winLines.length||doneTasks.length||habitsDone.length||moodDiary.length||whispers.length||questEvents.length||images.length};
+      has: winLines.length||rantLines.length||doneTasks.length||habitsDone.length||moodDiary.length||whispers.length||questEvents.length||images.length};
   },
   section(title, items, empty){
     if(!items||!items.length) return empty?`<div class="db-sec"><h3>${title}</h3><div class="db-empty">${empty}</div></div>`:'';
@@ -3601,19 +3614,23 @@ const DiaryBook = {
       return `<div class="db-empty big clickable" onclick="DiaryBook.goDaily('${date}')">这一天还没有记录。<br><span style="color:#6b984f;font-weight:600">点击这里 → 去补记每日记录</span></div>`;
     }
     const out=[];
-    /* v105 手账模块化：今日完成(上)/@一日总结/打卡/开心小事为主框，习惯/情绪/碎碎念/作息用@弱化放底部，感恩瞬间图片并排无标题 */
-    if(d.doneTasks.length) out.push(`<div class="db-box"><h3>今日完成</h3><ul class="db-list">${d.doneTasks.map(x=>`<li>${Util.esc(x.text)}</li>`).join('')}</ul></div>`);
-    if(d.mood) out.push(`<div class="db-box"><h3>@一日总结</h3><p>${Util.esc(d.mood)}${d.moodLine?(' · '+Util.esc(d.moodLine)):''}</p></div>`);
+    /* v107 手账固定配色+顺序：🏆今日完成 → @一日总结(紫白字) → 打卡(浅黄黑字) → ⭐开心小事(粉) → 💬吐槽区(青)；
+       之后 @情绪日记/@碎碎念 用黑色正文无框段（碎碎念合并成一段话），@习惯打卡/@作息 咖色弱化放最底部；感恩瞬间图并排无标题 */
+    if(d.doneTasks.length) out.push(`<div class="db-box"><h3>🏆 今日完成</h3><ul class="db-list">${d.doneTasks.map(x=>`<li>${Util.esc(x.text)}</li>`).join('')}</ul></div>`);
+    if(d.mood) out.push(`<div class="db-box purple"><h3>@一日总结</h3><p>${Util.esc(d.mood)}${d.moodLine?(' · '+Util.esc(d.moodLine)):''}</p></div>`);
     if(d.questEvents.length){
       const byQ={}; d.questEvents.forEach(e=>{ byQ[e.questId]=(byQ[e.questId]||0)+1; });
       const list=MainQuest.list();
-      out.push(`<div class="db-box"><h3>打卡</h3><ul class="db-list">${Object.entries(byQ).map(([qid,n])=>{ const q=list.find(x=>x.id===qid); return `<li>${q?Util.esc(q.name):'已删任务'} +${n}</li>`; }).join('')}</ul></div>`);
+      out.push(`<div class="db-box yellow"><h3>打卡</h3><ul class="db-list">${Object.entries(byQ).map(([qid,n])=>{ const q=list.find(x=>x.id===qid); return `<li>${q?Util.esc(q.name):'已删任务'} +${n}</li>`; }).join('')}</ul></div>`);
     }
-    if(d.winLines.length) out.push(`<div class="db-box num"><h3>开心小事</h3><ul class="db-list">${d.winLines.map(x=>`<li>${Util.esc(x)}</li>`).join('')}</ul></div>`);
+    if(d.winLines.length) out.push(`<div class="db-box pink num"><h3>⭐ 开心小事</h3><ul class="db-list">${d.winLines.map(x=>`<li>${Util.esc(x)}</li>`).join('')}</ul></div>`);
+    if(d.rantLines.length) out.push(`<div class="db-box cyan"><h3>💬 吐槽区</h3><ul class="db-list">${d.rantLines.map(x=>`<li>${Util.esc(x)}</li>`).join('')}</ul></div>`);
+    /* @情绪日记 / @碎碎念：无框、黑色正文同正文，排在主框后；碎碎念合并成一段话 */
+    if(d.moodDiary.length) out.push(`<div class="db-plain"><b>@情绪日记</b><p>${d.moodDiary.map(x=>`${Util.esc(x.symbol||'')} ${Util.esc(x.text)}`).join('；')}</p></div>`);
+    if(d.whispers.length) out.push(`<div class="db-plain"><b>@碎碎念</b><p>${d.whispers.map(x=>Util.esc(x)).join('，')}</p></div>`);
+    /* 咖色弱化（放最底部）：@习惯打卡 / @作息 */
     const weak=[];
     if(d.habitsDone.length) weak.push(`<span class="db-weak-item"><b>@习惯打卡</b>${d.habitsDone.map(it=>Util.esc(it.name)).join('、')}</span>`);
-    if(d.moodDiary.length) weak.push(d.moodDiary.map(x=>`<span class="db-weak-item"><b>@情绪日记</b> ${Util.esc(x.symbol||'')} ${Util.esc(x.text)}</span>`).join(''));
-    if(d.whispers.length) weak.push(d.whispers.map(x=>`<span class="db-weak-item"><b>@碎碎念</b> ${Util.esc(x)}</span>`).join(''));
     if(d.s.sleepTime||d.s.wakeTime) weak.push(`<span class="db-weak-item"><b>@作息</b> 入睡 ${Util.esc(d.s.sleepTime||'—')} · 起床 ${Util.esc(d.s.wakeTime||'—')}</span>`);
     if(weak.length) out.push(`<div class="db-sec db-weak">${weak.join('')}</div>`);
     if(d.images.length){ Media._diaryImgs = d.images; out.push(`<div class="db-sec"><div class="img-row">${d.images.map((id,i)=>`<img data-media="${id}" alt="" onclick="Media.gallery(Media._diaryImgs, ${i})">`).join('')}</div></div>`); }
@@ -3666,7 +3683,7 @@ const DiaryBook = {
     const daysHtml=week.map(dt=>{
       const d=this.dayData(dt);
       const dow=new Date(dt+'T00:00:00').getDay();
-      const head=`<div class="db-sum-day-head"><span class="db-sum-day-date">${dt.slice(8)}</span><span class="db-sum-day-wd">周${wd[dow]}</span></div>`;
+      const head=`<div class="db-sum-day-head"><span class="db-sum-day-date">${dt.slice(8)}</span><span class="db-sum-day-line"></span><span class="db-sum-day-wd">周${wd[dow]}</span></div>`;
       /* v105：必做全列上（完成划线、未完成不划线）；习惯用 ♪ 区分，不与必做圆点雷同 */
       const taskHtml = (d.tasks||[]).map((t,i)=>`<li class="${d.doneTasks.includes(t)?'done':''}"><span class="db-sum-dot" style="background:${palette[i%palette.length]}"></span><span class="t">${Util.esc(t.text)}</span></li>`).join('');
       const habitHtml = d.habitsDone.map(h=>`<li class="db-sum-habit-li"><span class="db-sum-habit">${Util.esc(h.name)}</span></li>`).join('');
@@ -4174,6 +4191,7 @@ const DailyLog = {
     Util.fillMoodSelect('dlMood'); dlMood.value = rec.mood || '😊';
     dlMoodLine.value = rec.line || '';
     const s = Store.get(Success.key(d), {});
+    if(document.getElementById('dlRants')) dlRants.value = s.rants||'';
     dlWins.value = s.wins||''; if(document.getElementById('dlMustBox')) MustEditor.mount('dlMustBox', Success.norm(s.tomorrow));
     /* 今日必做改为可编辑：直接挂载结构化编辑器，忘了昨晚规划也能补；
        首次打开用 todayTasks() 兜底（含昨晚计划），写回 today.todayTasks，不与昨天的 tomorrow 混淆 */
@@ -4214,7 +4232,7 @@ const DailyLog = {
     const cur = Store.get(Tracker.dayKey(d), {habits:{}, mood:'😊', line:''});
     Store.set(Tracker.dayKey(d), {...cur, date:d, habits, mood:dlMood.value, line:dlMoodLine.value.trim()});
     const old = Store.get(Success.key(d), {});
-    Store.set(Success.key(d), {...old, date:d, wins:dlWins.value.trim(), todayTasks:MustEditor.collect('dlTodayMustBox'), tomorrow:MustEditor.collect('dlMustBox'), sleepTime:document.getElementById('dlSleep')?.value||'23:00', wakeTime:document.getElementById('dlWake')?.value||'08:00'});
+    Store.set(Success.key(d), {...old, date:d, rants:(document.getElementById('dlRants')?.value||'').trim(), wins:dlWins.value.trim(), todayTasks:MustEditor.collect('dlTodayMustBox'), tomorrow:MustEditor.collect('dlMustBox'), sleepTime:document.getElementById('dlSleep')?.value||'23:00', wakeTime:document.getElementById('dlWake')?.value||'08:00'});
     const hint=document.getElementById('dailyAutoSaveHint'); if(hint) hint.textContent='已自动保存到本机 · '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
   },
   toggleMood(){ Store.set('daily_mood_collapsed', !Store.get('daily_mood_collapsed', true)); this.applyMoodCollapse(); },
@@ -4229,7 +4247,7 @@ const DailyLog = {
     Store.set(Tracker.dayKey(d), {...cur, date:d, habits, mood:dlMood.value, line:dlMoodLine.value.trim()});
     /* 2. 感恩日记 */
     const old = Store.get(Success.key(d), {});
-    Store.set(Success.key(d), {...old, date:d, wins:dlWins.value.trim(), todayTasks:MustEditor.collect('dlTodayMustBox'), tomorrow:MustEditor.collect('dlMustBox'), sleepTime:document.getElementById('dlSleep')?.value||'23:00', wakeTime:document.getElementById('dlWake')?.value||'08:00'});
+    Store.set(Success.key(d), {...old, date:d, rants:(document.getElementById('dlRants')?.value||'').trim(), wins:dlWins.value.trim(), todayTasks:MustEditor.collect('dlTodayMustBox'), tomorrow:MustEditor.collect('dlMustBox'), sleepTime:document.getElementById('dlSleep')?.value||'23:00', wakeTime:document.getElementById('dlWake')?.value||'08:00'});
     /* 3. 情绪日记，写了才存 */
     let extra = '';
     const text = dlMoodText.value.trim();
@@ -4692,10 +4710,11 @@ const Review = {
       const doneTasks=tasks.filter((_,i)=>done.includes(i));
       const habits=Tracker.items().filter(it=>t.habits?.[it.id]);
       const wins=Util.lines(s.wins||'');
+      const rants=Util.lines(s.rants||'');
       const moodDiary=Mood.list().filter(x=>x.date===date);
       const whispers=Companion.dailyWhispers(date);
       const quest=MainQuest.dayLog(date);
-      const has=wins.length||doneTasks.length||habits.length||moodDiary.length||whispers.length||quest.length||t.mood;
+      const has=wins.length||rants.length||doneTasks.length||habits.length||moodDiary.length||whispers.length||quest.length||t.mood;
       if(!has) continue;
       const b=[date];
       if(t.mood) b.push('情绪:'+t.mood+(t.line?'('+t.line+')':''));
@@ -4703,6 +4722,7 @@ const Review = {
       if(habits.length) b.push('习惯:'+habits.map(h=>h.name).join('、'));
       if(quest.length){ const byQ={}; quest.forEach(e=>byQ[e.questId]=(byQ[e.questId]||0)+1); b.push('主线任务:'+Object.entries(byQ).map(([id,n])=>{const q=MainQuest.list().find(x=>x.id===id);return (q?q.name:'已删任务')+'+'+n;}).join('、')); }
       if(wins.length) b.push('开心小事:'+wins.join('；'));
+      if(rants.length) b.push('吐槽:'+rants.join('；'));
       if(moodDiary.length) b.push('情绪日记:'+moodDiary.map(x=>(x.symbol||'')+x.text).join('；'));
       if(whispers.length) b.push('碎碎念:'+whispers.join('；'));
       if(s.sleepTime||s.wakeTime) b.push('作息:入睡'+s.sleepTime+' 起床'+s.wakeTime);
