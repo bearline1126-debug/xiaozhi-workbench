@@ -759,17 +759,50 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
 .book-left,.book-right{flex:1;background:#fffdf8;overflow-y:auto;padding:14px 16px;min-height:62vh;box-shadow:0 2px 12px rgba(0,0,0,.06);position:relative;font-size:14px;line-height:1.62;font-family:var(--font);color:#3a3a34}
 .book-left{border-radius:12px 0 0 12px;border:1px solid #ece6d8;border-right:none}
 .book-right{border-radius:0 12px 12px 0;border:1px solid #ece6d8;border-left:none}
-/* 翻页动画：真实书本翻页 —— 一页纸绕书脊(中缝)旋转翻走，背面是下一页 */
-.book-leaf{position:absolute;top:0;bottom:0;z-index:20;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.45,.05,.3,1);pointer-events:none}
-.book-leaf.next{left:50%;right:0;transform-origin:left center}
-.book-leaf.prev{left:0;right:50%;transform-origin:right center}
-.book-leaf-front,.book-leaf-back{position:absolute;inset:0;overflow:hidden;backface-visibility:hidden;background:#fffdf8}
-.book-leaf-front{box-shadow:inset -22px 0 32px -22px rgba(60,50,30,.30);border-radius:0 12px 12px 0}
-.book-leaf-back{transform:rotateY(180deg);box-shadow:inset 22px 0 32px -22px rgba(60,50,30,.30);border-radius:12px 0 0 12px}
-.book-leaf.next.turn{transform:rotateY(-178deg)}
-.book-leaf.prev.turn{transform:rotateY(178deg)}
-.book-leaf::after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(0,0,0,0) 55%,rgba(0,0,0,.16));opacity:0;transition:opacity .55s}
-.book-leaf.turn::after{opacity:1}
+/* 手机竖屏（用户主投诉点）：两页左右并排会窄到一行只能放几个字、像清单不像书。
+   改为上下堆叠、每页整行全宽，像一本书的单页——一行能排更多字，阅读更舒服。翻页动画不受影响。
+   （桌面宽屏仍保持经典双页对开） */
+@media (max-width:760px){
+  .book-spread{flex-direction:column;align-items:stretch;min-height:0}
+  .book-spine{width:100%;height:4px;margin:4px 0;border-radius:2px}
+  .book-left,.book-right{min-height:0;border:1px solid #ece6d8;border-radius:10px}
+  .book-left{margin-bottom:6px}
+  .book-flip-overlay{flex-direction:column}
+  .book-flip-overlay .book-left,.book-flip-overlay .book-right{min-height:0;border:1px solid #ece6d8;border-radius:10px}
+  .book-flip-overlay .book-left{margin-bottom:6px}
+}
+/* v105 翻页改为「整页平滑滑入」——不再用 3D rotateY（会字放大+背景瞬时变白）。内容随整页平移、不缩放不变色 */
+.book-spread{position:relative}
+.book-flip-overlay{position:absolute;inset:0;display:flex;z-index:22;background:#fffdf8;border-radius:12px;overflow:hidden;box-shadow:-6px 0 18px rgba(60,50,30,.18);transition:transform .38s cubic-bezier(.4,.1,.3,1),opacity .38s;pointer-events:none}
+.book-flip-overlay .book-left,.book-flip-overlay .book-right{flex:1;min-height:100%;overflow-y:auto;padding:14px 16px;font-size:14px;line-height:1.62;color:#3a3a34}
+.book-flip-overlay .book-left{border-radius:12px 0 0 12px;background:#fffdf8}
+.book-flip-overlay .book-right{border-radius:0 12px 12px 0;background:#fffdf8}
+.book-flip-overlay.from-right{transform:translateX(104%);opacity:.5}
+.book-flip-overlay.from-left{transform:translateX(-104%);opacity:.5}
+.book-flip-overlay.in{transform:translateX(0);opacity:1}
+/* 手账：主模块卡片框（不滚动）。
+   今日完成/@一日总结/打卡/开心小事 用框；习惯/情绪/碎碎念/作息 用 @ 弱化放底部；图片并排 */
+.db-box{background:#fffef8;border:1px solid #eee5d2;border-radius:12px;padding:9px 12px;margin:8px 0;box-shadow:0 1px 4px rgba(160,140,90,.06)}
+.db-box h3{font-size:13px;color:#8a7a5c;margin:0 0 5px;font-weight:700;letter-spacing:.5px}
+.db-sec .db-list{margin:0;padding-left:16px;list-style:none}
+.db-box .db-list li{margin:2px 0;font-size:14px;line-height:1.62;color:#4a4a44;list-style:none}
+.db-box.num .db-list{counter-reset:none;list-style:decimal;padding-left:20px}
+.db-box.num .db-list li{list-style:decimal}
+.db-box p{font-size:14px;line-height:1.62;color:#4a4a44;margin:0}
+.db-weak{margin:10px 0;padding-top:6px;border-top:1px dashed #eee2cc;display:flex;flex-direction:column;gap:3px}
+.db-weak-item{font-size:12.5px;color:#a89a7c;line-height:1.6}
+.db-weak-item b{color:#8a7a5c;font-weight:600;margin-right:2px}
+/* 感恩瞬间图片并排成一行 */
+.db-sec .img-row{display:flex;gap:4px;margin:6px 0}
+.db-sec .img-row img{flex:1;min-width:0;aspect-ratio:1;object-fit:cover;border-radius:8px;border:1px solid #efe6d8;background:#f7f3ea}
+/* 周记录：日期在左、内容在右，紧凑 */
+.db-sum-day{display:grid;grid-template-columns:42px 1fr;gap:8px;align-items:start;padding:3px 0}
+.db-sum-day .db-sum-day-head{display:flex;align-items:baseline;gap:5px;padding:2px 0}
+.db-sum-day-body{border-left:1px dashed #e6dcc6;padding-left:8px;min-width:0}
+.db-sum-items li.done span.t{text-decoration:line-through;color:#bfb6a0}
+.db-sum-habit-li{padding:1.5px 0}
+.db-sum-habit{color:#8a5a9e;font-size:12.5px}
+.db-sum-habit::before{content:'♪ ';color:#b48ada}
 .db-cal{margin-bottom:10px}
 .db-cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .db-cal-head b{font-size:15px;color:#5a6e52}
@@ -1109,6 +1142,8 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
         </div>
         <button class="btn" style="margin-top:12px;width:100%" onclick="Review.aiGenerate()">AI 生成当前复盘</button>
         <div class="ai-box" id="reviewOutput"></div>
+        <button class="btn ghost" style="margin-top:8px;width:100%" onclick="Review.viewRaw()">查看发给 AI 的对话</button>
+        <div class="ai-box" id="reviewRaw" style="margin-top:8px;white-space:pre-wrap"></div>
       </div>
       <div class="card">
         <h2>复盘记录</h2>
@@ -1121,7 +1156,7 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
         <div id="reviewNotes"></div>
       </div>
     </section><!-- ==== 功能：复盘中心 END ==== --><!-- ==== 功能：日记本 START ==== --><section class="page" id="page-diarybook">
-      <div class="page-title">日记本</div><div class="page-sub">双页翻书，可翻到任意日期补记。</div>
+      <div class="page-title">日记本</div><div class="page-sub">频繁记录是为了让幸福可以翻阅。</div>
       <div class="db-top-bar">
         <span class="db-flip db-flip-left" onclick="DiaryBook.prev()">‹</span>
         <input type="date" id="dbDatePick" onchange="DiaryBook.go(this.value)">
@@ -2557,8 +2592,11 @@ const AI = {
     const model = Store.get('aiModel','deepseek-chat');
     if (!key) { App.go('settings'); throw new Error('还没配置 AI key，请去设置里填'); }
     const threadKey = options.threadKey;
+    /* v105：fresh=true 且带线程时——本轮结果仍累积进线程键（对话连续可翻看），但旧上下文不喂给模型，
+       防止 model 顺着旧周报复读（用户踩过的「两周结果雷同」）；模型只凭【本次】记录作答。 */
     const history = threadKey ? Store.get('ai_thread_'+threadKey, []) : [];
-    const messages = [{role:'system',content:options.system || '你是一个温和、清醒、具体的个人复盘助手。回答要简明、可落地，不要说教。'}, ...history.slice(-10), {role:'user',content:prompt}];
+    const sendHistory = (threadKey && options.fresh) ? [] : history;
+    const messages = [{role:'system',content:options.system || '你是一个温和、清醒、具体的个人复盘助手。回答要简明、可落地，不要说教。'}, ...sendHistory.slice(-10), {role:'user',content:prompt}];
     let r;
     /* v89：自动检测 dashscope（千问）→ 加 enable_search=true 让千问联网搜索（深/豆包/混元等其他 base 不影响） */
     const body = {model, messages, temperature: (typeof options.temperature === 'number') ? options.temperature : .6};
@@ -2577,7 +2615,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-09-02-v105';
+const BUILD_VERSION = '2026-09-02-v106';
 const App = {
   current:'home',
   booting:true,
@@ -3563,19 +3601,22 @@ const DiaryBook = {
       return `<div class="db-empty big clickable" onclick="DiaryBook.goDaily('${date}')">这一天还没有记录。<br><span style="color:#6b984f;font-weight:600">点击这里 → 去补记每日记录</span></div>`;
     }
     const out=[];
-    if(d.winLines.length) out.push(this.section('感恩日记', d.winLines.map(x=>Util.esc(x))));
-    if(d.images.length){ Media._diaryImgs = d.images; out.push(`<div class="db-sec"><h3>感恩瞬间</h3><div class="img-grid">${d.images.map((id,i)=>`<img data-media="${id}" alt="感动瞬间 ${i+1}" onclick="Media.gallery(Media._diaryImgs, ${i})">`).join('')}</div></div>`); }
-    if(d.moodDiary.length) out.push(this.section('情绪日记', d.moodDiary.map(x=>`${Util.esc(x.symbol||'')} ${Util.esc(x.text)}`)));
-    if(d.whispers.length) out.push(this.section('碎碎念', d.whispers.map(x=>Util.esc(x))));
-    if(d.doneTasks.length) out.push(this.section('今日必做完成', d.doneTasks.map(x=>Util.esc(x.text))));
-    if(d.habitsDone.length) out.push(this.section('习惯打卡', d.habitsDone.map(it=>`${Util.esc(it.name)} ✓`)));
-    if(d.mood) out.push(`<div class="db-sec"><h3>今日情绪</h3><p>${Util.esc(d.mood)}${d.moodLine?(' · '+Util.esc(d.moodLine)):''}</p></div>`);
+    /* v105 手账模块化：今日完成(上)/@一日总结/打卡/开心小事为主框，习惯/情绪/碎碎念/作息用@弱化放底部，感恩瞬间图片并排无标题 */
+    if(d.doneTasks.length) out.push(`<div class="db-box"><h3>今日完成</h3><ul class="db-list">${d.doneTasks.map(x=>`<li>${Util.esc(x.text)}</li>`).join('')}</ul></div>`);
+    if(d.mood) out.push(`<div class="db-box"><h3>@一日总结</h3><p>${Util.esc(d.mood)}${d.moodLine?(' · '+Util.esc(d.moodLine)):''}</p></div>`);
     if(d.questEvents.length){
       const byQ={}; d.questEvents.forEach(e=>{ byQ[e.questId]=(byQ[e.questId]||0)+1; });
       const list=MainQuest.list();
-      out.push(this.section('主线任务打卡', Object.entries(byQ).map(([qid,n])=>{ const q=list.find(x=>x.id===qid); return `${q?Util.esc(q.name):'已删任务'} +${n}`; })));
+      out.push(`<div class="db-box"><h3>打卡</h3><ul class="db-list">${Object.entries(byQ).map(([qid,n])=>{ const q=list.find(x=>x.id===qid); return `<li>${q?Util.esc(q.name):'已删任务'} +${n}</li>`; }).join('')}</ul></div>`);
     }
-    if(d.s.sleepTime||d.s.wakeTime) out.push(`<div class="db-sec"><h3>作息</h3><p>入睡 ${Util.esc(d.s.sleepTime||'—')} · 起床 ${Util.esc(d.s.wakeTime||'—')}</p></div>`);
+    if(d.winLines.length) out.push(`<div class="db-box num"><h3>开心小事</h3><ul class="db-list">${d.winLines.map(x=>`<li>${Util.esc(x)}</li>`).join('')}</ul></div>`);
+    const weak=[];
+    if(d.habitsDone.length) weak.push(`<span class="db-weak-item"><b>@习惯打卡</b>${d.habitsDone.map(it=>Util.esc(it.name)).join('、')}</span>`);
+    if(d.moodDiary.length) weak.push(d.moodDiary.map(x=>`<span class="db-weak-item"><b>@情绪日记</b> ${Util.esc(x.symbol||'')} ${Util.esc(x.text)}</span>`).join(''));
+    if(d.whispers.length) weak.push(d.whispers.map(x=>`<span class="db-weak-item"><b>@碎碎念</b> ${Util.esc(x)}</span>`).join(''));
+    if(d.s.sleepTime||d.s.wakeTime) weak.push(`<span class="db-weak-item"><b>@作息</b> 入睡 ${Util.esc(d.s.sleepTime||'—')} · 起床 ${Util.esc(d.s.wakeTime||'—')}</span>`);
+    if(weak.length) out.push(`<div class="db-sec db-weak">${weak.join('')}</div>`);
+    if(d.images.length){ Media._diaryImgs = d.images; out.push(`<div class="db-sec"><div class="img-row">${d.images.map((id,i)=>`<img data-media="${id}" alt="" onclick="Media.gallery(Media._diaryImgs, ${i})">`).join('')}</div></div>`); }
     return out.join('');
   },
   /* 左页：迷你日历 */
@@ -3618,22 +3659,21 @@ const DiaryBook = {
   summaryPageHtml(sundayDate){
     const monday=Util.dateAdd(sundayDate,-6);
     const monthLabel = Number(monday.slice(5,7)) + '月';
-    const weekLabel = '第' + this._isoWeek(monday) + '周';
+    const weekLabel = '第' + Math.max(1, Math.ceil(Number(monday.slice(8))/7)) + '周';   /* 本月第几周（1、2、3、4…） */
     const wd=['日','一','二','三','四','五','六'];
     const palette=['#e8a87c','#85c1e9','#a8d18d','#d4a5e0','#f4d35e','#ff8a80','#82b1ff','#a0c4a8'];
     const week=[]; for(let i=0;i<7;i++) week.push(Util.dateAdd(monday,i));
     const daysHtml=week.map(dt=>{
       const d=this.dayData(dt);
-      /* 完成的必做 + 完成的习惯，按顺序拼成一条清单 */
-      const items=[];
-      d.doneTasks.forEach(t=>items.push(t.text));
-      d.habitsDone.forEach(h=>items.push(h.name));
       const dow=new Date(dt+'T00:00:00').getDay();
       const head=`<div class="db-sum-day-head"><span class="db-sum-day-date">${dt.slice(8)}</span><span class="db-sum-day-wd">周${wd[dow]}</span></div>`;
-      const list=items.length
-        ? `<ul class="db-sum-items">${items.map((t,i)=>`<li><span class="db-sum-dot" style="background:${palette[i%palette.length]}"></span>${Util.esc(t)}</li>`).join('')}</ul>`
+      /* v105：必做全列上（完成划线、未完成不划线）；习惯用 ♪ 区分，不与必做圆点雷同 */
+      const taskHtml = (d.tasks||[]).map((t,i)=>`<li class="${d.doneTasks.includes(t)?'done':''}"><span class="db-sum-dot" style="background:${palette[i%palette.length]}"></span><span class="t">${Util.esc(t.text)}</span></li>`).join('');
+      const habitHtml = d.habitsDone.map(h=>`<li class="db-sum-habit-li"><span class="db-sum-habit">${Util.esc(h.name)}</span></li>`).join('');
+      const list=(taskHtml||habitHtml)
+        ? `<ul class="db-sum-items">${taskHtml}${habitHtml}</ul>`
         : `<div class="db-sum-empty">没记录</div>`;
-      return `<div class="db-sum-day">${head}${list}</div>`;
+      return `<div class="db-sum-day">${head}<div class="db-sum-day-body">${list}</div></div>`;
     }).join('');
     return `<div class="db-date db-sum-title">${monthLabel} ${weekLabel}</div><div class="db-sum-week">${daysHtml}</div><div class="db-sum-next-hint">↪ 继续翻 → 进入下周</div>`;
   },
@@ -3658,24 +3698,20 @@ const DiaryBook = {
       : `<div class="db-date">${rightDate} · 周${wd[new Date(rightDate+'T00:00:00').getDay()]}</div>`+this.pageHtml(this.dayData(rightDate),rightDate);
     const dir=this._flipDir; this._flipDir=0;
     if(dir && spread){
-      /* 实体书翻页：旧右页（next）或旧左页（prev）作为叶子翻走，下方先放好新对开页 */
-      const oldLeftHtml=left.innerHTML, oldRightHtml=right.innerHTML;
-      const leafHtml=dir>0?oldRightHtml:oldLeftHtml;
-      const leaf=document.createElement('div');
-      leaf.className='book-leaf '+(dir>0?'next':'prev');
-      const f=document.createElement('div'); f.className='book-leaf-front';
-      const b=document.createElement('div'); b.className='book-leaf-back';
-      f.innerHTML=leafHtml; b.innerHTML=leafHtml;
-      leaf.appendChild(f); leaf.appendChild(b);
-      spread.appendChild(leaf);
-      Media.paint(f); Media.paint(b);
+      /* v105：翻页改为「新对开页整页从侧滑入」——不再用 3D 叶子翻转（会字放大+背景瞬时变白）；
+         内容随整页平移、不缩放不变色，更接近实体书的柔和带入 */
       left.innerHTML=leftHtml; right.innerHTML=rightHtml;
       Media.paint(left); Media.paint(right);
-      void leaf.offsetWidth;
-      requestAnimationFrame(()=>leaf.classList.add('turn'));
-      const done=()=>{ if(leaf.isConnected) leaf.remove(); };
-      leaf.addEventListener('transitionend', done, {once:true});
-      setTimeout(done, 750);
+      const ov=document.createElement('div');
+      ov.className='book-flip-overlay from-'+(dir>0?'right':'left');
+      ov.innerHTML=`<div class="book-left">${leftHtml}</div><div class="book-spine"></div><div class="book-right">${rightHtml}</div>`;
+      spread.appendChild(ov);
+      Media.paint(ov);
+      void ov.offsetWidth;
+      requestAnimationFrame(()=>ov.classList.add('in'));
+      const done=()=>{ if(ov.isConnected) ov.remove(); };
+      ov.addEventListener('transitionend', done, {once:true});
+      setTimeout(done, 460);
     } else {
       left.innerHTML=leftHtml; right.innerHTML=rightHtml;
       Media.paint(left); Media.paint(right);
@@ -4642,26 +4678,72 @@ const Review = {
   },
   markRead(){ Store.set('lastWeeklyReview', Util.today()); this.render(); },
   setMode(m,btn){ this.mode=m; document.querySelectorAll('#page-review .tab').forEach(x=>x.classList.remove('on')); btn.classList.add('on'); },
-  prompt(){
-    /* v105：按复盘模式裁剪数据范围（周报只发本周 7 天，不再像旧版那样一律发 31 天）；
-       并把上一次同类复盘结论喂给 AI 做承接——比「靠同一个对话线程让 AI 自动记住」更可靠，
-       因为独立请求+可裁剪+明确承接，既避免重复发全部原始记录，又不触发 AI 顺着旧文复读雷同 */
-    const m=this.mode;
-    const days = m==='week'?7 : m==='month'?30 : m==='year'?366 : 30;
-    const data={success:Success.collect(days),mood:Mood.collect(days),tracker:Util.rangeDays(days).map(d=>({date:d,track:Store.get(Tracker.dayKey(d),{})})),notes:Store.get('review_notes',[]),plans:this.plans()};
-    const prior=this.results().filter(r=>r.mode===m).slice(0,2).map(r=>r.out).join('\n--\n');
-    const priorHint = prior ? `\n\n[请参考上次${this.label(m)}的结论文档，在此基础上做更高一层提炼，不要复述它的话]：\n${prior}` : '';
-    const ask={week:'请做周总结：从本周(近7天)的记录里，你看到一个怎样的我？分析本周生活状态、变化与卡点，给出 3 条下周能落地的建议。',month:'请做月总结：从本月(近30天)的记录提炼本月模式、进步、消耗源，给出 3 条下月能执行的点。',year:'请做年总结框架：从今年记录提炼长期主题、主要进步与消耗源，给出下一阶段的 2-3 个方向。',plan:'请做计划复盘：看看我的年度计划是否过载、哪些更值得保留；并参考「每日记录」里关联到各计划的投入天数，判断推进节奏。我的年度计划：\n'+(data.plans.length?data.plans.map(p=>`· ${p.title}（${p.desc||'无说明'}）今年已关联 ${this.planDays(p.id)} 天`).join('\n'):'（还没列年度计划）')}[m];
-    return ask+priorHint+'\n数据：\n'+JSON.stringify(data);
+  /* v105：把某日期范围内每天的「一手文字记录」拼成文本（含情绪/今日完成/习惯/主线任务/开心小事/情绪日记/碎碎念/作息，图片一律排除） */
+  rangeText(start, end){
+    const lines=[];
+    let d=new Date(start+'T00:00:00');
+    const last=new Date(end+'T00:00:00');
+    for(; d<=last; d.setDate(d.getDate()+1)){
+      const date=String(d.getFullYear())+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      const s=Store.get('success:'+date,null)||{};
+      const t=Store.get('tracker:'+date,null)||{};
+      const tasks=Success.tasksFor(date);
+      const done=Store.get('task_done:'+date,[])||[];
+      const doneTasks=tasks.filter((_,i)=>done.includes(i));
+      const habits=Tracker.items().filter(it=>t.habits?.[it.id]);
+      const wins=Util.lines(s.wins||'');
+      const moodDiary=Mood.list().filter(x=>x.date===date);
+      const whispers=Companion.dailyWhispers(date);
+      const quest=MainQuest.dayLog(date);
+      const has=wins.length||doneTasks.length||habits.length||moodDiary.length||whispers.length||quest.length||t.mood;
+      if(!has) continue;
+      const b=[date];
+      if(t.mood) b.push('情绪:'+t.mood+(t.line?'('+t.line+')':''));
+      if(doneTasks.length) b.push('今日完成:'+doneTasks.map(x=>x.text).join('、'));
+      if(habits.length) b.push('习惯:'+habits.map(h=>h.name).join('、'));
+      if(quest.length){ const byQ={}; quest.forEach(e=>byQ[e.questId]=(byQ[e.questId]||0)+1); b.push('主线任务:'+Object.entries(byQ).map(([id,n])=>{const q=MainQuest.list().find(x=>x.id===id);return (q?q.name:'已删任务')+'+'+n;}).join('、')); }
+      if(wins.length) b.push('开心小事:'+wins.join('；'));
+      if(moodDiary.length) b.push('情绪日记:'+moodDiary.map(x=>(x.symbol||'')+x.text).join('；'));
+      if(whispers.length) b.push('碎碎念:'+whispers.join('；'));
+      if(s.sleepTime||s.wakeTime) b.push('作息:入睡'+s.sleepTime+' 起床'+s.wakeTime);
+      lines.push(b.join(' | '));
+    }
+    return lines.join('\n');
   },
+  /* v105：按日历周期自动选记录——周发本周、月发本月、年发今年（均截止今天），给完整一手文字，不再给二手结论 */
+  prompt(){
+    const m=this.mode;
+    const today=Util.today();
+    let start,end,unit;
+    if(m==='week'){ const mon=DiaryBook.mondayOf(today); start=mon; end=Util.dateAdd(mon,6); unit='本周'; }
+    else if(m==='month'){ start=today.slice(0,7)+'-01'; end=today; unit='本月'; }
+    else if(m==='year'){ start=today.slice(0,4)+'-01-01'; end=today; unit='今年'; }
+    else { start=Util.dateAdd(today,-30); end=today; unit='最近30天'; }
+    const records=this.rangeText(start, end);
+    const plans=this.plans();
+    const planBlock=plans.length?plans.map(p=>`· ${p.title}（${p.desc||'无说明'}）今年已关联 ${this.planDays(p.id)} 天`).join('\n'):'（还没列年度计划）';
+    const ask={week:'请做周总结：下面的记录是我【本周】的完整一手记录（已去图片，仅文字）。请只针对本次数据范围提炼：本周主要做什么、状态如何、有什么进步和卡点，给 3 条下周能落地的建议。严格基于本次范围，不要沿用之前对话里旧周的内容。',month:'请做月总结：下面的记录是我【本月】的完整一手记录（仅文字，已去图）。请针对本月提炼：本月模式、主要进展、消耗源、情绪起伏，给 3 条下月能执行的点。严格基于本次范围，不要沿用旧月的结论。',year:'请做年总结框架：下面的记录是我【今年】的完整一手记录（仅文字）。请提炼全年长期主题、主要进步与消耗源、阶段起伏，给出下一阶段 2-3 个方向。严格基于今年范围。',plan:'请做计划复盘：针对我今年的年度计划，结合下面每日记录里各计划的投入，判断是否过载、哪些值得保留、节奏怎么调。我的年度计划：\n'+planBlock}[m];
+    return ask+'\n\n【数据范围】'+unit+'：'+start+' ~ '+end+'\n【记录内容】\n'+(records||'（这个范围内还没有记录）')+'\n\n【年度计划】\n'+planBlock;
+  },
+  /* v105：查看发给 AI 的复盘对话原文（同一对话累积在 ai_thread_review_growth；显示最近几轮，含完整一手记录条目） */
+  viewRaw(){
+    const h=Store.get('ai_thread_review_growth',[]);
+    const box=document.getElementById('reviewRaw');
+    if(!box) return;
+    if(!h.length){ box.innerHTML='<div class="db-empty">还没有生成过 AI 复盘对话。</div>'; return; }
+    box.innerHTML='<div class="md-body">'+h.slice(-8).reverse().map(x=>`<div class="db-weak-item" style="margin:6px 0"><b>${x.role==='user'?'➤ 你发给 AI':'✧ AI 回复'}（${x.role==='user'?'记录与指令':'总结'}）</b><br>${Util.esc(String(x.content||x.text||''))}</div>`).join('')+'</div>';
+  },
+  /* 上面是 rangeText/prompt/viewRaw，下面保持原接口 */
   results(){ return Store.get('review_results',[]); },
   async aiGenerate(){
     reviewOutput.textContent='生成中...';
     try{
-      /* v104：去掉共享线程 review_growth（它会把最近 10 条同类周报问答塞进上下文，模型顺着旧文复读得到雷同结果）；
-         改为每次基于本次数据独立生成 + 提高温度，让不同记录必然产出不同总结 */
-      const out=await AI.ask(this.prompt(),{temperature:1.1});
+      /* v105：恢复「同一对话线程」——结果累积进 ai_thread_review_growth（对话框连续、可点「查看发给 AI 的对话」翻看），
+         但 fresh=true 让模型只凭本次一手记录作答（不读旧文，避免 v104 修过的「两周结果雷同」）。
+         发给 AI 的内容 = 按日历周期自动抓取的完整文字记录（去图），不给二手结论。 */
+      const out=await AI.ask(this.prompt(),{temperature:1.0,threadKey:'review_growth',fresh:true});
       reviewOutput.innerHTML=this.md(out);
+      this.viewRaw();
       Store.set('review_last_'+this.mode,{date:Util.today(),out});
       Store.set('review_results',[{id:Util.uid(),date:Util.today(),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),mode:this.mode,out},...this.results()]);
       this.history();
