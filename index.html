@@ -2647,7 +2647,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-09-02-v120';
+const BUILD_VERSION = '2026-09-03-v121';
 /* 版本自愈：一旦读到的 HTML 比上次更新（BUILD_VERSION 变了），立即清空 caches 里的旧副本并 reload。
    避免 SWR 回退到陈旧缓存、让旧界面永远赖着不走（中国网络访问 github.io 不稳时尤其多发：联网经常失败→回退旧缓存） */
 (function(){try{
@@ -3785,17 +3785,21 @@ const DiaryBook = {
       leaf.className='book-leaf '+(dir>0?'next':'prev');
       const f=document.createElement('div'); f.className='book-leaf-front';
       const b=document.createElement('div'); b.className='book-leaf-back';
-      f.innerHTML=dir>0?oldRightHtml:oldLeftHtml;   /* 正面=即将被翻走的那页（旧内容），翻书前半真实可见 */
+      f.innerHTML=dir>0?oldRightHtml:oldLeftHtml;   /* 书叶正面=即将被翻走的那一页（旧页），翻书时可见 */
       /* b 背面留白 */
       leaf.appendChild(f); leaf.appendChild(b);
       spread.appendChild(leaf);
       Media.paint(f);
-      /* 翻页期间不更新 left/right —— 让旧页在翻页前/中都保持显示 */
+      /* v121 用户期望「翻的那一页保持旧页、另一页已是新页、翻完瞬间那一页才换新」：
+         不参与翻转的那一页立刻铺新（它本就会显示翻页后的新内容）；
+         被翻走的那一页保持旧页（书叶正面即是），到 done() 翻页完成瞬间才换上翻页后的新内容。 */
+      if(dir>0){ left.innerHTML=leftHtml; Media.paint(left); }      /* next：左页(未翻)立刻更新 */
+      else     { right.innerHTML=rightHtml; Media.paint(right); }   /* prev：右页(未翻)立刻更新 */
       void leaf.offsetWidth;
       requestAnimationFrame(()=>leaf.classList.add('turn'));
       const done=()=>{
-        left.innerHTML=leftHtml; right.innerHTML=rightHtml;   /* 翻页完成才换上新手账 */
-        Media.paint(left); Media.paint(right);
+        if(dir>0){ right.innerHTML=rightHtml; Media.paint(right); }  /* next：右页(被翻)翻完瞬间换新 */
+        else     { left.innerHTML=leftHtml; Media.paint(left); }     /* prev：左页(被翻)翻完瞬间换新 */
         if(leaf.isConnected) leaf.remove();
       };
       leaf.addEventListener('transitionend', done, {once:true});
@@ -4433,14 +4437,31 @@ const Companion = {
     const m = {...msg, date: msg.date || Util.today()};
     const list = this.log().concat(m).slice(-200);
     Store.set(this.key(), list);
+    /* v121 单向写入：用户发的碎碎念同时存档进独立仓库(whispers)，清空闲话铺对话不再影响日记本 */
+    if(m.role === 'user' && m.content){
+      const w = Store.get('whispers', []);
+      if(!w.some(x => x.date === m.date && x.text === m.content)) Store.set('whispers', [...w, {id: Util.uid(), date: m.date, text: m.content}]);
+    }
     this.paint();
   },
   msgDate(m){ if(m.date) return m.date; const mm=(m.at||'').match(/(\d{2})\/(\d{2})/); if(mm){ return new Date().getFullYear()+'-'+mm[1]+'-'+mm[2]; } return ''; },
-  /* 某一天的「碎碎念」= 当天你发的用户消息 */
-  dailyWhispers(date){ return this.log().filter(m => m.role==='user' && this.msgDate(m)===date).map(m=>m.content).filter(Boolean); },
+  /* 某一天的「碎碎念」= 当天你发的用户消息。
+     v121 单向写入：优先读独立存档 whispers（清空闲话铺不清它），并合并旧聊天 log 里当天未入库的用户消息（历史不丢）。 */
+  dailyWhispers(date){
+    const stored = Store.get('whispers', []).filter(x => x.date === date).map(x => x.text).filter(Boolean);
+    const legacy = this.log().filter(m => m.role === 'user' && this.msgDate(m) === date).map(m => m.content).filter(Boolean);
+    return [...new Set(stored.concat(legacy))];
+  },
   clear(){
-    if(!confirm('清空这里的对话记录？清掉之后写使用说明书就少了这部分素材。')) return;
-    Store.set(this.key(), []);
+    if(!confirm('清空这里的对话记录？日记本里的「碎碎念」已单向存档，会保留，只清掉这里的聊天对话。')) return;
+    /* v121 单向写入：清空前把聊天里所有用户发的碎碎念回填进独立存档(whispers)，确保清空对话也不丢日记记录 */
+    const ws = this.log().filter(m => m.role === 'user' && m.content).map(m => ({date: m.date || Util.today(), text: m.content}));
+    if(ws.length){
+      const w = Store.get('whispers', []);
+      ws.forEach(x => { if(!w.some(y => y.date === x.date && y.text === x.text)) w.push({id: Util.uid(), date: x.date, text: x.text}); });
+      Store.set('whispers', w);
+    }
+    Store.set(this.key(), []);   /* 只清聊天对话 */
     this.paint();
   },
   now(){ return new Date().toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}); },
