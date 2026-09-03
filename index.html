@@ -2623,7 +2623,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-09-03-v122';
+const BUILD_VERSION = '2026-09-03-v123';
 /* 版本自愈：一旦读到的 HTML 比上次更新（BUILD_VERSION 变了），立即清空 caches 里的旧副本并 reload。
    避免 SWR 回退到陈旧缓存、让旧界面永远赖着不走（中国网络访问 github.io 不稳时尤其多发：联网经常失败→回退旧缓存） */
 (function(){try{
@@ -3745,7 +3745,7 @@ const DiaryBook = {
     const rightHtml=isSunday
       ? this.summaryPageHtml(curLeft)
       : `<div class="db-date">${rightDate} · 周${wd[new Date(rightDate+'T00:00:00').getDay()]}</div>`+this.pageHtml(this.dayData(rightDate),rightDate);
-    /* v122 去翻页动画：点左/右页空白处直接刷新成新对开页，无中间的翻转过渡 */
+    /* v123 去翻页动画：点左/右页空白处直接刷新成新对开页，无中间的翻转过渡 */
     left.innerHTML=leftHtml; right.innerHTML=rightHtml;
     Media.paint(left); Media.paint(right);
     if(pick) pick.value=curLeft;
@@ -4297,10 +4297,11 @@ const DailyLog = {
     const s = Store.get(Success.key(d), {});
     const m = Store.get('moods', []).find(x => x.date === d);
     const wins = Util.lines(s.wins||'').slice(0,3).join('；') || '（无）';
+    const rants = Util.lines(s.rants||'').slice(0,3).join('；') || '（无）';
     const moodText = m ? m.text.slice(0, 80) : '（无）';
     dlMoodLine.placeholder = '生成中…';
     try{
-      const out = await AI.ask('请根据以下今日内容，用 1 句不超过 20 字的话总结今天的情绪：\n成就：' + wins + '\n情绪日记：' + moodText);
+      const out = await AI.ask('请根据以下今日内容，用 1 句不超过 20 字的话总结今天的情绪：\n感恩/开心小事：' + wins + '\n吐槽区：' + rants + '\n情绪日记：' + moodText);
       dlMoodLine.value = out.trim().replace(/^["「"]|["」"]$/g, '');
       dlMoodLine.placeholder = '（AI 总结会填到这里，可手动改）';
       UI.toast('已填到下方，可手动改');
