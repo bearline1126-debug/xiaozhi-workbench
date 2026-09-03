@@ -750,27 +750,11 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
 .quest-meta{display:flex;justify-content:space-between;font-size:13px}
 /* 日记本 */
 /* 日记本 - 双页翻书 */
-.book-spread{display:flex;align-items:stretch;margin-top:10px;perspective:3000px;position:relative;min-height:62vh}
-.book-edge-btn{position:absolute;top:50%;transform:translateY(-50%);width:36px;height:56px;display:flex;align-items:center;justify-content:center;font-size:26px;color:#b3a98f;background:rgba(243,240,234,.85);border-radius:10px;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;border:1px solid #e6e0d0;flex-shrink:0;z-index:5;backdrop-filter:blur(4px);transition:background .15s,transform .15s}
-.book-edge-btn:active{background:#e7e4db;transform:translateY(-50%) scale(.92)}
-.book-edge-btn.left-edge{left:-8px}
-.book-edge-btn.right-edge{right:-8px}
+.book-spread{display:flex;align-items:stretch;margin-top:10px;position:relative;min-height:62vh}
 .book-spine{width:3px;background:linear-gradient(180deg,#d4c5a9,#e8dcc8,#d4c5a9);flex-shrink:0;border-radius:1px;box-shadow:0 0 8px rgba(0,0,0,.08),inset 0 0 3px rgba(0,0,0,.06);z-index:2}
 .book-left,.book-right{flex:1;background:#fffdf8;overflow-y:auto;padding:10px 10px;min-height:62vh;box-shadow:0 2px 12px rgba(0,0,0,.06);position:relative;font-size:12.5px;line-height:1.5;font-family:var(--font);color:#3a3a34}
 .book-left{border-radius:12px 0 0 12px;border:1px solid #ece6d8;border-right:none}
 .book-right{border-radius:0 12px 12px 0;border:1px solid #ece6d8;border-left:none}
-/* 日记本 - 真实翻书动画（v110 恢复最初 v39 手感）：一页纸绕书脊(中缝) rotateY 旋转翻走，背面是下一页。
-   用 preserve-3d + backface-visibility 避免旧 3D rotateY 的字放大/闪白；transform-origin 定向翻页 */
-.book-leaf{position:absolute;top:0;bottom:0;z-index:20;pointer-events:none;transform-style:preserve-3d;transition:transform .58s cubic-bezier(.45,.05,.3,1);will-change:transform}
-.book-leaf.next{left:50%;right:0;transform-origin:left center;backface-visibility:hidden;transform:rotateY(0)}
-.book-leaf.prev{left:0;right:50%;transform-origin:right center;backface-visibility:hidden;transform:rotateY(0)}
-.book-leaf-front,.book-leaf-back{position:absolute;inset:0;overflow:hidden;background:#fffdf8;backface-visibility:hidden;-webkit-backface-visibility:hidden}
-.book-leaf-front{box-shadow:inset -22px 0 32px -22px rgba(60,50,30,.30);border-radius:0 12px 12px 0}
-.book-leaf-back{transform:rotateY(180deg);box-shadow:inset 22px 0 32px -22px rgba(60,50,30,.30);border-radius:12px 0 0 12px}
-.book-leaf.next.turn{transform:rotateY(-177deg)}
-.book-leaf.prev.turn{transform:rotateY(177deg)}
-.book-leaf::after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(0,0,0,0) 55%,rgba(0,0,0,.16));opacity:0;transition:opacity .55s}
-.book-leaf.turn::after{opacity:1}
 /* 手账：主模块卡片框（不滚动）。
    今日完成/@一日总结/打卡/开心小事 用框；习惯/情绪/碎碎念/作息 用 @ 弱化放底部；图片并排 */
 .db-box{background:#fffef8;border:1px solid #eee5d2;border-radius:10px;padding:6px 8px;margin:6px 0;box-shadow:0 1px 3px rgba(160,140,90,.06)}
@@ -858,8 +842,6 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
 .db-sum-next-hint{margin-top:10px;text-align:center;font-size:11px;color:#a8a8a8;letter-spacing:2px;opacity:.7}
 .book-bar{display:flex;gap:8px;margin-top:10px}
 .db-top-bar{display:flex;align-items:center;gap:10px;margin-top:8px}
-.db-flip{width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:24px;color:#b3a98f;background:#f3f1ea;border-radius:50%;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;border:1px solid #e6e0d0;flex-shrink:0}
-.db-flip:active{background:#e7e4db;transform:scale(.92)}
 .db-cal-wrap{margin-top:12px;background:#faf8f3;border:1px solid #ece6d8;border-radius:14px;padding:12px}
 @keyframes starIn{from{opacity:0;transform:translateY(-20px) scale(.5)}to{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes starFly{0%{opacity:1;transform:translateY(-40px) scale(.6)}50%{opacity:1;transform:translateY(30px) scale(1.1)}80%{opacity:1;transform:translateY(70px) scale(.9)}100%{opacity:0;transform:translateY(100px) scale(.4)}}
@@ -1190,21 +1172,15 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
     </section><!-- ==== 功能：复盘中心 END ==== --><!-- ==== 功能：日记本 START ==== --><section class="page" id="page-diarybook">
       <div class="page-title">日记本</div><div class="page-sub">频繁记录是为了让幸福可以翻阅。</div>
       <div class="db-top-bar">
-        <span class="db-flip db-flip-left" onclick="DiaryBook.prev()">‹</span>
         <input type="date" id="dbDatePick" onchange="DiaryBook.go(this.value)">
-        <span class="db-flip db-flip-right" onclick="DiaryBook.next()">›</span>
       </div>
       <div class="book-spread" id="bookSpread">
-        <div class="book-edge-btn left-edge" onclick="DiaryBook.prev()">‹</div>
         <div class="book-spine"></div>
-        <div class="book-left" id="dbLeft"></div>
-        <div class="book-right" id="dbRight"></div>
-        <div class="book-edge-btn right-edge" onclick="DiaryBook.next()">›</div>
+        <div class="book-left" id="dbLeft" onclick="DiaryBook.prev()" title="点左页空白处看上一对开页"></div>
+        <div class="book-right" id="dbRight" onclick="DiaryBook.next()" title="点右页空白处看下一对开页"></div>
       </div>
       <div class="book-bar">
-        <button class="btn ghost small" onclick="DiaryBook.prev()" aria-label="上一页">←</button>
         <button class="btn ghost small" onclick="DiaryBook.go(Util.today())">回到今天</button>
-        <button class="btn ghost small" onclick="DiaryBook.next()" aria-label="下一页">→</button>
         <button class="btn ghost small" onclick="DiaryBook.toggleArchive()">📅 日记存放处</button>
       </div>
       <div id="dbArchiveBox" style="display:none;margin-top:8px"></div>
@@ -2647,7 +2623,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-09-03-v121';
+const BUILD_VERSION = '2026-09-03-v122';
 /* 版本自愈：一旦读到的 HTML 比上次更新（BUILD_VERSION 变了），立即清空 caches 里的旧副本并 reload。
    避免 SWR 回退到陈旧缓存、让旧界面永远赖着不走（中国网络访问 github.io 不稳时尤其多发：联网经常失败→回退旧缓存） */
 (function(){try{
@@ -3586,7 +3562,6 @@ const MainQuest = {
 /* ==== 功能：日记本 START ==== */
 const DiaryBook = {
   cur:null,
-  _flipDir:0, /* -1=向后翻(上一页), +1=向前翻(下一页) */
   /* cur = 当前展开页的左页日期（实体书式：每翻一页 = 整张对开页换一对）
      合法左页：周一/周三/周五/周日（间距 2 天），左页为周日时右页是本周汇总（也是可翻的一页） */
   render(){
@@ -3594,13 +3569,12 @@ const DiaryBook = {
       /* 初始对开页：把「今天」吸附到合法的左页（周一/三/五/日），像实体书一样成对出现 */
       this.cur = this._leftOf(Util.today());
     }
-    this._flipDir=0; this.updateDatePick(); this.initSwipe(); this.renderSpread(this.cur);
+    this.updateDatePick(); this.initSwipe(); this.renderSpread(this.cur);
   },
   go(date, flipDir){
     /* 让 date 吸附到合法的左页（周一/三/五/日；周日左页的右页就是本周汇总），像实体书一样成对。
        允许跳到未来日期（未来页是空白页，不显示补记按钮）。 */
     this.cur = this._leftOf(date);
-    this._flipDir=flipDir || 0;
     this.updateDatePick();
     this.renderSpread(this.cur);
   },
@@ -3615,18 +3589,16 @@ const DiaryBook = {
     return date;
   },
   prev(){
-    this._flipDir=-1;
-    /* 实体书 2 页翻：合法左页间距 +2（Mon↔Wed↔Fri↔Sun），唯独 Mon→Sun 是 -1（同一周末边界） */
+    /* 点左页=上一对开页：合法左页间距 -2（Mon↔Wed↔Fri↔Sun），唯独 Mon→Sun 是 -1（同一周末边界） */
     const newLeft = this._dow(this.cur)===1 ? Util.dateAdd(this.cur,-1) : Util.dateAdd(this.cur,-2);
     this.cur=newLeft;
     this.updateDatePick();
     this.renderSpread(this.cur);
   },
   next(){
-    /* 实体书 2 页翻：合法左页间距 +2，唯独 Sun→Mon 是 +1（周日对开页右页是汇总，下一对开页才是 Mon|Tue）。
+    /* 点右页=下一对开页：合法左页间距 +2，唯独 Sun→Mon 是 +1（周日对开页右页是汇总，下一对开页才是 Mon|Tue）。
        允许翻到未来日期 —— 未来的页是空白页，不会触发补记提示。 */
     const newLeft = this._isSunday(this.cur) ? Util.dateAdd(this.cur,1) : Util.dateAdd(this.cur,2);
-    this._flipDir=1;
     this.cur=newLeft;
     this.updateDatePick();
     this.renderSpread(this.cur);
@@ -3763,7 +3735,7 @@ const DiaryBook = {
     return Math.ceil((((d-yearStart)/86400000)+1)/7);
   },
   renderSpread(curLeft){
-    const left=document.getElementById('dbLeft'), right=document.getElementById('dbRight'), pick=document.getElementById('dbDatePick'), spread=document.getElementById('bookSpread');
+    const left=document.getElementById('dbLeft'), right=document.getElementById('dbRight'), pick=document.getElementById('dbDatePick');
     if(!left||!right) return;
     const isSunday=this._isSunday(curLeft);
     const rightDate=isSunday?null:Util.dateAdd(curLeft,1);
@@ -3773,41 +3745,9 @@ const DiaryBook = {
     const rightHtml=isSunday
       ? this.summaryPageHtml(curLeft)
       : `<div class="db-date">${rightDate} · 周${wd[new Date(rightDate+'T00:00:00').getDay()]}</div>`+this.pageHtml(this.dayData(rightDate),rightDate);
-    const dir=this._flipDir; this._flipDir=0;
-    if(dir && spread){
-      /* v110 真实翻书：旧页作为 book-leaf 绕书脊 rotateY 旋转翻走，背面即是下一页内容，下方已铺好新对开页
-         v117 修「旧内容盖新页0.6s再突跳」：叶子背面留白。
-         v118 修「翻页动作前就显示新内容」：老做法在动画开始前就把 left/right 换成新页，导致点箭头瞬间整张先变新、
-         翻到一半是白纸、完了又"再显示一遍"。现改为——翻页动画期间 left/right 维持旧内容（翻页前保持旧页），
-         正面=被翻走那页(旧内容可见)，翻到 done() 才把新对开页换上去并移除书叶（同一同步块：先填新再移除，避免闪旧/闪白）。 */
-      const oldLeftHtml=left.innerHTML, oldRightHtml=right.innerHTML;
-      const leaf=document.createElement('div');
-      leaf.className='book-leaf '+(dir>0?'next':'prev');
-      const f=document.createElement('div'); f.className='book-leaf-front';
-      const b=document.createElement('div'); b.className='book-leaf-back';
-      f.innerHTML=dir>0?oldRightHtml:oldLeftHtml;   /* 书叶正面=即将被翻走的那一页（旧页），翻书时可见 */
-      /* b 背面留白 */
-      leaf.appendChild(f); leaf.appendChild(b);
-      spread.appendChild(leaf);
-      Media.paint(f);
-      /* v121 用户期望「翻的那一页保持旧页、另一页已是新页、翻完瞬间那一页才换新」：
-         不参与翻转的那一页立刻铺新（它本就会显示翻页后的新内容）；
-         被翻走的那一页保持旧页（书叶正面即是），到 done() 翻页完成瞬间才换上翻页后的新内容。 */
-      if(dir>0){ left.innerHTML=leftHtml; Media.paint(left); }      /* next：左页(未翻)立刻更新 */
-      else     { right.innerHTML=rightHtml; Media.paint(right); }   /* prev：右页(未翻)立刻更新 */
-      void leaf.offsetWidth;
-      requestAnimationFrame(()=>leaf.classList.add('turn'));
-      const done=()=>{
-        if(dir>0){ right.innerHTML=rightHtml; Media.paint(right); }  /* next：右页(被翻)翻完瞬间换新 */
-        else     { left.innerHTML=leftHtml; Media.paint(left); }     /* prev：左页(被翻)翻完瞬间换新 */
-        if(leaf.isConnected) leaf.remove();
-      };
-      leaf.addEventListener('transitionend', done, {once:true});
-      setTimeout(done, 620);
-    } else {
-      left.innerHTML=leftHtml; right.innerHTML=rightHtml;
-      Media.paint(left); Media.paint(right);
-    }
+    /* v122 去翻页动画：点左/右页空白处直接刷新成新对开页，无中间的翻转过渡 */
+    left.innerHTML=leftHtml; right.innerHTML=rightHtml;
+    Media.paint(left); Media.paint(right);
     if(pick) pick.value=curLeft;
     /* 汇总页视觉上与日记页区分（更轻的纸色 + 更紧的字距），减少"翻页撞墙"感 */
     right.classList.toggle('summary', isSunday);
