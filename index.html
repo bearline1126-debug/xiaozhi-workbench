@@ -317,6 +317,16 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .db-keyword:active{opacity:.55}
 .db-keyword sup{font-size:9px;color:var(--text-dim);font-weight:400;margin-left:1px}
 .db-win-big{font-weight:800;color:var(--accent)}
+/* v124：我的小赢词库标签「整理模式」——长按移动 / 重叠停留=合并 / 拖顶部=删除 */
+#dbWinsBody.db-wins-edit{position:relative;touch-action:none;user-select:none;-webkit-user-select:none}
+#dbWinsBody.db-wins-edit .db-editable{cursor:grab}
+.db-editable{position:relative;will-change:transform}
+.db-editable.dragging{cursor:grabbing;z-index:999;box-shadow:0 4px 14px rgba(0,0,0,.22);opacity:.96}
+.db-editable.target{box-shadow:0 0 0 2px var(--accent);background:#fdf3c9}
+.db-drop-zone{border:2px dashed #e0c9a8;color:#b3a98f;text-align:center;padding:8px;border-radius:8px;font-size:12px;margin-bottom:8px;transition:all .15s}
+.db-wins-edit .db-drop-zone.hot,.db-wins-edit.zonehot .db-drop-zone{border-color:var(--accent-2);color:#fff;background:var(--accent-2)}
+.db-kw-hint{font-size:11px;color:var(--text-dim);margin-bottom:6px;line-height:1.5}
+.db-kw-flow{padding:2px;touch-action:none}
 .bottom-nav{
   position:fixed;left:0;right:0;bottom:0;z-index:38;
   display:grid;grid-template-columns:repeat(4,1fr);
@@ -1190,6 +1200,7 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
         <div id="dbWinsBody"></div>
         <div class="row" style="margin-top:8px;gap:8px">
           <button class="btn ghost small" style="flex:1" onclick="Wins.analyze()">↻ 分析新素材</button>
+          <button class="btn ghost small" style="flex:1" id="dbWinsEditBtn" onclick="Wins.toggleEdit()">✏️ 整理</button>
           <button class="btn ghost small" style="flex:1" onclick="Wins.openLibrary()">📚 成功库</button>
         </div>
       </div>
@@ -2623,7 +2634,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-09-03-v123';
+const BUILD_VERSION = '2026-09-04-v124';
 /* 版本自愈：一旦读到的 HTML 比上次更新（BUILD_VERSION 变了），立即清空 caches 里的旧副本并 reload。
    避免 SWR 回退到陈旧缓存、让旧界面永远赖着不走（中国网络访问 github.io 不稳时尤其多发：联网经常失败→回退旧缓存） */
 (function(){try{
@@ -3918,6 +3929,7 @@ const Wins = {
   render(box){
     box = box || document.getElementById('dbWinsBody'); if(!box) return;
     const gs = this.groups();
+    if(box.dataset.edit==='1'){ this.renderEdit(box, gs); return; }
     if(!gs.length){
       box.innerHTML = '<div class="empty">还没有小赢。点「分析新素材」从感恩日记 / 必做 / 主线任务里萃取。</div>';
       return;
@@ -3932,8 +3944,101 @@ const Wins = {
       return `<span class="${cls}" style="font-size:${size}px" onclick="Wins.showDays('${Util.esc(g.text).replace(/'/g,"\\'")}')" title="${Util.esc(tail)}">${mark}${Util.esc(g.text)}<sup>${g.days>1?g.days:''}</sup></span>`;
     }).join('<span class="db-keyword-sep"> </span>');
   },
+  /* v124：词库标签人工整理——长按移动 / 拖到另一词停留=合并 / 拖进顶部区域=删减 */
+  toggleEdit(){
+    const box=document.getElementById('dbWinsBody'); if(!box) return;
+    const editing=box.dataset.edit==='1';
+    box.dataset.edit=editing?'':'1';
+    box.classList.toggle('db-wins-edit', !editing);
+    const btn=document.getElementById('dbWinsEditBtn'); if(btn) btn.textContent=editing?'✏️ 整理':'✅ 完成';
+    if(editing){ this.render(box); } else { this.renderEdit(box, this.groups()); }
+  },
+  enc(s){ try{ return encodeURIComponent(s); }catch(_){ return 'x'; } },
+  dec(s){ try{ return decodeURIComponent(s); }catch(_){ return ''; } },
+  _rct(a,b){ return Math.max(0, Math.min(a.right,b.right)-Math.max(a.left,b.left)) * Math.max(0, Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)); },
+  renderEdit(box, gs){
+    if(!gs.length){ box.innerHTML='<div class="empty">没有标签可整理</div>'; return; }
+    const maxDays=Math.max(...gs.map(g=>g.days),1);
+    box.innerHTML = '<div class="db-drop-zone" id="dbDropZone">🗑️ 拖到这里删除</div>'
+      + '<div class="db-kw-hint">长按一个词开始拖动：<b>拖到另一个词上停留</b> = 合并（显示更完整的词，次数相加）；<b>拖进上方区域停留</b> = 删除。</div>'
+      + '<div class="db-kw-flow">'
+      + gs.slice(0,40).map(g=>{
+          let size, cls='db-keyword db-editable', mark='';
+          if(g.big){ size=24; cls+=' db-win-big'; mark='🏆 '; }
+          else if(g.days>=2){ size=15+Math.round((g.days/maxDays)*12); }
+          else size=13;
+          const tail=(g.big?'大赢 · ':'')+(g.days>=2?('持续 '+g.days+' 天 · '):'')+g.dates[0]+(g.dates.length>1?(' ~ '+g.dates[g.dates.length-1]):'');
+          return `<span class="${cls}" data-key="${this.enc(g.text)}" style="font-size:${size}px" title="${Util.esc(tail)}">${mark}${Util.esc(g.text)}<sup>${g.days>1?g.days:''}</sup></span>`;
+        }).join(' ')
+      + '</div>';
+    this.bindEdit(box);
+  },
+  bindEdit(box){
+    if(box._dwB) return; box._dwB=true;
+    let el=null, sx=0, sy=0, locked=false, lpId=0, zoneT=0, hit=null;
+    const zone=()=>box.querySelector('.db-drop-zone');
+    box.addEventListener('pointerdown', e=>{
+      const t=e.target.closest('.db-editable'); if(!t) return;
+      el=t; sx=e.clientX; sy=e.clientY; locked=false; zoneT=0; hit=null; this._mS=null;
+      if(el.setPointerCapture){ try{ el.setPointerCapture(e.pointerId); }catch(_){ } }
+      clearTimeout(lpId);
+      lpId=setTimeout(()=>{ locked=true; el.classList.add('dragging'); box.classList.add('zonehot-ready'); },350);
+    });
+    box.addEventListener('pointermove', e=>{
+      if(!el||!locked) return;
+      const dx=e.clientX-sx, dy=e.clientY-sy;
+      el.style.transform=`translate(${dx}px,${dy}px)`;
+      const r=el.getBoundingClientRect(), zr=zone()?zone().getBoundingClientRect():null;
+      const inZ=zr&&this._rct(r,zr)>0;
+      box.classList.toggle('zonehot', !!inZ);
+      if(inZ){ zoneT=zoneT||Date.now(); if(Date.now()-zoneT>700){ this.groupDel(box, el); return; } }
+      else zoneT=0;
+      let best=null, ba=0;
+      box.querySelectorAll('.db-editable').forEach(o=>{
+        if(o===el) return; const oo=o.getBoundingClientRect(); const A=this._rct(r,oo);
+        if(A>ba){ ba=A; best=o; }
+      });
+      if(best!==hit){ if(hit) hit.classList.remove('target'); hit=best; if(hit) hit.classList.add('target'); }
+      if(best){
+        if(!this._mS || this._mS.el!==best) this._mS={el:best,t:Date.now()};
+        else if(Date.now()-this._mS.t>700){ this.groupMerge(box, el, best); return; }
+      } else this._mS=null;
+    });
+    const up=()=>{
+      if(el){ clearTimeout(lpId); el.classList.remove('dragging'); el.style.transform=''; }
+      box.classList.remove('zonehot','zonehot-ready');
+      if(hit){ hit.classList.remove('target'); hit=null; }
+      el=null; locked=false; this._mS=null; zoneT=0;
+    };
+    box.addEventListener('pointerup', up);
+    box.addEventListener('pointercancel', up);
+  },
+  groupMerge(box, a, b){
+    const A=this.dec(a.dataset.key), B=this.dec(b.dataset.key);
+    if(!A||!B) return;
+    if(this.norm(A)===this.norm(B)){ UI.toast('本来就是同一个词'); return; }
+    /* 显示词取「更完整（更长）」的那个；次数=两个词条出现日期的并集，归一化后自动合并 */
+    const display = A.length>B.length ? A : B;
+    const lib=this.library();
+    lib.forEach(x=>{ const n=this.norm(x.text); if(n===this.norm(A)||n===this.norm(B)) x.text=display; });
+    Store.set(this.KEY_LIB, lib);
+    UI.toast('已合并「'+A+'」+「'+B+'」→「'+display+'」');
+    if(box.dataset.edit==='1') this.renderEdit(box, this.groups()); else this.render(box);
+  },
+  groupDel(box, el){
+    const K=this.dec(el.dataset.key); if(!K) return;
+    Store.set(this.KEY_LIB, this.library().filter(x=>this.norm(x.text)!==this.norm(K)));
+    UI.toast('已删除「'+K+'」');
+    if(box.dataset.edit==='1') this.renderEdit(box, this.groups()); else this.render(box);
+  },
   renderIfEmpty(){
     const box = document.getElementById('dbWinsBody'); if(!box) return;
+    /* 每次进入日记本自动退出「整理模式」，避免残留可拖标签误触发合并 */
+    if(box.dataset.edit==='1'){
+      box.dataset.edit=''; box.classList.remove('db-wins-edit');
+      const btn=document.getElementById('dbWinsEditBtn'); if(btn) btn.textContent='✏️ 整理';
+      this.render(box); return;
+    }
     if(box.dataset.loaded==='1') return;
     box.dataset.loaded='1';
     this.render(box);
