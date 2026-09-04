@@ -325,8 +325,11 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .db-editable.target{box-shadow:0 0 0 2px var(--accent);background:#fdf3c9}
 .db-drop-zone{border:2px dashed #e0c9a8;color:#b3a98f;text-align:center;padding:8px;border-radius:8px;font-size:12px;margin-bottom:8px;transition:all .15s}
 .db-wins-edit .db-drop-zone.hot,.db-wins-edit.zonehot .db-drop-zone{border-color:var(--accent-2);color:#fff;background:var(--accent-2)}
-.db-kw-hint{font-size:11px;color:var(--text-dim);margin-bottom:6px;line-height:1.5}
-.db-kw-flow{padding:2px;touch-action:none}
+.db-trash{position:absolute;top:-2px;right:-2px;z-index:40;width:32px;height:32px;border-radius:10px;background:rgba(200,83,70,.10);border:1px dashed rgba(200,83,70,.45);color:var(--accent-2);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;user-select:none;transition:transform .12s,background .15s;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.db-trash:active,.db-trash.hot{transform:scale(1.12);background:rgba(200,83,70,.25)}
+.db-trash .db-trash-n{position:absolute;top:-6px;right:-6px;min-width:16px;height:16px;border-radius:8px;background:var(--accent-2);color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;padding:0 4px}
+.db-kw-hint{font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.5}
+.db-kw-flow{padding:2px;padding-top:28px;touch-action:none}
 .bottom-nav{
   position:fixed;left:0;right:0;bottom:0;z-index:38;
   display:grid;grid-template-columns:repeat(4,1fr);
@@ -2634,7 +2637,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-09-04-v124';
+const BUILD_VERSION = '2026-09-04-v125';
 /* 版本自愈：一旦读到的 HTML 比上次更新（BUILD_VERSION 变了），立即清空 caches 里的旧副本并 reload。
    避免 SWR 回退到陈旧缓存、让旧界面永远赖着不走（中国网络访问 github.io 不稳时尤其多发：联网经常失败→回退旧缓存） */
 (function(){try{
@@ -3807,6 +3810,7 @@ const DiaryBook = {
 const Wins = {
   KEY_LIB:'wins_library',
   KEY_CURSOR:'wins_cursor',
+  KEY_TRASH:'wins_trash',
   library(){ return Store.get(this.KEY_LIB, []); },
   cursor(){ return Store.get(this.KEY_CURSOR, null); },
   /* 取「自 cursor（不含）起到今天（含）」之间的新素材；cursor 为空则首扫最近 180 天 */
@@ -3959,8 +3963,8 @@ const Wins = {
   renderEdit(box, gs){
     if(!gs.length){ box.innerHTML='<div class="empty">没有标签可整理</div>'; return; }
     const maxDays=Math.max(...gs.map(g=>g.days),1);
-    box.innerHTML = '<div class="db-drop-zone" id="dbDropZone">🗑️ 拖到这里删除</div>'
-      + '<div class="db-kw-hint">长按一个词开始拖动：<b>拖到另一个词上停留</b> = 合并（显示更完整的词，次数相加）；<b>拖进上方区域停留</b> = 删除。</div>'
+    const trashN=this.trash().length;
+    box.innerHTML = '<div class="db-trash" id="dbTrash" title="点击查看回收站" onclick="Wins.openTrash()">🗑'+(trashN?`<b class="db-trash-n">${trashN}</b>`:'')+'</div>'
       + '<div class="db-kw-flow">'
       + gs.slice(0,40).map(g=>{
           let size, cls='db-keyword db-editable', mark='';
@@ -3970,66 +3974,116 @@ const Wins = {
           const tail=(g.big?'大赢 · ':'')+(g.days>=2?('持续 '+g.days+' 天 · '):'')+g.dates[0]+(g.dates.length>1?(' ~ '+g.dates[g.dates.length-1]):'');
           return `<span class="${cls}" data-key="${this.enc(g.text)}" style="font-size:${size}px" title="${Util.esc(tail)}">${mark}${Util.esc(g.text)}<sup>${g.days>1?g.days:''}</sup></span>`;
         }).join(' ')
-      + '</div>';
+      + '</div>'
+      + '<div class="db-kw-hint">搬动：放上另一词=合并 · 丢进🗑=删除(可在回收站恢复或倾倒) · 长按松手=改词</div>';
     this.bindEdit(box);
   },
   bindEdit(box){
     if(box._dwB) return; box._dwB=true;
-    let el=null, sx=0, sy=0, locked=false, lpId=0, zoneT=0, hit=null;
-    const zone=()=>box.querySelector('.db-drop-zone');
+    let el=null, sx=0, sy=0, locked=false, lpId=0, hit=null, moved=false, refEl=null, t0=0;
     box.addEventListener('pointerdown', e=>{
       const t=e.target.closest('.db-editable'); if(!t) return;
-      el=t; sx=e.clientX; sy=e.clientY; locked=false; zoneT=0; hit=null; this._mS=null;
+      el=t; sx=e.clientX; sy=e.clientY; locked=false; moved=false; hit=null; refEl=null; t0=0;
       if(el.setPointerCapture){ try{ el.setPointerCapture(e.pointerId); }catch(_){ } }
       clearTimeout(lpId);
-      lpId=setTimeout(()=>{ locked=true; el.classList.add('dragging'); box.classList.add('zonehot-ready'); },350);
+      lpId=setTimeout(()=>{ locked=true; el.classList.add('dragging'); },350);
     });
     box.addEventListener('pointermove', e=>{
       if(!el||!locked) return;
       const dx=e.clientX-sx, dy=e.clientY-sy;
+      if(Math.hypot(dx,dy)<7) return;   /* 未离开原始位置 → 待长按松手=改词 */
+      moved=true;
       el.style.transform=`translate(${dx}px,${dy}px)`;
-      const r=el.getBoundingClientRect(), zr=zone()?zone().getBoundingClientRect():null;
-      const inZ=zr&&this._rct(r,zr)>0;
-      box.classList.toggle('zonehot', !!inZ);
-      if(inZ){ zoneT=zoneT||Date.now(); if(Date.now()-zoneT>700){ this.groupDel(box, el); return; } }
-      else zoneT=0;
+      const r=el.getBoundingClientRect();
+      /* 1) 拖到回收站上方 → 立即删除（进回收站，无须停留） */
+      const tr=document.getElementById('dbTrash'); const trr=tr?tr.getBoundingClientRect():null;
+      if(trr && this._rct(r,trr)>0){ this.delToTrash(box, el); return; }
+      /* 2) 重叠另一词 → 停留 0.7s 合并（显示被拖放到的下方目标词） */
       let best=null, ba=0;
-      box.querySelectorAll('.db-editable').forEach(o=>{
-        if(o===el) return; const oo=o.getBoundingClientRect(); const A=this._rct(r,oo);
-        if(A>ba){ ba=A; best=o; }
-      });
+      box.querySelectorAll('.db-editable').forEach(o=>{ if(o===el) return; const oo=o.getBoundingClientRect(); const A=this._rct(r,oo); if(A>ba){ ba=A; best=o; } });
       if(best!==hit){ if(hit) hit.classList.remove('target'); hit=best; if(hit) hit.classList.add('target'); }
       if(best){
-        if(!this._mS || this._mS.el!==best) this._mS={el:best,t:Date.now()};
-        else if(Date.now()-this._mS.t>700){ this.groupMerge(box, el, best); return; }
-      } else this._mS=null;
+        if(refEl!==best){ refEl=best; t0=Date.now(); }
+        else if(Date.now()-t0>700){ this.mergeTo(box, el, best); return; }
+      } else refEl=null;
     });
-    const up=()=>{
-      if(el){ clearTimeout(lpId); el.classList.remove('dragging'); el.style.transform=''; }
-      box.classList.remove('zonehot','zonehot-ready');
+    box.addEventListener('pointerup', ()=>{
+      if(!el) return;
+      clearTimeout(lpId);
+      const doRename = locked && !moved;   /* 长按后原地松手 → 改词 */
+      el.classList.remove('dragging'); el.style.transform='';
       if(hit){ hit.classList.remove('target'); hit=null; }
-      el=null; locked=false; this._mS=null; zoneT=0;
-    };
-    box.addEventListener('pointerup', up);
-    box.addEventListener('pointercancel', up);
+      if(doRename){ const K=this.dec(el.dataset.key); if(K) this.renameGroup(K, box); }
+      else if(box.dataset.edit==='1'){ this.renderEdit(box, this.groups()); }
+      el=null; locked=false; moved=false; refEl=null;
+    });
+    box.addEventListener('pointercancel', ()=>{
+      if(el){ clearTimeout(lpId); el.classList.remove('dragging'); el.style.transform=''; }
+      if(hit){ hit.classList.remove('target'); hit=null; }
+      el=null; locked=false; moved=false; refEl=null;
+    });
   },
-  groupMerge(box, a, b){
+  renameGroup(K, box){
+    const nv=prompt('修改这个词条为（可并入已有词）：', K);
+    if(nv==null) return;
+    const v=nv.trim(); if(!v || v===K) return;
+    const lib=this.library();
+    lib.forEach(x=>{ if(this.norm(x.text)===this.norm(K)) x.text=v; });
+    Store.set(this.KEY_LIB, lib);
+    UI.toast('词条已改为「'+v+'」');
+    if(box.dataset.edit==='1') this.renderEdit(box, this.groups()); else this.render(box);
+  },
+  mergeTo(box, a, b){
     const A=this.dec(a.dataset.key), B=this.dec(b.dataset.key);
     if(!A||!B) return;
     if(this.norm(A)===this.norm(B)){ UI.toast('本来就是同一个词'); return; }
-    /* 显示词取「更完整（更长）」的那个；次数=两个词条出现日期的并集，归一化后自动合并 */
-    const display = A.length>B.length ? A : B;
+    /* 合并 = 被拖动词 A 并入「下方」目标词 B：B 作显示词，A 的出现次数自然并入（归一化去重相加） */
     const lib=this.library();
-    lib.forEach(x=>{ const n=this.norm(x.text); if(n===this.norm(A)||n===this.norm(B)) x.text=display; });
+    lib.forEach(x=>{ if(this.norm(x.text)===this.norm(A)) x.text=B; });
     Store.set(this.KEY_LIB, lib);
-    UI.toast('已合并「'+A+'」+「'+B+'」→「'+display+'」');
+    UI.toast('已把「'+A+'」并入「'+B+'」');
     if(box.dataset.edit==='1') this.renderEdit(box, this.groups()); else this.render(box);
   },
-  groupDel(box, el){
+  delToTrash(box, el){
     const K=this.dec(el.dataset.key); if(!K) return;
-    Store.set(this.KEY_LIB, this.library().filter(x=>this.norm(x.text)!==this.norm(K)));
-    UI.toast('已删除「'+K+'」');
+    const lib=this.library(), trash=this.trash();
+    const keep=[];
+    lib.forEach(x=>{ if(this.norm(x.text)===this.norm(K)){ trash.push(Object.assign({}, x, {deletedAt:new Date().toISOString()})); } else keep.push(x); });
+    Store.set(this.KEY_LIB, keep);
+    this.trashSet(trash);
+    UI.toast('「'+K+'」已移入回收站');
     if(box.dataset.edit==='1') this.renderEdit(box, this.groups()); else this.render(box);
+  },
+  /* v125：回收站（软删除）——倾倒后才彻底删除 */
+  trash(){ const v=Store.get(this.KEY_TRASH); return Array.isArray(v)?v:[]; },
+  trashSet(v){ Store.set(this.KEY_TRASH, v); },
+  openTrash(){
+    const t=this.trash();
+    if(!t.length){ UI.toast('回收站是空的'); return; }
+    const html = '<p class="hint">以下词条已移入回收站，点 🚮 倾倒才彻底删除。</p>'
+      + '<ul class="db-list">' + t.map((x,i)=>`<li>${Util.esc(x.text||'')} <span class="muted" style="font-size:11px">· ${x.deletedAt?x.deletedAt.slice(0,16).replace('T',' '):''}</span><br><span style="display:flex;gap:6px;margin-top:4px"><button class="btn ghost small" onclick="Wins.restoreTrash(${i})">↺ 恢复</button><button class="btn ghost small" onclick="Wins.dumpTrashOne(${i})">🚮 倾倒</button></span></li>`).join('')
+      + '</ul>'
+      + '<div class="row" style="margin-top:8px"><button class="btn ghost small" style="flex:1;color:var(--accent-2)" onclick="Wins.dumpTrashAll()">🚮 全部倾倒（彻底删除）</button></div>';
+    UI.modal('🗑 回收站', html);
+  },
+  _syncTrashView(){
+    const box=document.getElementById('dbWinsBody'); if(box) this.render(box);
+  },
+  restoreTrash(i){
+    const t=this.trash(); const item=t[i]; if(!item) return;
+    const nx={date:item.date, text:item.text, source:item.source||'感恩', type:item.type||'small'}; if(item.mqId) nx.mqId=item.mqId;
+    const lib=this.library(); lib.push(nx); Store.set(this.KEY_LIB, lib);
+    t.splice(i,1); this.trashSet(t); this._syncTrashView();
+    UI.toast('已恢复「'+item.text+'」'); this.openTrash();
+  },
+  dumpTrashOne(i){
+    const t=this.trash(); t.splice(i,1); this.trashSet(t); this._syncTrashView();
+    UI.toast('已彻底删除'); this.openTrash();
+  },
+  dumpTrashAll(){
+    this.trashSet([]); this._syncTrashView();
+    UI.toast('回收站已清空');
+    if(typeof UI.closeModal==='function') UI.closeModal();
   },
   renderIfEmpty(){
     const box = document.getElementById('dbWinsBody'); if(!box) return;
