@@ -1516,6 +1516,10 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
           <button class="btn" style="width:100%" onclick="Settings.donate()">🎁 打赏作者</button>
         </div>
         <p class="hint">如果你觉得这个小工具帮到了你，欢迎自愿打赏请作者喝杯咖啡 ☕</p>
+        <div class="row" style="margin-top:10px;display:flex;gap:8px">
+          <button class="btn" style="flex:1" onclick="if(confirm('确定载入示例记录吗？会写入几天的示例内容')){Seed.install(true);UI.toast('已载入示例');location.reload()}">📚 载入示例</button>
+          <button class="btn ghost" style="flex:1" onclick="if(confirm('确定清除示例记录吗？会移除近30天记录与情绪日志')){Seed.clear();UI.toast('已清除');location.reload()}">🧹 清除示例</button>
+        </div>
         <p class="hint" id="buildInfo"></p>
       </div>
     </section><!-- ==== 功能：设置 END ==== -->
@@ -2641,7 +2645,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-09-08-v126';
+const BUILD_VERSION = '2026-09-08-v127';
 /* 版本自愈：一旦读到的 HTML 比上次更新（BUILD_VERSION 变了），立即清空 caches 里的旧副本并 reload。
    避免 SWR 回退到陈旧缓存、让旧界面永远赖着不走（中国网络访问 github.io 不稳时尤其多发：联网经常失败→回退旧缓存） */
 (function(){try{
@@ -7833,6 +7837,40 @@ const Settings = {
       '<p class="hint" style="text-align:center;margin-top:10px">纯自愿、金额随意，谢谢你的鼓励 🌱</p>');
   }
 };
+const Seed = {
+  /* 演示示例：全新打开且无任何记录时自动注入几天示例，方便截图/给别人演示；设置里可一键清除 */
+  KEY: '_seedDemoV1',
+  existing(){
+    if (Util.rangeDays(14).some(d => Store.get('success:' + d, null))) return true;
+    return (Store.get('moods', []) || []).length > 0;
+  },
+  install(force){
+    if (Store.get(this.KEY)) return;
+    if (!force && this.existing()) { Store.set(this.KEY, {skip: 1}); return; }
+    this.clear(false);
+    const days = Util.rangeDays(5).reverse();
+    const data = [
+      {wins:'早睡成功\n给窗台绿植浇了水\n把拖了很久的文档写完了', rants:'出门忘带钥匙，来回折腾一趟', tasks:[{text:'读10分钟英语',done:true},{text:'写感恩日记',done:true}]},
+      {wins:'整理了一周复盘，方向更清楚了\n给自己做了一顿像样的晚饭', rants:'外卖迟到了半小时', tasks:[{text:'散步20分钟',done:true},{text:'给家人打电话',done:false}]},
+      {wins:'坚持打卡第3天\n把乱糟糟的桌面收干净了', rants:'咖啡不小心洒在键盘上', tasks:[{text:'早睡半小时',done:true}]},
+      {wins:'把想看的书读完了一章\n给朋友发去生日祝福', rants:'通勤又堵车，好烦', tasks:[{text:'运动20分钟',done:false},{text:'写情绪日记',done:true}]},
+      {wins:'完成今天的计划复盘\n给明天列好了三件大事', rants:'', tasks:[{text:'读一会书',done:true},{text:'整理笔记',done:false}]}
+    ];
+    days.forEach((d, i) => {
+      const o = data[i % data.length];
+      Store.set('success:' + d, {date: d, wins: o.wins, rants: o.rants, todayTasks: o.tasks, tomorrow: []});
+    });
+    const mt = ['今天状态不错，把惦记的计划落地了','有点累但能撑住','整理完房间，心里清爽不少','连着两天没睡够，得注意作息','被一句夸奖鼓舞到了'];
+    const md = ['😃','😐','😌','😴','🌟'];
+    Store.set('moods', mt.map((t, i) => ({id: Util.uid(), date: days[i % days.length], symbol: md[i % 5], text: t})));
+    Store.set(this.KEY, {ts: Date.now()});
+  },
+  clear(delFlag){
+    Util.rangeDays(30).forEach(d => Store.set('success:' + d, null));
+    Store.set('moods', []);
+    if (delFlag !== false) Store.set(this.KEY, null);
+  }
+};
 const Lock = {
   hash(s){ let h=0; for(let i=0;i<s.length;i++) h=((h<<5)-h+s.charCodeAt(i))|0; return String(h); },
   check(){ if(Store.get('lockHash') && sessionStorage.getItem('unlocked')!=='1') lockScreen.classList.add('on'); },
@@ -7903,6 +7941,7 @@ const PWAInstall = {
 (async () => {
   try { await Store.init(); } catch(e){ console.error('Store init 失败：', e); }
   App.init();
+  Seed.install();
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
   }
