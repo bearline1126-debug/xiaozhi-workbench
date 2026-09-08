@@ -1512,6 +1512,10 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
       <div class="card">
         <h2>关于</h2>
         <p class="hint">数据只存在当前手机浏览器。换手机前先导出 JSON 备份。</p>
+        <div class="row" style="margin-top:10px">
+          <button class="btn" style="width:100%" onclick="Settings.donate()">🎁 打赏作者</button>
+        </div>
+        <p class="hint">如果你觉得这个小工具帮到了你，欢迎自愿打赏请作者喝杯咖啡 ☕</p>
         <p class="hint" id="buildInfo"></p>
       </div>
     </section><!-- ==== 功能：设置 END ==== -->
@@ -2637,7 +2641,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-09-04-v125';
+const BUILD_VERSION = '2026-09-08-v126';
 /* 版本自愈：一旦读到的 HTML 比上次更新（BUILD_VERSION 变了），立即清空 caches 里的旧副本并 reload。
    避免 SWR 回退到陈旧缓存、让旧界面永远赖着不走（中国网络访问 github.io 不稳时尤其多发：联网经常失败→回退旧缓存） */
 (function(){try{
@@ -7816,6 +7820,17 @@ const Settings = {
     try { await Media.clearAll(); } catch(e) { console.error(e); }
     try { if('caches' in window){ const names = await caches.keys(); await Promise.all(names.map(n => caches.delete(n))); } } catch {}
     setTimeout(() => { location.reload(); }, 500);
+  },
+  /* 打赏作者：纯自愿，弹窗展示收款码（图放 assets/donate-qr.png，未放则提示） */
+  donate(){
+    const qr = 'assets/donate-qr.png';
+    UI.modal('🎁 打赏作者', 
+      '<p style="text-align:center;margin:0 0 4px;color:#333">如果这个小工具帮到了你，欢迎请作者喝杯咖啡 ☕</p>' +
+      '<div style="text-align:center;margin-top:6px">' +
+        '<img src="' + qr + '" alt="打赏收款码" style="width:196px;height:196px;object-fit:contain;border-radius:12px;border:1px solid #eee;background:#fff" onerror="this.style.display=\'none\';document.getElementById(\'donateTip\').style.display=\'block\'">' +
+        '<p id="donateTip" class="hint" style="display:none;text-align:center;color:#999;margin:8px 0 0">收款码还没放好：把支付宝或微信的收款码图保存为 <b>assets/donate-qr.png</b>，刷新后就会显示在这里。</p>' +
+      '</div>' +
+      '<p class="hint" style="text-align:center;margin-top:10px">纯自愿、金额随意，谢谢你的鼓励 🌱</p>');
   }
 };
 const Lock = {
