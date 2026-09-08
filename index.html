@@ -2162,6 +2162,17 @@ const Migrate = {
       Store.set('home_entries', ['daily','chat','success','tracker','mood','mainquest','diarybook','review','self','notes','quick','english','visual','wish','cooking','gift','wishshop','sport','outfit','lifeAnalysis']);
       Store.set('_homeV30Layout', 1);
     }
+    /* v128：生活万花筒与今天吃什么并排（都占半格）。仅当布局仍是旧默认时重置，避免覆盖用户自定义 */
+    if(!Store.get('_homeWheelLifeLayout')){
+      const oldDefault=[
+        {id:'tasks',size:'wide',collapsed:false},{id:'tracker',size:'wide',collapsed:false},
+        {id:'life',size:'wide',collapsed:false},{id:'wheel',size:'small',collapsed:false},{id:'entries',size:'wide',collapsed:false}
+      ];
+      const sw=Store.get('home_widgets');
+      const same=!!sw && Array.isArray(sw) && sw.length===oldDefault.length && sw.every((x,i)=>x.id===oldDefault[i].id && x.size===oldDefault[i].size && !!x.collapsed===oldDefault[i].collapsed);
+      if(same) Store.set('home_widgets', Home.defaults());
+      Store.set('_homeWheelLifeLayout', 1);
+    }
     const cur = Number(Store.get('_schemaVersion', 1));
     if(cur >= SCHEMA_VERSION) { this.ensureSeeds(); return; }
     const snapshot = {};
@@ -2645,7 +2656,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-09-08-v127';
+const BUILD_VERSION = '2026-09-08-v128';
 /* 版本自愈：一旦读到的 HTML 比上次更新（BUILD_VERSION 变了），立即清空 caches 里的旧副本并 reload。
    避免 SWR 回退到陈旧缓存、让旧界面永远赖着不走（中国网络访问 github.io 不稳时尤其多发：联网经常失败→回退旧缓存） */
 (function(){try{
@@ -2979,7 +2990,7 @@ const Home = {
     return [
       {id:'tasks',size:'wide',collapsed:false},
       {id:'tracker',size:'wide',collapsed:false},
-      {id:'life',size:'wide',collapsed:false},
+      {id:'life',size:'small',collapsed:false},
       {id:'wheel',size:'small',collapsed:false},
       {id:'entries',size:'wide',collapsed:false}
     ];
