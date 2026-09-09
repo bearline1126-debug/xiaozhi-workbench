@@ -12,3 +12,9 @@ index.backup-*.html
 # 系统
 .DS_Store
 .zcode/
+
+# 本地打包含构建产物 / 签名材料 / 营销素材：不进公共仓库
+keystore-release/
+xiaozhi-promo/
+.trae-html-share-packages/
+_test_backup.js

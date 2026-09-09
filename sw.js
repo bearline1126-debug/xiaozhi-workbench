@@ -4,13 +4,13 @@
    3. fetch HTML：网络优先 + 缓存兜底（SWR）——网络成功回填缓存（部署立即生效），
       失败回退缓存副本（弱网/离线不白屏。v84 的"纯不缓存"曾导致网络不稳时白屏，v91 修复）
    4. 其他静态资源 cache-first */
-const CACHE = 'xiaozhi-workbench-v128';
+const CACHE = 'xiaozhi-workbench-v129';
 const ASSETS = ['./manifest.json', './icon.png', './icon-192.png', './assets/welcome-default.jpg', './dict.json'];
-const BUILD = '2026-09-08-v128';
+const BUILD = '2026-09-09-v129';
 
 const DEFAULT_MANIFEST = {
-  name: '小彘的工作台', short_name: '小彘',
-  description: '小彘的本地个人复盘工作台',
+  name: '拾光手账', short_name: '拾光',
+  description: '本地生活记录与个人复盘',
   id: '/xiaozhi-workbench/',
   start_url: './index.html', scope: './', display: 'standalone', display_override: ['standalone','minimal-ui'], orientation: 'portrait',
   background_color: '#eef7ef', theme_color: '#dfead6',

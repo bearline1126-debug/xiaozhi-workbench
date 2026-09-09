@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
-<title>小彘的工作台</title>
+<title>拾光手账</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -950,7 +950,7 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
 <body>
 <div class="lock" id="lockScreen">
   <div class="lock-card">
-    <div class="page-title" id="lockTitle">小彘的工作台</div><p class="page-sub" style="margin:6px 0 14px">输入本地密码解锁。密码只存在这台设备里。</p>
+    <div class="page-title" id="lockTitle">拾光手账</div><p class="page-sub" style="margin:6px 0 14px">输入本地密码解锁。密码只存在这台设备里。</p>
     <input type="text" id="unlockPassword" placeholder="输入密码" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-form-type="other" style="-webkit-text-security:disc;text-security:disc">
     <button class="btn" style="width:100%;margin-top:10px" onclick="Lock.unlock()">解锁</button>
   </div>
@@ -976,7 +976,7 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
     <div class="topbar">
       <button class="menu-btn" onclick="App.openDrawer()">☰</button>
       <div>
-        <div class="top-title" id="appTopTitle">小彘的工作台</div>
+        <div class="top-title" id="appTopTitle">拾光手账</div>
         <div class="muted" id="groupHint">本地优先 · 可离线使用</div>
       </div>
       <button class="menu-btn" style="width:34px;height:34px;font-size:16px" title="恢复备份：读取已选 360 同步文件夹里的固定一份「小彘的工作台-备份.json」；没选则在本机选文件" onclick="AutoBackup.restore()">📂</button>
@@ -1461,7 +1461,7 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
       </div>
       <div class="card">
         <h2>自动备份</h2>
-        <p class="hint">电脑可指定同步文件夹，每次写一份「小彘的工作台-备份.json」+ 历史副本，并把原图按 日记/灵感/生活 分进「小彘图片」文件夹，永不覆盖旧日期。</p>
+        <p class="hint">备份包含<b>全部文字 + 图片视频</b>，一次保存、换设备也能一次恢复。电脑：可选一个同步文件夹，写入固定备份 + 历史副本 + 分类原图。手机 App：「立即备份」会弹出系统面板，自行选保存到云盘 / 文档 / 任意文件夹，看得见找得到。</p>
         <div class="row" style="margin-top:8px">
           <button class="btn" onclick="AutoBackup.pickFolder()">选同步文件夹</button>
           <button class="btn ghost" onclick="AutoBackup.runNow()">立即备份</button>
@@ -1490,17 +1490,17 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
       <div class="card">
         <h2>本地密码锁</h2>
         <input type="text" id="newPassword" placeholder="设置本地密码" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true" data-form-type="other" style="-webkit-text-security:disc;text-security:disc">
+        <p class="hint">已启用时，关闭需先在密码框输入当前密码。</p>
         <div class="row" style="margin-top:8px">
           <button class="btn" onclick="Lock.setPassword()">启用/修改</button>
           <button class="btn ghost" onclick="Lock.disable()">关闭</button>
         </div>
       </div>
       <div class="card">
-        <h2>App 名称（安装到桌面后显示）</h2>
-        <input id="appName" placeholder="默认：小彘的工作台" maxlength="20">
-        <input id="appShortName" placeholder="简称（4 字内），默认：小彘" maxlength="6" style="margin-top:8px">
+        <h2>App 名称</h2>
+        <input id="appName" placeholder="默认：拾光手账" maxlength="20">
         <button class="btn" style="margin-top:10px;width:100%" onclick="AppCustom.applyFromSettings()">保存</button>
-        <p class="hint">改完得删掉旧桌面图标再重新安装，新名字才会生效。</p>
+        <p class="hint">这个名称只用于 App 顶部显示，改完立即生效、无需重装。安装在手机桌面的 App 名称是固定的，无法在这里修改。</p>
       </div>
       <div class="card" style="border:1px solid #f0c9c0">
         <h2>恢复与清空</h2>
@@ -1734,7 +1734,7 @@ const Store = (() => {
       /* 使用频率缓存（freq_*）一并清掉 */
       [..._mem.keys()].filter(k => k.startsWith('freq_')).forEach(k => this.remove(k));
       /* 应用名回到默认 */
-      this.set('_appCustom', {name:'小彘的工作台', shortName:'小彘', icon:''});
+      this.set('_appCustom', {name:'拾光手账', shortName:'拾光', icon:''});
       return true;
     },
     /* 清空一切：包括用户记录 + 偏好 + 媒体。不可恢复。用于测试或换机。 */
@@ -2656,7 +2656,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-09-08-v128';
+const BUILD_VERSION = '2026-09-09-v129';
 /* 版本自愈：一旦读到的 HTML 比上次更新（BUILD_VERSION 变了），立即清空 caches 里的旧副本并 reload。
    避免 SWR 回退到陈旧缓存、让旧界面永远赖着不走（中国网络访问 github.io 不稳时尤其多发：联网经常失败→回退旧缓存） */
 (function(){try{
@@ -4743,6 +4743,36 @@ const Chart = {
   }
 };
 /* ==== 每月自动备份到本机同步文件夹 START ==== */
+/* 原生 App（Capacitor）备份保存助手：让用户在系统「分享/存储」面板里自己选保存位置（云盘/文档/任意文件夹），彻底解决"存哪了看不见找不到"。网页版不走这里。 */
+const NativeBackup = {
+  isNative(){ try{ return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); }catch(e){ return false; } },
+  plugins(){ return (window.Capacitor && window.Capacitor.Plugins) || {}; },
+  /* 确保原生插件代理可用（native-bridge 已自动注册 App/文件/分享等；这里兜底一次，避免个别 WebView 漏装代理） */
+  ensure(name){
+    const P = this.plugins();
+    if(P && P[name]) return P[name];
+    try{ if(window.Capacitor && window.Capacitor.registerPlugin) window.Capacitor.registerPlugin(name, {}); }catch(e){}
+    return this.plugins()[name];
+  },
+  async writeCache(name, text){
+    const FS = this.ensure('Filesystem');
+    if(!FS) return null;
+    await FS.writeFile({path:name, data:text, directory:'CACHE', encoding:'UTF8'});
+    const r = await FS.getUri({path:name, directory:'CACHE'});
+    return r?.uri || null;
+  },
+  /* 先把备份写进缓存，再弹系统「分享/存储」面板让用户选去向；返回 true 表示面板已弹出 */
+  async shareFile(name, text){
+    try{
+      const FS = this.ensure('Filesystem'), SH = this.ensure('Share');
+      if(!FS || !SH) return false;
+      const uri = await this.writeCache(name, text);
+      if(!uri) return false;
+      await SH.shareFiles({files:[uri], title:'保存「' + name + '」', dialogTitle:'选择保存位置（云盘 / 文件 / 微信…）'});
+      return true;
+    }catch(e){ console.warn('NativeBackup.shareFile fail:', e); return false; }
+  }
+};
 const AutoBackup = {
   cfg(){ return Store.get('autoBackup', {on:false, lastMonth:'', dirName:'', exitDl:false}); },
   save(p){ Store.set('autoBackup', {...this.cfg(), ...p}); },
@@ -4752,6 +4782,11 @@ const AutoBackup = {
   historyDir(){ return '小彘的工作台-备份历史'; },
   async handle(){ const rec = await Media.get('__backupDir').catch(() => null); return rec?.blob || null; },
   async pickFolder(){
+    if(NativeBackup.isNative()){
+      /* 手机端：选文件夹不可用，直接走系统保存面板（用户自选云盘/文档位置） */
+      Backup.exportFull();
+      return;
+    }
     if(!this.supported()) return UI.toast('这个浏览器不支持直接选文件夹，手机上请用下面的手动导出');
     try{
       const dir = await window.showDirectoryPicker({id:'bysdash-backup', mode:'readwrite'});
@@ -4775,7 +4810,10 @@ const AutoBackup = {
       return false;
     }
     const month = Util.today().slice(0, 7);
-    const text = JSON.stringify(Store.exportAll(), null, 2);
+    /* 自动备份同样打包全量：文字 + 全部图片视频，一次存、一次恢复 */
+    const pack = Store.exportAll();
+    try{ pack.media = await Media.exportAll().catch(() => []); }catch(e){}
+    const text = JSON.stringify(pack);
     const name = this.fileName();
     const dir = await this.handle();
     if(dir && await this.ensurePermission(dir)){
@@ -4794,10 +4832,19 @@ const AutoBackup = {
         return true;
       }catch(e){ if(!silent) UI.toast('写入失败：' + e.message); }
     }
+    /* 原生 App（手机）：弹系统「分享/存储」面板，让用户自己选保存到哪（云盘/文档/任意文件夹），看得见找得到 */
+    if(NativeBackup.isNative()){
+      const shared = await NativeBackup.shareFile(name, text).catch(() => false);
+      this.save({lastMonth:month});
+      this.render();
+      if(shared){ if(!silent) UI.toast('已弹出保存面板，请选择位置保存（含全部图片）'); return true; }
+      if(!silent) UI.toast('没能弹出保存面板，请用下面的「手动导出·完整备份」重试');
+      return false;
+    }
     if(silent) return false;
     Util.download(name, text, 'application/json');
     this.save({lastMonth:month});
-    UI.toast('✅ 已下载备份文件，放进 360AI 同步文件夹即可');
+    UI.toast('✅ 已下载完整备份（含图片）');
     this.render();
     return true;
   },
@@ -7683,12 +7730,20 @@ const Backup = {
     try{
       const pack = Store.exportAll();
       pack.media = await Media.exportAll();
-      Util.download('小彘完整备份-'+Util.today()+'.json', JSON.stringify(pack), 'application/json');
+      const name = '小彘完整备份-'+Util.today()+'.json';
+      const text = JSON.stringify(pack);
+      let viaNative = false;
+      if(NativeBackup.isNative()){
+        viaNative = await NativeBackup.shareFile(name, text).catch(() => false);
+        if(!viaNative){ UI.toast('没能打开保存面板，请重试'); return; }
+      } else {
+        Util.download(name, text, 'application/json');
+      }
       Store.set('_lastBackup', Date.now()); Settings.render();
-      UI.toast('已导出完整备份，含 ' + (pack.media || []).length + ' 个媒体文件');
+      UI.toast('已导出完整备份，含 ' + (pack.media || []).length + ' 个媒体文件' + (viaNative ? '，请在弹出的面板里选择保存位置' : ''));
     }catch(e){ UI.toast('完整备份失败：' + e.message); }
   },
-  markdown(){ const lines=['# 小彘的工作台日记本','','导出时间：'+new Date().toLocaleString('zh-CN'),'']; Success.collect(365).forEach(x=>{lines.push('## 成功日记 '+x.date, '', '### 成就感', x.wins||'', '### 学到了什么', x.learned||'', '### 做对了什么', x.right||'', '### 明日必做', ...Success.norm(x.tomorrow).map(t=>'- '+t.text), '');}); Mood.list().forEach(x=>lines.push('## 情绪日记 '+x.date+' '+x.time,'',x.symbol+' '+x.text,'',x.summary||'','')); return lines.join('\n'); },
+  markdown(){ const lines=['# 拾光手账日记本','','导出时间：'+new Date().toLocaleString('zh-CN'),'']; Success.collect(365).forEach(x=>{lines.push('## 成功日记 '+x.date, '', '### 成就感', x.wins||'', '### 学到了什么', x.learned||'', '### 做对了什么', x.right||'', '### 明日必做', ...Success.norm(x.tomorrow).map(t=>'- '+t.text), '');}); Mood.list().forEach(x=>lines.push('## 情绪日记 '+x.date+' '+x.time,'',x.symbol+' '+x.text,'',x.summary||'','')); return lines.join('\n'); },
   csv(){ const rows=[['type','date','title','content']]; Success.collect(365).forEach(x=>rows.push(['success',x.date,'感恩日记',[x.wins,Success.norm(x.tomorrow).map(y=>y.text).join(';')].join('\n')])); Mood.list().forEach(x=>rows.push(['mood',x.date,x.symbol,x.text])); Gift.list().forEach(x=>rows.push(['gift',x.date,x.person,`${x.type} ${x.amount} ${x.event} ${x.note}`])); return rows.map(r=>r.map(Util.csvCell).join(',')).join('\n'); },
   importFile(input){ const f=input.files[0]; if(!f)return; const r=new FileReader(); r.onload=async e=>{ try{ const parsed=JSON.parse(e.target.result); if(!confirm('恢复备份会覆盖当前数据，确定吗？覆盖前会自动留一份急救快照，误操作也能救回。'))return; Store.rescue(); Store.importAll(parsed); if(Array.isArray(parsed.media)) await Media.restore(parsed.media); UI.toast('恢复成功'); setTimeout(()=>location.reload(),800); }catch{ UI.toast('备份文件读不了'); } }; r.readAsText(f); input.value=''; },
   /* 从最近一次恢复前自动留的急救快照救回（最多保留 3 份） */
@@ -7712,8 +7767,8 @@ const AppCustom = {
     c = c && typeof c === 'object' ? c : {};
     return {name:this.cleanText(c.name, 24), shortName:this.cleanText(c.shortName, 8), icon:''};
   },
-  getName(){ const c = this.cleanCustom(Store.get('_appCustom')); return c.name || '小彘的工作台'; },
-  getShortName(){ const c = this.cleanCustom(Store.get('_appCustom')); return c.shortName || '小彘'; },
+  getName(){ const c = this.cleanCustom(Store.get('_appCustom')); return c.name || '拾光手账'; },
+  getShortName(){ const c = this.cleanCustom(Store.get('_appCustom')); return c.shortName || '拾光'; },
   apply(){
     const name=this.getName(), short=this.getShortName();
     document.title=name;
@@ -7751,11 +7806,12 @@ const AppCustom = {
   },
   async applyFromSettings(){
     const name = document.getElementById('appName')?.value || '';
-    const shortName = document.getElementById('appShortName')?.value || '';
+    const shortEl = document.getElementById('appShortName');
+    const shortName = shortEl ? (shortEl.value || (this.getShortName() !== '小彘' ? this.getShortName() : '')) : '';
     await this.save(name, shortName);
     this.render();
     this.apply();
-    UI.toast('✅ 名称已生效。桌面名称需删除旧图标后重新安装');
+    UI.toast('✅ 顶部名称已更新');
   }
 };
 /* ==== 功能：App 外观自定义 END ==== */
@@ -7856,7 +7912,8 @@ const Seed = {
     return (Store.get('moods', []) || []).length > 0;
   },
   install(force){
-    if (Store.get(this.KEY)) return;
+    const m = Store.get(this.KEY);
+    if(!force && m && (m.cleared || m.skip)) return;
     if (!force && this.existing()) { Store.set(this.KEY, {skip: 1}); return; }
     this.clear(false);
     const days = Util.rangeDays(5).reverse();
@@ -7879,7 +7936,7 @@ const Seed = {
   clear(delFlag){
     Util.rangeDays(30).forEach(d => Store.set('success:' + d, null));
     Store.set('moods', []);
-    if (delFlag !== false) Store.set(this.KEY, null);
+    if (delFlag !== false) Store.set(this.KEY, {cleared: 1});
   }
 };
 const Lock = {
@@ -7887,7 +7944,10 @@ const Lock = {
   check(){ if(Store.get('lockHash') && sessionStorage.getItem('unlocked')!=='1') lockScreen.classList.add('on'); },
   unlock(){ if(this.hash(unlockPassword.value)===Store.get('lockHash')){ sessionStorage.setItem('unlocked','1'); lockScreen.classList.remove('on'); unlockPassword.value=''; } else UI.toast('密码不对'); },
   setPassword(){ const p=newPassword.value.trim(); if(!p)return UI.toast('先输入密码'); Store.set('lockHash',this.hash(p)); newPassword.value=''; UI.toast('密码锁已启用'); },
-  disable(){ Store.remove('lockHash'); sessionStorage.removeItem('unlocked'); UI.toast('密码锁已关闭'); }
+  disable(){
+    const stored = Store.get('lockHash');
+    if(stored){ const p = newPassword.value.trim(); if(!p) return UI.toast('先输入当前密码再关闭'); if(this.hash(p)!==stored) return UI.toast('密码不对，无法关闭'); }
+    Store.remove('lockHash'); sessionStorage.removeItem('unlocked'); newPassword.value=''; UI.toast('密码锁已关闭'); }
 };
 /* ==== PWA 安装提示：捕获浏览器安装事件，在App内显示安装按钮 ==== */
 const PWAInstall = {
@@ -7955,6 +8015,18 @@ const PWAInstall = {
   Seed.install();
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+  /* Capacitor 原生（打包 APK）返回键/手势适配：先关全屏 → 其次回上一页 → 最后才退出 App，
+     统一用 history.back() 触发既有 popstate 机制，与网页版行为一致 */
+  if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()){
+    try{
+      window.Capacitor.Plugins.App.addListener('backButton', () => {
+        if (UI._silentFsClose) return;
+        if (UI.isFullOpen()) { history.back(); return; }
+        if (App.current !== 'home') { history.back(); return; }
+        window.Capacitor.Plugins.App.exitApp();
+      });
+    }catch(e){ console.error('Capacitor backButton 绑定失败：', e); }
   }
   /* 备份策略：手动（💾/立即备份）+ 月度自动（AutoBackup.check）。不再在刷新/退出时自动下载，避免每次刷新都被浏览器拦下载、也说不清是否真备份了 */
 })();
