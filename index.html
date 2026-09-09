@@ -1460,15 +1460,13 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
         <p class="hint" id="backupInfo"></p><span class="hint" id="rescueInfo"></span>
       </div>
       <div class="card">
-        <h2>自动备份</h2>
-        <p class="hint">备份包含<b>全部文字 + 图片视频</b>，一次保存、换设备也能一次恢复。电脑：可选一个同步文件夹，写入固定备份 + 历史副本 + 分类原图。手机 App：「立即备份」会弹出系统面板，自行选保存到云盘 / 文档 / 任意文件夹，看得见找得到。</p>
+        <h2>备份到文件夹</h2>
+        <p class="hint">备份含<b>全部文字 + 图片视频</b>，一次保存，换机也能一次恢复。<b>先选一次保存位置</b>，之后点「立即备份」（或每月提醒）都直接写进该文件夹，不用再选。</p>
         <div class="row" style="margin-top:8px">
-          <button class="btn" onclick="AutoBackup.pickFolder()">选择保存路径</button>
+          <button class="btn" onclick="AutoBackup.pickFolder()">选择保存位置</button>
           <button class="btn ghost" onclick="AutoBackup.runNow()">立即备份</button>
         </div>
-        <label style="margin-top:10px"><input type="checkbox" id="autoBackupOn" style="width:auto;min-height:auto;margin-right:6px">每月提醒我备份（开启后，每月首次打开会弹一次备份保存面板，由你选择保存位置）</label>
-        <button class="btn ghost small" style="margin-left:6px" onclick="AutoBackup.saveToggle()">保存</button>
-        <p class="hint" style="margin-top:8px">平时不会自动备份：以你手动点「立即备份」为主，避免每次刷新都触发下载被浏览器拦截。月度开关打开后，每月只在应用内首次打开时提醒你备份一次。手机不会静默后台自动保存——需在弹出面板里自己选位置；电脑浏览器则可选一个同步文件夹持久写入。</p>
+        <label style="margin-top:10px;display:block;cursor:pointer"><input type="checkbox" id="autoBackupOn" onchange="AutoBackup.saveToggle()" style="width:auto;min-height:auto;margin-right:6px">每月首次打开提醒我备份</label>
         <p class="hint" id="autoBackupInfo"></p>
       </div>
       <div class="card">
@@ -2661,7 +2659,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-09-09-v132';
+const BUILD_VERSION = '2026-09-09-v133';
 /* 版本自愈：一旦读到的 HTML 比上次更新（BUILD_VERSION 变了），立即清空 caches 里的旧副本并 reload。
    避免 SWR 回退到陈旧缓存、让旧界面永远赖着不走（中国网络访问 github.io 不稳时尤其多发：联网经常失败→回退旧缓存） */
 (function(){try{
@@ -4751,53 +4749,79 @@ const Chart = {
   }
 };
 /* ==== 每月自动备份到本机同步文件夹 START ==== */
-/* 原生 App（Capacitor）备份保存助手：让用户在系统「分享/存储」面板里自己选保存位置（云盘/文档/任意文件夹），彻底解决"存哪了看不见找不到"。网页版不走这里。 */
+/* 原生 App（Capacitor）备份保存助手：手机端用系统文件夹选择器选任意文件夹并长期记住授权，
+   备份文件分块直接写入该文件夹（不再弹分享面板、也不再一次性把整段大 JSON 穿过原生桥导致闪退）。
+   网页版不走这里（桌面用 File System Access API / 下载）。 */
 const NativeBackup = {
   isNative(){ try{ return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); }catch(e){ return false; } },
   plugins(){ return (window.Capacitor && window.Capacitor.Plugins) || {}; },
-  /* 确保原生插件代理可用（native-bridge 已自动注册 App/文件/分享等；这里兜底一次，避免个别 WebView 漏装代理） */
+  /* 确保原生插件代理可用（native-bridge 已自动注册 App/文件/分享/BackupSave；这里兜底一次，避免个别 WebView 漏装代理） */
   ensure(name){
     const P = this.plugins();
     if(P && P[name]) return P[name];
     try{ if(window.Capacitor && window.Capacitor.registerPlugin) window.Capacitor.registerPlugin(name, {}); }catch(e){}
     return this.plugins()[name];
   },
-  async writeCache(name, text){
-    const FS = this.ensure('Filesystem');
-    if(!FS) return null;
-    await FS.writeFile({path:name, data:text, directory:'CACHE', encoding:'UTF8'});
-    const r = await FS.getUri({path:name, directory:'CACHE'});
-    return r?.uri || null;
+  /* 系统文件夹选择器：选任意文件夹并长期记住授权，返回 {uri, name, canceled} */
+  async pickFolder(){
+    const B = this.ensure('BackupSave');
+    if(!B){ return {canceled:true}; }
+    return await B.pickFolder();
   },
-  /* 先把备份写进缓存，再弹系统「分享/存储」面板让用户选去向；返回 true 表示面板已弹出 */
-  async shareFile(name, text){
+  /* 流式单 JSON 备份：文字一次写入，每个媒体「读一个→立刻分块追加→随即释放」，全程 JS 内存只占一两个文件大小，
+     绝不把整包 base64 一次性 stringify（那是 100MB 量级在手机 WebView 里被打爆的根因）。
+     文件仍是单 JSON、仍可导入，和网页端格式完全一致。 */
+  async streamBackup(dir, fileName){
     try{
-      const FS = this.ensure('Filesystem'), SH = this.ensure('Share');
-      if(!FS || !SH) return false;
-      const uri = await this.writeCache(name, text);
-      if(!uri) return false;
-      /* Capacitor Share 官方 API 是 SHARE.share({files:[uri], ...})，没有 shareFiles 方法；
-         v129 曾错误调用 shareFiles 导致「保存面板打不开」。改用 share() 弹系统存储/分享面板。 */
-      await SH.share({files:[uri], title:'保存「' + name + '」', dialogTitle:'选择保存位置（云盘 / 文件 / 微信…）'});
+      const B = this.ensure('BackupSave');
+      if(!B || !dir) return false;
+      const CH = 512 * 1024;   // 每块 512KB，跨桥传输既不闪退也不丢块
+      const push = async (txt, isLast) => {
+        for(let i = 0; i < txt.length; i += CH){
+          const last = isLast && (i + CH) >= txt.length;
+          await B.writeChunk({dir, fileName, chunk: txt.slice(i, i + CH), isLast: last});
+        }
+      };
+      /* 1) 文字区：Store.exportAll() 去掉结尾 }，拼上 media 数组头 */
+      const store = JSON.stringify(Store.exportAll());
+      await push(store.slice(0, -1) + ',"media":[', false);
+      /* 2) 逐个媒体：读一个 base64 → 追加一条记录 → 释放，峰值只有单个文件 */
+      const keys = await Media.keys();
+      let first = true;
+      for(const k of keys){
+        if(String(k).startsWith('__')) continue;
+        const rec = await Media.get(k);
+        if(!rec || !rec.blob) continue;
+        const b64 = await Media.blobToDataUrl(rec.blob);
+        const frag = (first ? '' : ',') + JSON.stringify({id:String(k), meta:rec.meta || {}, base64:b64});
+        await push(frag, false);
+        first = false;
+      }
+      /* 3) 收尾：原生侧最后一块把 .part 原子转正成正式文件 */
+      await push(']}', true);
       return true;
-    }catch(e){ console.warn('NativeBackup.shareFile fail:', e); return false; }
+    }catch(e){ console.warn('NativeBackup.streamBackup fail:', e); return false; }
   }
 };
 const AutoBackup = {
-  cfg(){ return Store.get('autoBackup', {on:false, lastMonth:'', dirName:'', exitDl:false}); },
+  cfg(){ return Store.get('autoBackup', {on:false, lastMonth:'', dirName:'', dirUri:'', exitDl:false}); },
   save(p){ Store.set('autoBackup', {...this.cfg(), ...p}); },
   supported(){ return typeof window.showDirectoryPicker === 'function'; },
   fileName(){ return '小彘的工作台-备份.json'; },
-  historyName(){ return '小彘的工作台-备份-' + Util.today() + '.json'; },
-  historyDir(){ return '小彘的工作台-备份历史'; },
   async handle(){ const rec = await Media.get('__backupDir').catch(() => null); return rec?.blob || null; },
   async pickFolder(){
     if(NativeBackup.isNative()){
-      /* 手机端：选文件夹不可用，直接走系统保存面板（用户自选云盘/文档位置） */
-      Backup.exportFull();
+      /* v133：手机端只「选文件夹 + 长期记住」，绝不在此触发备份（旧版误触发 exportFull 是闪退点之一） */
+      try{
+        const r = await NativeBackup.pickFolder();
+        if(!r || r.canceled || !r.uri) return;
+        this.save({dirUri:r.uri, dirName:r.name || '已选文件夹', on:true, lastMonth:''});
+        UI.toast('已记住保存文件夹：' + (r.name || '已选文件夹'));
+        this.render();
+      }catch(e){ UI.toast('没选成功：' + (e && e.message || '')); }
       return;
     }
-    if(!this.supported()) return UI.toast('这个浏览器不支持直接选文件夹，手机上请用下面的手动导出');
+    if(!this.supported()) return UI.toast('这个浏览器不支持直接选文件夹，手机上请先选保存文件夹');
     try{
       const dir = await window.showDirectoryPicker({id:'bysdash-backup', mode:'readwrite'});
       await Media.put('__backupDir', dir, {kind:'dir'});
@@ -4814,77 +4838,57 @@ const AutoBackup = {
     return p === 'granted';
   },
   async runNow(silent = false){
-    /* 空数据守卫：当前工作台没有任何记录时，绝不用空文件覆盖云盘里的有效备份 */
+    /* 空数据守卫：当前工作台没有任何记录时，绝不写空文件覆盖有效备份 */
     if(!Store.hasUserData()){
-      if(!silent) UI.toast('当前工作台还没有记录，已跳过备份，避免用空数据覆盖云盘里的有效备份');
+      if(!silent) UI.toast('还没有记录，已跳过备份');
       return false;
     }
     const month = Util.today().slice(0, 7);
-    /* 自动备份同样打包全量：文字 + 全部图片视频，一次存、一次恢复 */
+    const name = this.fileName();
+    const c = this.cfg();
+    /* 手机 App：写进已记住的文件夹（流式单 JSON：文字一次写、媒体逐个读一个追加一个，内存峰值只有单个文件） */
+    if(NativeBackup.isNative()){
+      if(!c.dirUri){ if(!silent) UI.toast('还没设置保存位置，请先点「选择保存位置」'); return false; }
+      const ok = await NativeBackup.streamBackup(c.dirUri, name);
+      if(!ok){ if(!silent) UI.toast('写入失败，请重新「选择保存位置」再试'); return false; }
+      this.save({lastMonth:month});
+      if(!silent) UI.toast('✅ 已备份到「' + (c.dirName || '所选文件夹') + '」');
+      this.render();
+      return true;
+    }
+    /* 桌面浏览器：拼全量后再写（桌面堆内存大，一次性 stringify 没问题） */
     const pack = Store.exportAll();
     try{ pack.media = await Media.exportAll().catch(() => []); }catch(e){}
     const text = JSON.stringify(pack);
-    const name = this.fileName();
     const dir = await this.handle();
     if(dir && await this.ensurePermission(dir)){
       try{
         const fh = await dir.getFileHandle(name, {create:true});
         const wr = await fh.createWritable(); await wr.write(text); await wr.close();
-        try{
-          const sub = await dir.getDirectoryHandle(this.historyDir(), {create:true});
-          const hf = await sub.getFileHandle(this.historyName(), {create:true});
-          const hw = await hf.createWritable(); await hw.write(text); await hw.close();
-        }catch(e){}
-        try{ await this.exportMediaFolders(dir); }catch(e){}
         this.save({lastMonth:month});
-        if(!silent) UI.toast('✅ 已写入「' + (this.cfg().dirName || '所选文件夹') + '」（固定一份 + 备份历史 + 分类图片）');
+        if(!silent) UI.toast('✅ 已写入「' + (c.dirName || '所选文件夹') + '」');
         this.render();
         return true;
-      }catch(e){ if(!silent) UI.toast('写入失败：' + e.message); }
+      }catch(e){ if(!silent) UI.toast('写入失败：' + e.message); return false; }
     }
-    /* 原生 App（手机）：弹系统「分享/存储」面板，让用户自己选保存到哪（云盘/文档/任意文件夹），看得见找得到 */
-    if(NativeBackup.isNative()){
-      const shared = await NativeBackup.shareFile(name, text).catch(() => false);
-      this.render();
-      if(!shared){ if(!silent) UI.toast('没能弹出保存面板，请用下面的「手动导出·完整备份」重试'); return false; }
-      /* v132：只有面板真的弹出来(shared)才记 lastMonth=本月已提醒。面板没弹出绝不标记，下次打开会再试。
-         系统分享面板只能确认「已弹出」，无法确认用户最后是否点保存，所以文案不宣称“已自动备份”。 */
-      this.save({lastMonth:month});
-      if(!silent) UI.toast('已弹出保存面板，请选择位置保存（含全部图片）');
-      return true;
-    }
-    if(silent) return false;
     Util.download(name, text, 'application/json');
     this.save({lastMonth:month});
-    UI.toast('✅ 已下载完整备份（含图片）');
+    if(!silent) UI.toast('✅ 已下载完整备份（含图片）');
     this.render();
     return true;
   },
   async fileExists(dir, name){ try { await dir.getFileHandle(name); return true; } catch(e){ return false; } },
   async readFile(dir, name){ const f = await (await dir.getFileHandle(name)).getFile(); return f.text(); },
-  /* 把大仓库里的原图按 category 导出到「小彘图片/日记·灵感·生活」三个子文件夹，方便在同步盘里直接看 */
-  async exportMediaFolders(dir){
-    try{
-      const cats={diary:null,inspiration:null,life:null};
-      for(const c in cats){ try{ cats[c]=await dir.getDirectoryHandle('小彘图片/'+c,{create:true}); }catch(e){ cats[c]=null; } }
-      const keys=await Media.keys();
-      for(const k of keys){
-        const s=String(k); if(s.startsWith('__')||s.endsWith(':thumb')) continue;
-        const rec=await Media.get(k); if(!rec||!rec.blob) continue;
-        const cat=rec.meta?.category; if(!cat||!cats[cat]) continue;
-        const ext=Media.extOf(rec.meta?.type||'image/jpeg');
-        const fh=await cats[cat].getFileHandle('m_'+s.slice(2)+ext,{create:true});
-        const w=await fh.createWritable(); await w.write(rec.blob); await w.close();
-      }
-    }catch(e){ console.warn('分类图片导出跳过：', e.message); }
-  },
   async check(){
     const c = this.cfg();
     if(!c.on) return;
     const month = Util.today().slice(0, 7);
     if(c.lastMonth === month) return;
-    const ok = await this.runNow(true).catch(() => false);
-    if(ok) UI.toast(NativeBackup.isNative() ? '已弹本月备份保存面板，请在系统里选位置保存' : '✅ 本月备份已写入「' + (c.dirName || '本机下载') + '」');
+    if(await this.runNow(true).catch(() => false)){
+      UI.toast(NativeBackup.isNative() ? '✅ 本月备份已保存到文件夹' : '✅ 本月备份已写入文件夹');
+    } else {
+      UI.toast(NativeBackup.isNative() ? '本月还没备份：到设置里「选择保存位置」后点「立即备份」' : '本月还没备份：设置里点「立即备份」即可');
+    }
   },
   /* 手机端：默认不再退出时自动备份（避免每次刷新都被浏览器拦下载）；开启后才备份 */
   exitBackup(){
@@ -4909,9 +4913,9 @@ const AutoBackup = {
     const c = this.cfg();
     const box = document.getElementById('autoBackupOn');
     if(box) box.checked = !!c.on;
-    const box2 = document.getElementById('autoBackupExit');
-    if(box2) box2.checked = !!c.exitDl;
-    el.textContent = `${c.dirName ? '文件夹：' + c.dirName : '还没选文件夹'} · ${c.lastMonth ? '上次备份 ' + c.lastMonth : '还没备份过'}${this.supported() ? '' : ' · 当前浏览器不支持直接写文件夹，会改成下载'}`;
+    el.textContent = c.dirName
+      ? '保存位置：' + c.dirName + (c.lastMonth ? ' · 上次 ' + c.lastMonth : ' · 还没备份过')
+      : '还没设置保存位置' + (this.supported() ? '' : '（本浏览器选不了文件夹，请在手机 App 里选）');
   },
   /* 首页一键恢复：桌面端直接读已选 360 同步文件夹里的固定一份「小彘的工作台-备份.json」；手机端退回本机选文件 */
   async restore(){
@@ -7742,20 +7746,27 @@ const Backup = {
   /* 完整备份：文字数据 + 大仓库里所有图片视频，单个 JSON 自包含，换设备也能恢复原图 */
   async exportFull(){
     UI.toast('正在打包完整备份（含图片视频）');
+    /* 手机 App：走流式单 JSON 写入已设文件夹，不在 JS 里拼整包大字符串 */
+    if(NativeBackup.isNative()){
+      const ab = Store.get('autoBackup', {});
+      if(!ab.dirUri){ UI.toast('请先在「备份到文件夹·选择保存位置」选一个文件夹'); return; }
+      const name = '小彘完整备份-'+Util.today()+'.json';
+      const ok = await NativeBackup.streamBackup(ab.dirUri, name);
+      if(!ok){ UI.toast('写入失败，请重新「选择保存位置」再试'); return; }
+      const count = (await Media.keys().catch(() => [])).filter(k => !String(k).startsWith('__')).length;
+      Store.set('_lastBackup', Date.now()); Settings.render();
+      UI.toast('已导出完整备份到「' + (ab.dirName || '所选文件夹') + '」，含 ' + count + ' 个媒体文件');
+      return;
+    }
+    /* 桌面浏览器：拼全量后下载（桌面堆内存大，一次 stringify 没问题） */
     try{
       const pack = Store.exportAll();
       pack.media = await Media.exportAll();
       const name = '小彘完整备份-'+Util.today()+'.json';
       const text = JSON.stringify(pack);
-      let viaNative = false;
-      if(NativeBackup.isNative()){
-        viaNative = await NativeBackup.shareFile(name, text).catch(() => false);
-        if(!viaNative){ UI.toast('没能打开保存面板，请重试'); return; }
-      } else {
-        Util.download(name, text, 'application/json');
-      }
+      Util.download(name, text, 'application/json');
       Store.set('_lastBackup', Date.now()); Settings.render();
-      UI.toast('已导出完整备份，含 ' + (pack.media || []).length + ' 个媒体文件' + (viaNative ? '，请在弹出的面板里选择保存位置' : ''));
+      UI.toast('已导出完整备份，含 ' + (pack.media || []).length + ' 个媒体文件');
     }catch(e){ UI.toast('完整备份失败：' + e.message); }
   },
   markdown(){ const lines=['# 拾光手账日记本','','导出时间：'+new Date().toLocaleString('zh-CN'),'']; Success.collect(365).forEach(x=>{lines.push('## 成功日记 '+x.date, '', '### 成就感', x.wins||'', '### 学到了什么', x.learned||'', '### 做对了什么', x.right||'', '### 明日必做', ...Success.norm(x.tomorrow).map(t=>'- '+t.text), '');}); Mood.list().forEach(x=>lines.push('## 情绪日记 '+x.date+' '+x.time,'',x.symbol+' '+x.text,'',x.summary||'','')); return lines.join('\n'); },
@@ -7841,6 +7852,7 @@ const Settings = {
     aiModel.value=Store.get('aiModel','deepseek-chat');
     AppCustom.render();
     this.renderStorage();
+    if(typeof AutoBackup !== 'undefined') AutoBackup.render();
   },
   /* 刷新「存储空间」卡片：把文字记录 + 图片视频的 IDB 用量合并显示，总量 = lsBytes + u.bytes */
   async renderStorage(){
