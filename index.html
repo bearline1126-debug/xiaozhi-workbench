@@ -979,8 +979,8 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
         <div class="top-title" id="appTopTitle">拾光手账</div>
         <div class="muted" id="groupHint">本地优先 · 可离线使用</div>
       </div>
-      <button class="menu-btn" style="width:34px;height:34px;font-size:16px" title="恢复备份：读取已选 360 同步文件夹里的固定一份「小彘的工作台-备份.json」；没选则在本机选文件" onclick="AutoBackup.restore()">📂</button>
-      <button class="menu-btn" style="margin-left:auto;width:34px;height:34px;font-size:16px" title="一键备份：写入已选的 360 同步文件夹固定一份（恢复读它），同时把带日期的副本放进「备份历史」子文件夹；当前无记录会自动跳过；没选文件夹则下载到本地" onclick="AutoBackup.runNow()">💾</button>
+      <button class="menu-btn" style="width:34px;height:34px;font-size:16px" title="恢复备份：读取已选保存文件夹里的最新一份备份；没选则在本机选文件" onclick="AutoBackup.restore()">📂</button>
+      <button class="menu-btn" style="margin-left:auto;width:34px;height:34px;font-size:16px" title="一键备份：写入已选保存文件夹，每次生成带日期时间的一份备份（多份按时序排列）；当前无记录会自动跳过；没选文件夹则下载到本地" onclick="AutoBackup.runNow()">💾</button>
       <button class="menu-btn install-btn" id="pwaInstallBtn" style="display:none;width:34px;height:34px;font-size:14px;background:linear-gradient(135deg,#6b984f,#4a7a3a);color:#fff;border:none;box-shadow:0 2px 8px rgba(107,152,79,.35)" title="把小彘的工作台安装到桌面，像原生App一样使用" onclick="PWAInstall.prompt()">📱</button>
     </div><!-- ==== 功能：首页 START ==== --><section class="page" id="page-home">
       <section class="hero">
@@ -1444,7 +1444,7 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
     </section><!-- ==== 功能：生活智能分析 END ==== --><!-- ==== 功能：设置 START ==== --><section class="page" id="page-settings">
       <div class="page-title">设置</div>
       <div class="card">
-        <h2>备份与导出</h2>
+        <h2>导出与导入</h2>
         <select id="exportKind">
           <option value="full">完整备份 JSON · 含图片视频</option>
           <option value="json">轻备份 JSON · 只含文字</option>
@@ -1453,7 +1453,7 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
         </select>
         <div class="row" style="margin-top:8px">
           <button class="btn" onclick="Backup.export()">导出</button>
-          <button class="btn ghost" onclick="document.getElementById('importFile').click()">恢复</button>
+          <button class="btn ghost" onclick="document.getElementById('importFile').click()">导入</button>
           <button class="btn ghost small" onclick="Backup.restoreRescue()">急救快照</button>
         </div>
         <input id="importFile" type="file" accept=".json" style="display:none" onchange="Backup.importFile(this)">
@@ -1471,12 +1471,14 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
       </div>
       <div class="card">
         <h2>存储空间</h2>
-        <div class="kv"><span>本机大仓库（IndexedDB）</span><b id="storeUsage">-</b></div>
+        <div class="kv"><span>本机存储（数据只存在这台设备）</span><b id="storeUsage">-</b></div>
         <div class="meter" id="storeMeter"><span></span></div>
         <p class="hint" style="margin-top:4px"><span id="storeDetail">-</span></p>
         <div id="storeWarn" style="display:none;margin-top:8px;padding:10px 12px;border-radius:10px;font-size:13px;line-height:1.6"></div>
-        <button class="btn ghost" style="margin-top:8px;width:100%" onclick="Media.cleanOrphans()">清理残留</button>
-        <p class="hint">无 5 MB 限制，定期备份即可。</p>
+        <div class="row" style="margin-top:8px">
+          <button class="btn ghost small" onclick="Media.cleanOrphans()">清理残留</button>
+          <span class="hint" style="flex:1">只删除不再被任何记录引用的旧图片/视频；你的文字记录和正在使用的图片都不会被删。</span>
+        </div>
       </div>
       <div class="card">
         <h2>AI 分析</h2>
@@ -1763,6 +1765,7 @@ const Store = (() => {
 })();
 const Util = {
   today(){ const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); },
+  stamp(){ const d = new Date(), p = n => String(n).padStart(2,'0'); return d.getFullYear() + p(d.getMonth()+1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds()); },
   dateAdd(date, diff){ const d = new Date(date + 'T00:00:00'); d.setDate(d.getDate()+diff); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); },
   fmtDate(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); },
   uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); },
@@ -2087,12 +2090,13 @@ const Media = {
     UI.toast(removed ? `清掉 ${removed} 个残留文件` : '没有残留文件');
     if(typeof Settings !== 'undefined') Settings.renderStorage();
   },
-  /* 把大仓库里所有文件（原件 + 缩略图）导出成可序列化的 base64 数组，用于完整备份；目录句柄等非文件键会被跳过 */
+  /* 把大仓库里所有文件（原件）导出成可序列化的 base64 数组，用于完整备份；缩略图随原图重建，不进备份；目录句柄等非文件键会被跳过 */
   async exportAll(){
     const keys = await this.keys();
     const out = [];
     for(const k of keys){
       if(String(k).startsWith('__')) continue;
+      if(String(k).endsWith(':thumb')) continue; /* 缩略图勿进备份，随原图重建即可 */
       const rec = await this.get(k);
       if(!rec || !rec.blob) continue;
       out.push({ id:String(k), meta:rec.meta || {}, base64: await this.blobToDataUrl(rec.blob) });
@@ -2662,7 +2666,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-09-09-v134';
+const BUILD_VERSION = '2026-09-09-v135';
 /* 版本自愈：一旦读到的 HTML 比上次更新（BUILD_VERSION 变了），立即清空 caches 里的旧副本并 reload。
    避免 SWR 回退到陈旧缓存、让旧界面永远赖着不走（中国网络访问 github.io 不稳时尤其多发：联网经常失败→回退旧缓存） */
 (function(){try{
@@ -4758,6 +4762,8 @@ const Chart = {
 const NativeBackup = {
   isNative(){ try{ return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); }catch(e){ return false; } },
   plugins(){ return (window.Capacitor && window.Capacitor.Plugins) || {}; },
+  /* 最近一次写入失败的真实原因（桥接 reject 的 message），用于把原生错误透给用户，便于排查「明明写了却报失败」 */
+  lastErr: null,
   /* 确保原生插件代理可用（native-bridge 已自动注册 App/文件/分享/BackupSave；这里兜底一次，避免个别 WebView 漏装代理） */
   ensure(name){
     const P = this.plugins();
@@ -4775,6 +4781,7 @@ const NativeBackup = {
      绝不把整包 base64 一次性 stringify（那是 100MB 量级在手机 WebView 里被打爆的根因）。
      文件仍是单 JSON、仍可导入，和网页端格式完全一致。 */
   async streamBackup(dir, fileName){
+    this.lastErr = null;
     try{
       const B = this.ensure('BackupSave');
       if(!B || !dir) return false;
@@ -4792,7 +4799,8 @@ const NativeBackup = {
         }
       };
       const keys = await Media.keys();
-      const list = keys.filter(k => !String(k).startsWith('__'));
+      /* 只导出原件，不导出 `:thumb` 缩略图（缩略图可从原图重建、随原图一起存，导出它会让备份体积翻倍膨胀） */
+      const list = keys.filter(k => !String(k).startsWith('__') && !String(k).endsWith(':thumb'));
       /* 1) 文字区：注入 format/mediaCount 完整性标记（与旧格式/旧备份兼容，额外字段不影响导入），去尾 }，拼 media 数组头 */
       const st = Store.exportAll(); st.format = 'xiaozhi-backup-v2'; st.mediaCount = list.length;
       await push(JSON.stringify(st).slice(0, -1) + ',"media":[', false);
@@ -4809,14 +4817,26 @@ const NativeBackup = {
       /* 3) 收尾：原生侧最后一块把 .part 原子转正成正式文件 */
       await push(']}', true);
       return true;
-    }catch(e){ console.warn('NativeBackup.streamBackup fail:', e); return false; }
+    }catch(e){ console.warn('NativeBackup.streamBackup fail:', e); this.lastErr = e; return false; }
   }
 };
 const AutoBackup = {
   cfg(){ return Store.get('autoBackup', {on:false, lastMonth:'', dirName:'', dirUri:'', exitDl:false}); },
   save(p){ Store.set('autoBackup', {...this.cfg(), ...p}); },
   supported(){ return typeof window.showDirectoryPicker === 'function'; },
-  fileName(){ return '小彘的工作台-备份.json'; },
+  fileName(){ return '小彘的工作台-备份-' + Util.stamp() + '.json'; },
+  fullName(){ return '小彘完整备份-' + Util.stamp() + '.json'; },
+  /* 备份文件名含 YYYYMMDD-HHMMSS 时间戳，按名字字典序排序即「新→旧」；返回文件夹里最新的一份（时间戳最后一位最大 = 最新） */
+  async latestBackupName(dir){
+    try{
+      const names = [];
+      for await (const e of dir.values()){
+        if(e.kind === 'file' && e.name && /^小彘(.+)?-备份-/.test(e.name) && e.name.endsWith('.json')) names.push(e.name);
+      }
+      names.sort();
+      return names[names.length - 1] || null;
+    }catch{ return null; }
+  },
   async handle(){ const rec = await Media.get('__backupDir').catch(() => null); return rec?.blob || null; },
   async pickFolder(){
     if(NativeBackup.isNative()){
@@ -4859,7 +4879,7 @@ const AutoBackup = {
     if(NativeBackup.isNative()){
       if(!c.dirUri){ if(!silent) UI.toast('还没设置保存位置，请先点「选择保存位置」'); return false; }
       const ok = await NativeBackup.streamBackup(c.dirUri, name);
-      if(!ok){ if(!silent) UI.toast('写入失败，请重新「选择保存位置」再试'); return false; }
+      if(!ok){ const er = NativeBackup.lastErr; UI.toast('写入失败' + (er && er.message ? '：' + er.message : '，请重新「选择保存位置」再试')); return false; }
       this.save({lastMonth:month});
       if(!silent) UI.toast('✅ 已备份到「' + (c.dirName || '所选文件夹') + '」');
       this.render();
@@ -4886,7 +4906,6 @@ const AutoBackup = {
     this.render();
     return true;
   },
-  async fileExists(dir, name){ try { await dir.getFileHandle(name); return true; } catch(e){ return false; } },
   async readFile(dir, name){ const f = await (await dir.getFileHandle(name)).getFile(); return f.text(); },
   async check(){
     const c = this.cfg();
@@ -4932,12 +4951,11 @@ const AutoBackup = {
     if(dir && this.supported()){
       try{
         if(!await this.ensurePermission(dir)) return;
-        if(await this.fileExists(dir, this.fileName())){
-          if(!confirm('从「' + this.fileName() + '」恢复吗？\n恢复前会自动留一份当前数据的急救快照，误操作也能救回。')) return;
-          await this.applyRestore(await this.readFile(dir, this.fileName()), this.fileName());
-          return;
-        }
-        UI.toast('没找到「' + this.fileName() + '」，改用本机文件选择');
+        const latest = await this.latestBackupName(dir);
+        if(!latest){ UI.toast('文件夹里还没有备份，改用本机文件选择'); return this.pickFile(); }
+        if(!confirm('从「' + latest + '」恢复吗？\n恢复前会自动留一份当前数据的急救快照，误操作也能救回。')) return;
+        await this.applyRestore(await this.readFile(dir, latest), latest);
+        return;
       }catch(e){ UI.toast('读文件夹失败：' + e.message + '，改用本机文件选择'); }
     }
     this.pickFile();
@@ -7764,10 +7782,10 @@ const Backup = {
     if(NativeBackup.isNative()){
       const ab = Store.get('autoBackup', {});
       if(!ab.dirUri){ UI.toast('请先在「备份到文件夹·选择保存位置」选一个文件夹'); return; }
-      const name = '小彘完整备份-'+Util.today()+'.json';
+      const name = AutoBackup.fullName ? AutoBackup.fullName() : '小彘完整备份-' + Util.stamp() + '.json';
       const ok = await NativeBackup.streamBackup(ab.dirUri, name);
-      if(!ok){ UI.toast('写入失败，请重新「选择保存位置」再试'); return; }
-      const count = (await Media.keys().catch(() => [])).filter(k => !String(k).startsWith('__')).length;
+      if(!ok){ const er = NativeBackup.lastErr; UI.toast('写入失败' + (er && er.message ? '：' + er.message : '，请重新「选择保存位置」再试')); return; }
+      const count = (await Media.keys().catch(() => [])).filter(k => !String(k).startsWith('__') && !String(k).endsWith(':thumb')).length;
       Store.set('_lastBackup', Date.now()); Settings.render();
       UI.toast('已导出完整备份到「' + (ab.dirName || '所选文件夹') + '」，含 ' + count + ' 个媒体文件');
       return;
@@ -7776,7 +7794,7 @@ const Backup = {
     try{
       const pack = Store.exportAll();
       pack.media = await Media.exportAll();
-      const name = '小彘完整备份-'+Util.today()+'.json';
+      const name = '小彘完整备份-' + Util.stamp() + '.json';
       const text = JSON.stringify(pack);
       Util.download(name, text, 'application/json');
       Store.set('_lastBackup', Date.now()); Settings.render();
@@ -7951,18 +7969,17 @@ const Settings = {
     const el = document.getElementById('storeUsage');
     if(el) el.textContent = (supported ? '' : '当前浏览器不支持大仓库 · ') + Util.bytes(total) + (mediaCount ? ' · ' + mediaCount + ' 个文件' : '');
     const meter = document.getElementById('storeMeter');
-    const base = Math.max(50*1024*1024, quota);
-    if(meter && meter.firstElementChild) meter.firstElementChild.style.width = (quota ? Math.min(100, usage/base*100) : Math.min(100, total/(50*1024*1024)*100)).toFixed(1) + '%';
+    /* 只反映本应用真实占用的存储（文字+媒体），不再掺入浏览器整体配额，避免「浏览器可用 200GB」这类误导 */
+    const cap = 2 * 1024 * 1024 * 1024; /* 本机给 2GB 作为参考上限，纯提示用 */
+    if(meter && meter.firstElementChild) meter.firstElementChild.style.width = Math.min(100, total/cap*100).toFixed(1) + '%';
     const det = document.getElementById('storeDetail');
-    if(det) det.textContent = supported ? '文字 ' + Util.bytes(lsBytes) + ' · 媒体 ' + Util.bytes(mediaBytes) + (quota ? ' · 浏览器可用 ' + Util.bytes(quota) : '') : '建议用 Chrome / Edge 打开';
+    if(det) det.textContent = supported ? '文字 ' + Util.bytes(lsBytes) + ' · 媒体 ' + Util.bytes(mediaBytes) : '建议用 Chrome / Edge 打开';
     const warn = document.getElementById('storeWarn');
     if(warn){
-      const measured = (quota && usage) ? usage : total;
-      const cap = (quota && quota > 1024*1024) ? quota : 2*1024*1024*1024; /* 拿不到真实配额时用 2GB 作为软上限 */
-      const pct = measured / cap;
+      const pct = total / cap;
       if(pct >= 0.95){
         warn.style.display=''; warn.style.background='#fdecec'; warn.style.color='#b00020'; warn.style.border='1px solid #f3b4b4';
-        warn.innerHTML='⚠️ 存储快满了（已用 ' + (pct*100).toFixed(0) + '%）。数据只存在这台设备，不会自动上传云端。建议：① 先点「立即备份」存一份到同步文件夹；② 再点「清理残留」删掉没用到的旧图片。照片都是原图，占空间大，定期备份后清理即可。';
+        warn.innerHTML='⚠️ 存储快满了（已用 ' + (pct*100).toFixed(0) + '%）。数据只存在这台设备，不会自动上传云端。建议：① 先点「立即备份」存一份到同步文件夹；② 再点「清理残留」删掉没用的旧图片。照片都是原图，占空间大，定期备份后清理即可。';
       } else if(pct >= 0.8){
         warn.style.display=''; warn.style.background='#fff7e6'; warn.style.color='#9a6b00'; warn.style.border='1px solid #ffe1a6';
         warn.innerHTML='🟡 已用 ' + (pct*100).toFixed(0) + '%，还够用。记得定期点「立即备份」，存满前先备份再清理，照片都是原图占空间较大。';
