@@ -2109,16 +2109,19 @@ const Media = {
   },
   /* 完整备份恢复时，把 base64 数组重新写回大仓库；先清空缓存避免显示旧图 */
   async restore(arr){
-    if(!Array.isArray(arr)) return;
+    if(!Array.isArray(arr)) return {ok:0, fail:0};
     this._urls = {};
+    let ok = 0, fail = 0;
     for(const m of arr){
-      if(!m || !m.id || !m.base64) continue;
+      if(!m || !m.id || !m.base64){ fail++; continue; }
       try{
         const type = (m.meta && m.meta.type) || 'application/octet-stream';
         const blob = Util.dataUrlToBlob('data:' + type + ';base64,' + m.base64);
         if(blob) await this.put(m.id, blob, m.meta || {});
-      }catch(e){ console.error('恢复媒体失败', m.id, e); }
+        ok++;
+      }catch(e){ console.error('恢复媒体失败', m.id, e); fail++; }
     }
+    return {ok, fail};
   }
 };
 /* ==== 数据版本迁移：保证老数据永远能读进新版本 ==== */
@@ -2659,7 +2662,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-09-09-v133';
+const BUILD_VERSION = '2026-09-09-v134';
 /* 版本自愈：一旦读到的 HTML 比上次更新（BUILD_VERSION 变了），立即清空 caches 里的旧副本并 reload。
    避免 SWR 回退到陈旧缓存、让旧界面永远赖着不走（中国网络访问 github.io 不稳时尤其多发：联网经常失败→回退旧缓存） */
 (function(){try{
@@ -4776,20 +4779,26 @@ const NativeBackup = {
       const B = this.ensure('BackupSave');
       if(!B || !dir) return false;
       const CH = 512 * 1024;   // 每块 512KB，跨桥传输既不闪退也不丢块
+      /* 分块：按码点边界切，避免从 Emoji 高低代理对中间断开（否则切碎处变 U+FFFD 损坏） */
       const push = async (txt, isLast) => {
-        for(let i = 0; i < txt.length; i += CH){
-          const last = isLast && (i + CH) >= txt.length;
-          await B.writeChunk({dir, fileName, chunk: txt.slice(i, i + CH), isLast: last});
+        let i = 0;
+        while(i < txt.length){
+          let end = i + CH;
+          if(end >= txt.length) end = txt.length;
+          else{ const c = txt.charCodeAt(end); if(c >= 0xDC00 && c <= 0xDFFF) end--; }
+          const last = isLast && end >= txt.length;
+          await B.writeChunk({dir, fileName, chunk: txt.slice(i, end), isLast: last});
+          i = end;
         }
       };
-      /* 1) 文字区：Store.exportAll() 去掉结尾 }，拼上 media 数组头 */
-      const store = JSON.stringify(Store.exportAll());
-      await push(store.slice(0, -1) + ',"media":[', false);
-      /* 2) 逐个媒体：读一个 base64 → 追加一条记录 → 释放，峰值只有单个文件 */
       const keys = await Media.keys();
+      const list = keys.filter(k => !String(k).startsWith('__'));
+      /* 1) 文字区：注入 format/mediaCount 完整性标记（与旧格式/旧备份兼容，额外字段不影响导入），去尾 }，拼 media 数组头 */
+      const st = Store.exportAll(); st.format = 'xiaozhi-backup-v2'; st.mediaCount = list.length;
+      await push(JSON.stringify(st).slice(0, -1) + ',"media":[', false);
+      /* 2) 逐个媒体：读一个 base64 → 追加一条记录 → 释放，峰值只有单个文件 */
       let first = true;
-      for(const k of keys){
-        if(String(k).startsWith('__')) continue;
+      for(const k of list){
         const rec = await Media.get(k);
         if(!rec || !rec.blob) continue;
         const b64 = await Media.blobToDataUrl(rec.blob);
@@ -4948,9 +4957,14 @@ const AutoBackup = {
     if(!confirm('确定从「' + label + '」恢复吗？\n恢复前会自动留一份当前数据的急救快照，误操作也能救回。')) return;
     Store.rescue();
     await Store.importAll(parsed);
-    if(Array.isArray(parsed.media)) await Media.restore(parsed.media);
+    let msg = '恢复成功，正在刷新';
+    if(Array.isArray(parsed.media)){
+      const r = await Media.restore(parsed.media);
+      if(parsed.mediaCount != null && r.ok !== parsed.mediaCount) msg = '文字已恢复，媒体 ' + r.ok + '/' + parsed.mediaCount + ' 个，正在刷新';
+      else if(r.fail) msg = '文字已恢复，媒体成功 ' + r.ok + '、失败 ' + r.fail + ' 个，正在刷新';
+    }
     await Store.flush();
-    UI.toast('恢复成功，正在刷新');
+    UI.toast(msg);
     location.reload();
   }
 };
@@ -7771,7 +7785,78 @@ const Backup = {
   },
   markdown(){ const lines=['# 拾光手账日记本','','导出时间：'+new Date().toLocaleString('zh-CN'),'']; Success.collect(365).forEach(x=>{lines.push('## 成功日记 '+x.date, '', '### 成就感', x.wins||'', '### 学到了什么', x.learned||'', '### 做对了什么', x.right||'', '### 明日必做', ...Success.norm(x.tomorrow).map(t=>'- '+t.text), '');}); Mood.list().forEach(x=>lines.push('## 情绪日记 '+x.date+' '+x.time,'',x.symbol+' '+x.text,'',x.summary||'','')); return lines.join('\n'); },
   csv(){ const rows=[['type','date','title','content']]; Success.collect(365).forEach(x=>rows.push(['success',x.date,'感恩日记',[x.wins,Success.norm(x.tomorrow).map(y=>y.text).join(';')].join('\n')])); Mood.list().forEach(x=>rows.push(['mood',x.date,x.symbol,x.text])); Gift.list().forEach(x=>rows.push(['gift',x.date,x.person,`${x.type} ${x.amount} ${x.event} ${x.note}`])); return rows.map(r=>r.map(Util.csvCell).join(',')).join('\n'); },
-  importFile(input){ const f=input.files[0]; if(!f)return; const r=new FileReader(); r.onload=async e=>{ try{ const parsed=JSON.parse(e.target.result); if(!confirm('恢复备份会覆盖当前数据，确定吗？覆盖前会自动留一份急救快照，误操作也能救回。'))return; Store.rescue(); await Store.importAll(parsed); if(Array.isArray(parsed.media)) await Media.restore(parsed.media); await Store.flush(); UI.toast('恢复成功'); location.reload(); }catch{ UI.toast('备份文件读不了'); } }; r.readAsText(f); input.value=''; },
+  /* 恢复备份入口。小文件（≤20MB）快速整读；大文件走流式导入 importFull，避免整包 JSON.parse 撑爆 WebView。
+     恢复结果按实际成败反馈（不再盲目报「恢复成功」）。 */
+  importFile(input){
+    const f=input.files[0]; if(!f)return; input.value='';
+    if(!confirm('恢复备份会覆盖当前数据，确定吗？覆盖前会自动留一份急救快照，误操作也能救回。')) return;
+    Store.rescue();
+    const report=(r)=>{ if(r.fail>0){ alert('有 '+r.fail+' 个媒体没能恢复（原图可能已被清）。已恢复 '+(r.ok||0)+' 个。'); } else { UI.toast('恢复成功'+(r.mediaTotal?('，含 '+r.ok+'/'+r.mediaTotal+' 个媒体'):'')); } };
+    const done=async(r)=>{ await Store.flush(); report(r); location.reload(); };
+    const fail=()=>UI.toast('备份文件读不了');
+    if(f.size <= 20*1024*1024){
+      const r=new FileReader(); r.onerror=fail;
+      r.onload=async e=>{ try{ const parsed=JSON.parse(e.target.result); await Store.importAll(parsed); const res=Array.isArray(parsed.media)?await Media.restore(parsed.media):{ok:0,fail:0,mediaTotal:0}; await done(res); }catch{ fail(); } };
+      r.readAsText(f); return;
+    }
+    this.importFull(f).then(done, fail);
+  },
+  /* 大文件流式导入：字节级扫描定位顶层 "media":[ 与每个媒体对象的字节区间（全程不建整包大字符串），
+     头部文字一次性 parse 进 Store，媒体逐个「读区间→解码→写回大仓库→释放」，内存上限=最大单个媒体。 */
+  async importFull(f){
+    const CH = 1 << 20; // 1MB
+    const read = (start,len)=>new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(new Uint8Array(r.result)); r.onerror=()=>rej(new Error('读取失败')); r.readAsArrayBuffer(f.slice(start,start+len)); });
+    const MK=[34,109,101,100,105,97,34,91]; // "media":[
+    let headEnd=-1, have=0, pos=0;
+    outer:
+    while(pos<f.size){
+      const chunk=await read(pos,Math.min(CH,f.size-pos));
+      for(let i=0;i<chunk.length;i++){
+        const c=chunk[i];
+        have=(c===MK[have])?have+1:(c===MK[0]?1:0);
+        if(have===MK.length){ headEnd=pos+i+1-MK.length; break outer; }
+      }
+      pos+=chunk.length;
+    }
+    if(headEnd<0) throw new Error('未找到 media 数组');
+    const ranges=[];
+    let p=headEnd+MK.length, started=false, depth=0, inStr=false, esc=false, valStart=-1;
+    tail:
+    while(p<f.size){
+      const chunk=await read(p,Math.min(CH,f.size-p));
+      for(let i=0;i<chunk.length;i++){
+        const c=chunk[i];
+        if(!started){
+          if(c===0x20||c===0x09||c===0x0a||c===0x0d||c===0x2c) continue;
+          if(c===0x5d) break tail; // ] 数组结束
+          started=true; valStart=p+i;
+        }
+        if(inStr){ if(esc) esc=false; else if(c===0x5c) esc=true; else if(c===0x22) inStr=false; continue; }
+        switch(c){
+          case 0x22: inStr=true; break;
+          case 0x7b: case 0x5b: depth++; break;
+          case 0x7d: case 0x5d: depth--; if(depth===0){ ranges.push([valStart,p+i+1]); started=false; } break;
+        }
+      }
+      p+=chunk.length;
+    }
+    const headBytes=await read(0,headEnd);
+    const st=JSON.parse(new TextDecoder('utf-8').decode(headBytes)+'[]}');
+    await Store.importAll(st);
+    let ok=0, fail=0;
+    for(const rr of ranges){
+      let bytes;
+      try{ bytes=await read(rr[0],rr[1]-rr[0]); }catch{ fail++; continue; }
+      let m; try{ m=JSON.parse(new TextDecoder('utf-8').decode(bytes)); }catch{ fail++; continue; }
+      try{
+        const type=(m&&m.meta&&m.meta.type)||'application/octet-stream';
+        const blob=Util.dataUrlToBlob('data:'+type+';base64,'+m.base64);
+        if(blob) await Media.put(m.id, blob, m.meta||{});
+        ok++;
+      }catch{ fail++; }
+    }
+    return {ok, fail, mediaTotal:ranges.length};
+  },
   /* 从最近一次恢复前自动留的急救快照救回（最多保留 3 份） */
   async restoreRescue(){
     const list = Store.get('__rescueList', []);
