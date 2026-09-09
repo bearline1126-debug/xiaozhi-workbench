@@ -1475,10 +1475,8 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
         <div class="meter" id="storeMeter"><span></span></div>
         <p class="hint" style="margin-top:4px"><span id="storeDetail">-</span></p>
         <div id="storeWarn" style="display:none;margin-top:8px;padding:10px 12px;border-radius:10px;font-size:13px;line-height:1.6"></div>
-        <div class="row" style="margin-top:8px">
-          <button class="btn ghost small" onclick="Media.cleanOrphans()">清理残留</button>
-          <span class="hint" style="flex:1">只删除不再被任何记录引用的旧图片/视频；你的文字记录和正在使用的图片都不会被删。</span>
-        </div>
+        <button class="btn ghost small" style="margin-top:8px" onclick="Media.cleanOrphans()">清理残留</button>
+        <p class="hint" style="margin-top:4px">只删已不被任何卡片/日记/灵感引用的旧图片，你的文字和在用的图片都不受牵连。</p>
       </div>
       <div class="card">
         <h2>AI 分析</h2>
@@ -2076,18 +2074,40 @@ const Media = {
   /* 清理没有任何记录引用的孤儿文件 */
   async cleanOrphans(){
     if(!this.supported()) return;
+    /* 全量扫描：任何记录（含日记、灵感、生活、富文本内嵌图等）里引用的媒体 id 都收集，
+       只把「完全没有被引用」的旧图片当孤儿。媒体 id 统一形如 m_xxx。 */
     const used = new Set();
-    Store.get('visuals', []).forEach(x => { if(x.mediaId) used.add(x.mediaId); (x.mediaIds||[]).forEach(i=>used.add(i)); (Array.isArray(x.media)?x.media:[]).forEach(m=>{ if(m && m.id) used.add(m.id); }); });
-    Store.get('dishes', []).forEach(x => x.photoId && used.add(x.photoId));
-    Store.get('clothes', []).forEach(x => x.photoId && used.add(x.photoId));
+    const addId = id => { if(typeof id === 'string' && /^m_[A-Za-z0-9]+$/.test(id)) used.add(id); };
+    const INLINE_RE = /(?:data-media="|openFull\('|\[img:)(m_[A-Za-z0-9]+)/g;
+    const walk = (obj) => {
+      if(Array.isArray(obj)){
+        for(const it of obj){ if(it != null){ if(typeof it === 'string') addId(it); else if(typeof it === 'object') walk(it); } }
+        return;
+      }
+      if(obj && typeof obj === 'object'){
+        for(const k in obj){
+          const v = obj[k];
+          if(v == null) continue;
+          if(typeof v === 'string'){
+            addId(v);
+            INLINE_RE.lastIndex = 0; let m2;
+            while((m2 = INLINE_RE.exec(v)) !== null) used.add(m2[1]);
+          } else if(typeof v === 'object'){ walk(v); }
+        }
+      }
+    };
+    try{ (typeof Store.keyList === 'function' ? Store.keyList() : []).forEach(k => { try{ walk(Store.get(k)); }catch(e){} }); }catch(e){}
     const keys = await this.keys();
-    let removed = 0;
+    const doomed = [];
     for(const k of keys){
       if(String(k).startsWith('__')) continue;
-      const base = String(k).replace(/:thumb$/, '');
-      if(!used.has(base)){ await this.del(base); removed++; }
+      const root = String(k).replace(/:thumb$/, '');
+      if(!used.has(root)) doomed.push(k);
     }
-    UI.toast(removed ? `清掉 ${removed} 个残留文件` : '没有残留文件');
+    if(!doomed.length){ UI.toast('没有残留文件，所有图片都在使用中'); if(typeof Settings !== 'undefined') Settings.renderStorage(); return; }
+    if(!confirm('将删除 ' + doomed.length + ' 个「已不再被任何卡片、日记、灵感等记录引用」的旧图片/视频。\n只删用不到的，你的文字记录和正在用的图片都不会受影响。确定继续吗？')) return;
+    for(const k of doomed){ await this.del(k); }
+    UI.toast('已清理 ' + doomed.length + ' 个残留文件');
     if(typeof Settings !== 'undefined') Settings.renderStorage();
   },
   /* 把大仓库里所有文件（原件）导出成可序列化的 base64 数组，用于完整备份；缩略图随原图重建，不进备份；目录句柄等非文件键会被跳过 */
@@ -2666,7 +2686,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-09-09-v135';
+const BUILD_VERSION = '2026-09-09-v136';
 /* 版本自愈：一旦读到的 HTML 比上次更新（BUILD_VERSION 变了），立即清空 caches 里的旧副本并 reload。
    避免 SWR 回退到陈旧缓存、让旧界面永远赖着不走（中国网络访问 github.io 不稳时尤其多发：联网经常失败→回退旧缓存） */
 (function(){try{
@@ -4764,6 +4784,8 @@ const NativeBackup = {
   plugins(){ return (window.Capacitor && window.Capacitor.Plugins) || {}; },
   /* 最近一次写入失败的真实原因（桥接 reject 的 message），用于把原生错误透给用户，便于排查「明明写了却报失败」 */
   lastErr: null,
+  /* 读取本机设备存储（总/可用），供设置页进度条用「手机实际内存」作上限 */
+  getStorage(){ return this.ensure('BackupSave').getStorage().then(r => ({ totalBytes: r.totalBytes || 0, availBytes: r.availBytes || 0 })).catch(() => null); },
   /* 确保原生插件代理可用（native-bridge 已自动注册 App/文件/分享/BackupSave；这里兜底一次，避免个别 WebView 漏装代理） */
   ensure(name){
     const P = this.plugins();
@@ -4878,10 +4900,11 @@ const AutoBackup = {
     /* 手机 App：写进已记住的文件夹（流式单 JSON：文字一次写、媒体逐个读一个追加一个，内存峰值只有单个文件） */
     if(NativeBackup.isNative()){
       if(!c.dirUri){ if(!silent) UI.toast('还没设置保存位置，请先点「选择保存位置」'); return false; }
+      if(!silent) UI.toast('⏳ 正在备份，请稍候…');
       const ok = await NativeBackup.streamBackup(c.dirUri, name);
       if(!ok){ const er = NativeBackup.lastErr; UI.toast('写入失败' + (er && er.message ? '：' + er.message : '，请重新「选择保存位置」再试')); return false; }
       this.save({lastMonth:month});
-      if(!silent) UI.toast('✅ 已备份到「' + (c.dirName || '所选文件夹') + '」');
+      if(!silent) UI.toast('✅ 备份成功');
       this.render();
       return true;
     }
@@ -7809,9 +7832,10 @@ const Backup = {
     const f=input.files[0]; if(!f)return; input.value='';
     if(!confirm('恢复备份会覆盖当前数据，确定吗？覆盖前会自动留一份急救快照，误操作也能救回。')) return;
     Store.rescue();
-    const report=(r)=>{ if(r.fail>0){ alert('有 '+r.fail+' 个媒体没能恢复（原图可能已被清）。已恢复 '+(r.ok||0)+' 个。'); } else { UI.toast('恢复成功'+(r.mediaTotal?('，含 '+r.ok+'/'+r.mediaTotal+' 个媒体'):'')); } };
+    try{ if(UI && UI.openFull) UI.openFull('⏳ 正在导入…', '<div style="text-align:center;padding:24px 12px"><div style="font-size:20px">正在导入备份…</div><p class="hint" style="margin-top:10px">文件较大请稍候，勿关闭本页</p></div>', ''); }catch(e){}
+    const report=(r)=>{ if(r.fail>0){ alert('有 '+r.fail+' 个媒体没能恢复（原图可能已被清）。已恢复 '+(r.ok||0)+' 个。'); } else { UI.toast('导入成功'+(r.mediaTotal?('，含 '+r.ok+'/'+r.mediaTotal+' 个媒体'):'')); } };
     const done=async(r)=>{ await Store.flush(); report(r); location.reload(); };
-    const fail=()=>UI.toast('备份文件读不了');
+    const fail=()=>location.reload();
     if(f.size <= 20*1024*1024){
       const r=new FileReader(); r.onerror=fail;
       r.onload=async e=>{ try{ const parsed=JSON.parse(e.target.result); await Store.importAll(parsed); const res=Array.isArray(parsed.media)?await Media.restore(parsed.media):{ok:0,fail:0,mediaTotal:0}; await done(res); }catch{ fail(); } };
@@ -7969,11 +7993,18 @@ const Settings = {
     const el = document.getElementById('storeUsage');
     if(el) el.textContent = (supported ? '' : '当前浏览器不支持大仓库 · ') + Util.bytes(total) + (mediaCount ? ' · ' + mediaCount + ' 个文件' : '');
     const meter = document.getElementById('storeMeter');
-    /* 只反映本应用真实占用的存储（文字+媒体），不再掺入浏览器整体配额，避免「浏览器可用 200GB」这类误导 */
-    const cap = 2 * 1024 * 1024 * 1024; /* 本机给 2GB 作为参考上限，纯提示用 */
+    /* 进度条上限：APK 用「本机设备总存储」，网页兜底用浏览器给该站的存储配额；只反映本应用真实占用 */
+    let devCap = 0, devAvail = 0;
+    if(NativeBackup && NativeBackup.isNative() && Media.supported()){
+      const s = await NativeBackup.getStorage();
+      if(s && s.totalBytes){ devCap = s.totalBytes; devAvail = s.availBytes || 0; }
+    }
+    const cap = devCap > 0 ? devCap : Math.max(quota, 2 * 1024 * 1024 * 1024);
     if(meter && meter.firstElementChild) meter.firstElementChild.style.width = Math.min(100, total/cap*100).toFixed(1) + '%';
+    let detText = '文字 ' + Util.bytes(lsBytes) + ' · 媒体 ' + Util.bytes(mediaBytes);
+    if(devAvail > 0) detText += ' · 本机可用 ' + Util.bytes(devAvail);
     const det = document.getElementById('storeDetail');
-    if(det) det.textContent = supported ? '文字 ' + Util.bytes(lsBytes) + ' · 媒体 ' + Util.bytes(mediaBytes) : '建议用 Chrome / Edge 打开';
+    if(det) det.textContent = supported ? detText : '建议用 Chrome / Edge 打开';
     const warn = document.getElementById('storeWarn');
     if(warn){
       const pct = total / cap;
