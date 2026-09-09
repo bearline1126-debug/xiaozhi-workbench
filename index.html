@@ -1463,7 +1463,7 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
         <h2>自动备份</h2>
         <p class="hint">备份包含<b>全部文字 + 图片视频</b>，一次保存、换设备也能一次恢复。电脑：可选一个同步文件夹，写入固定备份 + 历史副本 + 分类原图。手机 App：「立即备份」会弹出系统面板，自行选保存到云盘 / 文档 / 任意文件夹，看得见找得到。</p>
         <div class="row" style="margin-top:8px">
-          <button class="btn" onclick="AutoBackup.pickFolder()">选同步文件夹</button>
+          <button class="btn" onclick="AutoBackup.pickFolder()">选择保存路径</button>
           <button class="btn ghost" onclick="AutoBackup.runNow()">立即备份</button>
         </div>
         <label style="margin-top:10px"><input type="checkbox" id="autoBackupOn" style="width:auto;min-height:auto;margin-right:6px">每月自动备份（开启后，每月首次打开会自动写一份并弹提醒）</label>
@@ -2656,7 +2656,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-09-09-v129';
+const BUILD_VERSION = '2026-09-09-v130';
 /* 版本自愈：一旦读到的 HTML 比上次更新（BUILD_VERSION 变了），立即清空 caches 里的旧副本并 reload。
    避免 SWR 回退到陈旧缓存、让旧界面永远赖着不走（中国网络访问 github.io 不稳时尤其多发：联网经常失败→回退旧缓存） */
 (function(){try{
@@ -4885,9 +4885,11 @@ const AutoBackup = {
   },
   saveExitToggle(){ this.save({exitDl: !!document.getElementById('autoBackupExit')?.checked}); this.render(); },
   saveToggle(){
-    this.save({on: !!document.getElementById('autoBackupOn')?.checked});
+    const on = !!document.getElementById('autoBackupOn')?.checked;
+    this.save({on});
     this.render();
-    if(this.cfg().on) this.check();
+    UI.toast(on ? '已开启每月自动备份' : '已关闭每月自动备份');
+    if(on) this.check();
   },
   render(){
     const el = document.getElementById('autoBackupInfo');
