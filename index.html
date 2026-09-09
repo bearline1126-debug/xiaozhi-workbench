@@ -1517,8 +1517,8 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
         </div>
         <p class="hint">如果你觉得这个小工具帮到了你，欢迎自愿打赏请作者喝杯咖啡 ☕</p>
         <div class="row" style="margin-top:10px;display:flex;gap:8px">
-          <button class="btn" style="flex:1" onclick="if(confirm('确定载入示例记录吗？会写入几天的示例内容')){Seed.install(true);UI.toast('已载入示例');location.reload()}">📚 载入示例</button>
-          <button class="btn ghost" style="flex:1" onclick="if(confirm('确定清除示例记录吗？会移除近30天记录与情绪日志')){Seed.clear();UI.toast('已清除');location.reload()}">🧹 清除示例</button>
+          <button class="btn" style="flex:1" onclick="if(!confirm('确定载入示例记录吗？会写入几天的示例内容'))return;Seed.install(true);Store.flush().then(()=>{UI.toast('已载入示例');location.reload()})">📚 载入示例</button>
+          <button class="btn ghost" style="flex:1" onclick="if(!confirm('确定清除示例记录吗？会移除近30天记录与情绪日志'))return;Seed.clear();Store.flush().then(()=>{UI.toast('已清除');location.reload()})">🧹 清除示例</button>
         </div>
         <p class="hint" id="buildInfo"></p>
       </div>
@@ -1662,6 +1662,9 @@ const Store = (() => {
   /* 顺序写入队列，避免并发事务冲突 */
   let _writeChain = Promise.resolve();
   const _enqueue = op => { _writeChain = _writeChain.then(op).catch(()=>{}); return _writeChain; };
+  /* 等待之前排队的所有 IndexedDB 写入落盘。清除/导入/恢复等「写完立刻刷新」的场景必须先 await 它，
+     否则 reload 时旧数据可能还没写进 IDB，新页面初始化又读到旧值（v129 曾因此"清除示例后复发"）。 */
+  const flush = () => _writeChain;
   return {
     async init(){ return init(); },
     ready(){ return _ready; },
@@ -1688,6 +1691,7 @@ const Store = (() => {
       if(SYS_KEYS.has(key)) localStorage.removeItem(NS + key);
       else _enqueue(() => _idbDelete(key));
     },
+    flush(){ return flush(); },
     getDaily(key, fallback = null){ return this.get(key + ':' + Util.today(), fallback); },
     setDaily(key, val){ return this.set(key + ':' + Util.today(), val); },
     getSecret(key){ return _lsGet(SEC + key); },
@@ -1701,6 +1705,7 @@ const Store = (() => {
         if(typeof k !== 'string' || k.length > 100 || /[\x00-\x1f]/.test(k)) return;
         if(v !== undefined) this.set(k, cleanImportValue(k, v));
       });
+      return flush();
     },
     /* 判断当前是否真的有用户数据（排除纯配置项），用于防止空数据覆盖云盘里的有效备份 */
     hasUserData(){
@@ -2401,20 +2406,20 @@ const UI = {
     box.querySelector('#uiFullBody').scrollTop = 0;
     window.scrollTo({top:0, behavior:'instant'});
     /* 占位 history：让浏览器后退键 / 滑动手势触发 popstate → _fsBack 走这一格 */
+    this._fsDepth = (this._fsDepth || 0) + 1;
     const prevDepth = (history.state && typeof history.state.uiFs === 'number') ? history.state.uiFs : 0;
     history.pushState({uiFs: prevDepth + 1}, '');
   },
   closeFull(reset=true){
     if(reset){
-      /* 把所有 uiFs 占位 history 全 pop 掉 —— 浏览器循环 history.back() 同步分派 popstate，
-         _silentFsClose 让 popstate 监听器短路不触发 _fsBack。 */
-      let safety = 60;
+      /* 把所有 uiFs 占位 history 一次弹干净（v131 改）：之前用 while(history.back()) 循环逐次弹出，
+         但 history.back() 是异步、且不保证每帧都落，多格里容易弹出过头/落不完 → 竞态。
+         现在改为自增计数器 _fsDepth + 单次 history.go(-depth) 原子定位，一步到位跨浏览器稳定。
+         _silentFsClose 让 popstate 监听器短路，避免弹栈过程触发 _fsBack。 */
+      const depth = this._fsDepth || 0;
+      this._fsDepth = 0;
       this._silentFsClose = true;
-      try {
-        while (safety-- > 0 && history.state && typeof history.state.uiFs === 'number') {
-          history.back();
-        }
-      } finally { this._silentFsClose = false; }
+      try { if(depth > 0) history.go(-depth); } finally { this._silentFsClose = false; }
       const box = document.getElementById('uiFullBox');
       if(box){
         box.style.display = 'none';
@@ -2656,7 +2661,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-09-09-v130';
+const BUILD_VERSION = '2026-09-09-v131';
 /* 版本自愈：一旦读到的 HTML 比上次更新（BUILD_VERSION 变了），立即清空 caches 里的旧副本并 reload。
    避免 SWR 回退到陈旧缓存、让旧界面永远赖着不走（中国网络访问 github.io 不稳时尤其多发：联网经常失败→回退旧缓存） */
 (function(){try{
@@ -3370,7 +3375,10 @@ const Home = {
         }
       }
     };
-    DragSort.attach(zoneSel('widget'), move, {attr:'dragHome', delay:340, whole:true});
+    /* v131：首页 widget 卡改用标题栏 ⠿ 把手「立即拖」——整卡长按(340ms)在 Android 上极易被
+       系统长按/文本选择手势劫持导致「长按没反应」，而带 data-grab 把手的小项(diary/知识)滚下即成功；
+       现在 widget 也走把手立即拖，与已验证可用的路径一致。顶栏/更多小块仍保留长按。 */
+    DragSort.attach(zoneSel('widget'), move, {attr:'dragHome', whole:false});
     DragSort.attach(zoneSel('top'), move, {attr:'dragHome', delay:340, whole:true});
     DragSort.attach(zoneSel('mini'), move, {attr:'dragHome', delay:340, whole:true});
   },
@@ -4768,7 +4776,9 @@ const NativeBackup = {
       if(!FS || !SH) return false;
       const uri = await this.writeCache(name, text);
       if(!uri) return false;
-      await SH.shareFiles({files:[uri], title:'保存「' + name + '」', dialogTitle:'选择保存位置（云盘 / 文件 / 微信…）'});
+      /* Capacitor Share 官方 API 是 SHARE.share({files:[uri], ...})，没有 shareFiles 方法；
+         v129 曾错误调用 shareFiles 导致「保存面板打不开」。改用 share() 弹系统存储/分享面板。 */
+      await SH.share({files:[uri], title:'保存「' + name + '」', dialogTitle:'选择保存位置（云盘 / 文件 / 微信…）'});
       return true;
     }catch(e){ console.warn('NativeBackup.shareFile fail:', e); return false; }
   }
@@ -4931,10 +4941,11 @@ const AutoBackup = {
     if(!parsed.data) { UI.toast('这不是有效的工作台备份'); return; }
     if(!confirm('确定从「' + label + '」恢复吗？\n恢复前会自动留一份当前数据的急救快照，误操作也能救回。')) return;
     Store.rescue();
-    Store.importAll(parsed);
+    await Store.importAll(parsed);
     if(Array.isArray(parsed.media)) await Media.restore(parsed.media);
+    await Store.flush();
     UI.toast('恢复成功，正在刷新');
-    setTimeout(() => location.reload(), 800);
+    location.reload();
   }
 };
 /* ==== 每月自动备份 END ==== */
@@ -7747,17 +7758,18 @@ const Backup = {
   },
   markdown(){ const lines=['# 拾光手账日记本','','导出时间：'+new Date().toLocaleString('zh-CN'),'']; Success.collect(365).forEach(x=>{lines.push('## 成功日记 '+x.date, '', '### 成就感', x.wins||'', '### 学到了什么', x.learned||'', '### 做对了什么', x.right||'', '### 明日必做', ...Success.norm(x.tomorrow).map(t=>'- '+t.text), '');}); Mood.list().forEach(x=>lines.push('## 情绪日记 '+x.date+' '+x.time,'',x.symbol+' '+x.text,'',x.summary||'','')); return lines.join('\n'); },
   csv(){ const rows=[['type','date','title','content']]; Success.collect(365).forEach(x=>rows.push(['success',x.date,'感恩日记',[x.wins,Success.norm(x.tomorrow).map(y=>y.text).join(';')].join('\n')])); Mood.list().forEach(x=>rows.push(['mood',x.date,x.symbol,x.text])); Gift.list().forEach(x=>rows.push(['gift',x.date,x.person,`${x.type} ${x.amount} ${x.event} ${x.note}`])); return rows.map(r=>r.map(Util.csvCell).join(',')).join('\n'); },
-  importFile(input){ const f=input.files[0]; if(!f)return; const r=new FileReader(); r.onload=async e=>{ try{ const parsed=JSON.parse(e.target.result); if(!confirm('恢复备份会覆盖当前数据，确定吗？覆盖前会自动留一份急救快照，误操作也能救回。'))return; Store.rescue(); Store.importAll(parsed); if(Array.isArray(parsed.media)) await Media.restore(parsed.media); UI.toast('恢复成功'); setTimeout(()=>location.reload(),800); }catch{ UI.toast('备份文件读不了'); } }; r.readAsText(f); input.value=''; },
+  importFile(input){ const f=input.files[0]; if(!f)return; const r=new FileReader(); r.onload=async e=>{ try{ const parsed=JSON.parse(e.target.result); if(!confirm('恢复备份会覆盖当前数据，确定吗？覆盖前会自动留一份急救快照，误操作也能救回。'))return; Store.rescue(); await Store.importAll(parsed); if(Array.isArray(parsed.media)) await Media.restore(parsed.media); await Store.flush(); UI.toast('恢复成功'); location.reload(); }catch{ UI.toast('备份文件读不了'); } }; r.readAsText(f); input.value=''; },
   /* 从最近一次恢复前自动留的急救快照救回（最多保留 3 份） */
-  restoreRescue(){
+  async restoreRescue(){
     const list = Store.get('__rescueList', []);
     if(!list.length) return UI.toast('还没有急救快照（每次恢复前会自动留一份）');
     const last = list[0];
     if(!confirm('从最新的急救快照（' + new Date(last.at).toLocaleString('zh-CN') + '）恢复吗？这会覆盖当前数据。')) return;
-    Store.importAll(last.data);
+    await Store.importAll(last.data);
+    await Store.flush();
     UI.toast('已从急救快照恢复，正在刷新');
-    setTimeout(() => location.reload(), 800);
-  }
+    location.reload();
+  },
 };
 /* ==== 功能：App 外观自定义（名称） ==== *
  * 自定义内容存 IndexedDB（key=app_custom），由 Service Worker 在拦截 manifest.json 时读取，
@@ -7889,6 +7901,8 @@ const Settings = {
     if(!confirm('⚠️ 清空所有缓存与记录？\n\n这会删除全部数据：图片视频、日记、灵感、心愿、追踪、感恩日记等，且不可恢复！\n确定要清空吗？')) return;
     if(!confirm('再次确认：真的要清空一切吗？此操作无法撤销。')) return;
     UI.toast('正在清空…');
+    /* 先把排队中的写入全部落盘，再清空，避免清到一半又被旧写入写回（清除竞态根因） */
+    try { await Store.flush(); } catch {}
     try { await Store.clearAll(); } catch(e) { console.error(e); }
     try { await Media.clearAll(); } catch(e) { console.error(e); }
     try { if('caches' in window){ const names = await caches.keys(); await Promise.all(names.map(n => caches.delete(n))); } } catch {}
@@ -7936,8 +7950,8 @@ const Seed = {
     Store.set(this.KEY, {ts: Date.now()});
   },
   clear(delFlag){
-    Util.rangeDays(30).forEach(d => Store.set('success:' + d, null));
-    Store.set('moods', []);
+    Util.rangeDays(30).forEach(d => Store.remove('success:' + d));
+    Store.remove('moods');
     if (delFlag !== false) Store.set(this.KEY, {cleared: 1});
   }
 };
