@@ -1466,9 +1466,9 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
           <button class="btn" onclick="AutoBackup.pickFolder()">选择保存路径</button>
           <button class="btn ghost" onclick="AutoBackup.runNow()">立即备份</button>
         </div>
-        <label style="margin-top:10px"><input type="checkbox" id="autoBackupOn" style="width:auto;min-height:auto;margin-right:6px">每月自动备份（开启后，每月首次打开会自动写一份并弹提醒）</label>
+        <label style="margin-top:10px"><input type="checkbox" id="autoBackupOn" style="width:auto;min-height:auto;margin-right:6px">每月提醒我备份（开启后，每月首次打开会弹一次备份保存面板，由你选择保存位置）</label>
         <button class="btn ghost small" style="margin-left:6px" onclick="AutoBackup.saveToggle()">保存</button>
-        <p class="hint" style="margin-top:8px">平时不会自动备份：以你手动点「立即备份」为主，避免每次刷新都触发下载被浏览器拦截。月度开关打开后，每月只自动写一次并提醒你。</p>
+        <p class="hint" style="margin-top:8px">平时不会自动备份：以你手动点「立即备份」为主，避免每次刷新都触发下载被浏览器拦截。月度开关打开后，每月只在应用内首次打开时提醒你备份一次。手机不会静默后台自动保存——需在弹出面板里自己选位置；电脑浏览器则可选一个同步文件夹持久写入。</p>
         <p class="hint" id="autoBackupInfo"></p>
       </div>
       <div class="card">
@@ -1490,7 +1490,7 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
       <div class="card">
         <h2>本地密码锁</h2>
         <input type="text" id="newPassword" placeholder="设置本地密码" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true" data-form-type="other" style="-webkit-text-security:disc;text-security:disc">
-        <p class="hint">已启用时，关闭需先在密码框输入当前密码。</p>
+        <p class="hint">已启用时，关闭需先在密码框输入当前密码。注：这是「应用访问锁」，只挡住进入 App；数据仍以明文存在本机，不加密。</p>
         <div class="row" style="margin-top:8px">
           <button class="btn" onclick="Lock.setPassword()">启用/修改</button>
           <button class="btn ghost" onclick="Lock.disable()">关闭</button>
@@ -2661,7 +2661,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-09-09-v131';
+const BUILD_VERSION = '2026-09-09-v132';
 /* 版本自愈：一旦读到的 HTML 比上次更新（BUILD_VERSION 变了），立即清空 caches 里的旧副本并 reload。
    避免 SWR 回退到陈旧缓存、让旧界面永远赖着不走（中国网络访问 github.io 不稳时尤其多发：联网经常失败→回退旧缓存） */
 (function(){try{
@@ -4845,11 +4845,13 @@ const AutoBackup = {
     /* 原生 App（手机）：弹系统「分享/存储」面板，让用户自己选保存到哪（云盘/文档/任意文件夹），看得见找得到 */
     if(NativeBackup.isNative()){
       const shared = await NativeBackup.shareFile(name, text).catch(() => false);
-      this.save({lastMonth:month});
       this.render();
-      if(shared){ if(!silent) UI.toast('已弹出保存面板，请选择位置保存（含全部图片）'); return true; }
-      if(!silent) UI.toast('没能弹出保存面板，请用下面的「手动导出·完整备份」重试');
-      return false;
+      if(!shared){ if(!silent) UI.toast('没能弹出保存面板，请用下面的「手动导出·完整备份」重试'); return false; }
+      /* v132：只有面板真的弹出来(shared)才记 lastMonth=本月已提醒。面板没弹出绝不标记，下次打开会再试。
+         系统分享面板只能确认「已弹出」，无法确认用户最后是否点保存，所以文案不宣称“已自动备份”。 */
+      this.save({lastMonth:month});
+      if(!silent) UI.toast('已弹出保存面板，请选择位置保存（含全部图片）');
+      return true;
     }
     if(silent) return false;
     Util.download(name, text, 'application/json');
@@ -4882,7 +4884,7 @@ const AutoBackup = {
     const month = Util.today().slice(0, 7);
     if(c.lastMonth === month) return;
     const ok = await this.runNow(true).catch(() => false);
-    if(ok) UI.toast('✅ 本月自动备份已写入「' + (c.dirName || '本机下载') + '」');
+    if(ok) UI.toast(NativeBackup.isNative() ? '已弹本月备份保存面板，请在系统里选位置保存' : '✅ 本月备份已写入「' + (c.dirName || '本机下载') + '」');
   },
   /* 手机端：默认不再退出时自动备份（避免每次刷新都被浏览器拦下载）；开启后才备份 */
   exitBackup(){
@@ -4898,7 +4900,7 @@ const AutoBackup = {
     const on = !!document.getElementById('autoBackupOn')?.checked;
     this.save({on});
     this.render();
-    UI.toast(on ? '已开启每月自动备份' : '已关闭每月自动备份');
+    UI.toast(on ? '已开启每月提醒备份' : '已关闭每月提醒备份');
     if(on) this.check();
   },
   render(){
