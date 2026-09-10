@@ -536,7 +536,10 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 /* v88 旧的 .note-edit-view 规则已废弃（v88 改单 div contenteditable 后 div 走 #noteEditPure 选择器，这里清掉避免 max-height:65% 残留导致"底部留白"） */
 .note-detail-text{white-space:pre-wrap;word-break:break-word;font-size:13.5px;line-height:1.7;color:var(--text)}
 .note-detail-text .note-inline-img{margin:6px 6px 6px 0}
-.note-detail-meta{font-size:11.5px;color:var(--text-dim);margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)}
+.note-detail-meta{font-size:11.5px;color:var(--text-dim);margin-top:10px;padding:8px 14px 6px;border-top:1px dashed var(--line)}
+.note-detail-meta .ndm-title{font-family:var(--title-font);font-size:15px;font-weight:700;color:var(--text);line-height:1.4;word-break:break-word}
+.note-detail-meta .ndm-tags{margin-top:5px;display:flex;flex-wrap:wrap;gap:5px}
+.note-detail-meta .ndm-tags span{background:rgba(107,152,79,.14);color:var(--accent);padding:1px 8px;border-radius:999px;font-size:11px}
 .note-cat-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
 .dish-basket-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:8px;border-bottom:1px dashed #d8d4be}
 .dish-basket-toggle{font-size:12px;padding:5px 12px;min-height:30px}
@@ -553,7 +556,7 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 /* v52：自定义下拉 Combo（替代 input+datalist） */
 .combo-toggle{font-size:14px;border:1px solid var(--line);background:#fff;color:var(--text);border-left:0;border-radius:0 8px 8px 0;padding:6px 8px;cursor:pointer;min-height:38px}
 .combo-toggle:hover{background:#f3f5ef}
-.combo-pop{background:#fff;border:1px solid var(--line);border-radius:10px;padding:4px 0;max-height:260px;overflow:auto;z-index:999;font-family:inherit;box-sizing:border-box}
+.combo-pop{background:#fff;border:1px solid var(--line);border-radius:10px;padding:4px 0;max-height:260px;overflow:auto;z-index:12000;font-family:inherit;box-sizing:border-box}
 .combo-pop.shadow{box-shadow:0 8px 24px rgba(0,0,0,.18)}
 .combo-tip{font-size:11px;color:var(--text-dim);padding:4px 12px;border-bottom:1px dashed var(--line);margin-bottom:4px}
 .combo-item{padding:9px 12px;font-size:14px;cursor:pointer;line-height:1.3;border-bottom:1px solid transparent;display:flex;align-items:center;gap:8px}
@@ -615,7 +618,7 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
 .vc-actions button:hover{background:rgba(107,152,79,.18)}
 .vc-actions button.danger{color:#c85346}
 .editing{outline:2px dashed rgba(107,152,79,.45);outline-offset:2px}
-.visual-viewer{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:200;display:none;flex-direction:column;align-items:center;justify-content:center}
+.visual-viewer{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:11000;display:none;flex-direction:column;align-items:center;justify-content:center}
 .visual-viewer[style*="flex"]{display:flex}
 .visual-viewer .vv-close{position:absolute;top:14px;right:18px;background:rgba(255,255,255,.18);border:0;color:#fff;font-size:24px;width:38px;height:38px;border-radius:50%;cursor:pointer}
 .visual-viewer .vv-prev,.visual-viewer .vv-next{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.18);border:0;color:#fff;font-size:36px;width:54px;height:54px;border-radius:50%;cursor:pointer}
@@ -1479,6 +1482,7 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
         <p class="hint" style="margin-top:4px"><span id="storeDetail">-</span></p>
         <p class="hint" id="storeNote" style="display:none;margin-top:2px"></p>
         <div id="storeWarn" style="display:none;margin-top:8px;padding:10px 12px;border-radius:10px;font-size:13px;line-height:1.6"></div>
+        <button class="btn ghost" style="margin-top:12px;width:100%" onclick="Settings.cleanOrphans()">🧹 清理孤立图片（只删没被任何记录引用的旧图）</button>
       </div>
       <div class="card">
         <h2>AI 分析</h2>
@@ -1773,6 +1777,20 @@ const Util = {
   lines(s){ return String(s || '').split(/\n+/).map(x => x.trim()).filter(Boolean); },
   download(name, text, type){ const blob = new Blob([text], {type}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); },
   debounce(fn, wait=650){ let timer; return (...args) => { clearTimeout(timer); timer=setTimeout(()=>fn(...args), wait); }; },
+  /* v138：给全屏查看器等元素绑左右滑动（cb(delta)：1=下一张，-1=上一张；竖直/轻微滑动不触发） */
+  bindSwipe(el, cb){
+    if(!el) return;
+    let x=0, y=0, t=0, on=false;
+    el.addEventListener('touchstart', e=>{ const c=e.touches[0]; x=c.clientX; y=c.clientY; t=Date.now(); on=true; }, {passive:true});
+    el.addEventListener('touchend', e=>{
+      if(!on) return; on=false;
+      const c=e.changedTouches[0];
+      const dx=c.clientX-x, dy=c.clientY-y;
+      if(Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy)*1.2 && (Date.now()-t) < 500){
+        cb(dx < 0 ? 1 : -1);
+      }
+    }, {passive:true});
+  },
   rangeDays(n){ const arr=[]; for(let i=n-1;i>=0;i--) arr.push(this.dateAdd(this.today(), -i)); return arr; },
   diffDays(from, to){ const a=new Date(String(from)+'T00:00:00'), b=new Date(String(to)+'T00:00:00'); if(isNaN(a)||isNaN(b)) return 0; return Math.round((b-a)/86400000); },
   csvCell(v){ return '"' + String(v ?? '').replace(/"/g,'""') + '"'; },
@@ -1995,7 +2013,9 @@ const Media = {
   async openFull(id){
     const url = await this.objectUrl(id);
     if(!url) return UI.toast('原件找不到了');
-    window.open(url, '_blank');
+    /* v138：不再 window.open 新标签（会弹浏览器地址栏遮挡、且退出麻烦），
+       改为应用内固定全屏查看器（黑底、左右翻页、z 层在最顶） */
+    this.gallery([id], 0);
   },
   /* v104：一组图片的全屏翻页查看器（日记本感动瞬间等）——左右按钮循环切换上/下一张，样式复用视觉灵感的 .visual-viewer */
   _g:null,
@@ -2011,6 +2031,7 @@ const Media = {
       box = document.createElement('div'); box.id = 'mediaViewer'; box.className = 'visual-viewer';
       box.innerHTML = `<button class="vv-close" onclick="Media.galClose()">×</button><button class="vv-prev" onclick="Media.galNav(-1)">‹</button><div class="vv-stage" id="vvStage2"></div><button class="vv-next" onclick="Media.galNav(1)">›</button><div class="vv-bar"><span class="vv-info" id="vvInfo2"></span></div>`;
       document.body.appendChild(box);
+      Util.bindSwipe(box, (d)=>{ if(d) Media.galNav(d); });
     }
     box.style.display = 'flex';
     const stage = document.getElementById('vvStage2');
@@ -2041,6 +2062,44 @@ const Media = {
       }
     }
     return {bytes, count, quota, usage};
+  },
+  /* v138：安全清理「孤儿图」——只删已不再被任何记录引用的旧图片。
+     全量深度扫描：遍历 Store 所有记录（含数组/对象嵌套的 id 字段 + 富文本/文本里内嵌的 [img:m_xxx] 引用）。
+     只要还有任何一处引用就保留；缩略图随原图一起删。删除前 confirm 明确数量。 */
+  async cleanOrphans(){
+    if(!this.supported()) return UI.toast('当前浏览器不支持大仓库');
+    UI.toast('正在扫描，请稍候…', 1);
+    const keys = await this.keys();
+    const originals = keys.filter(k => String(k).startsWith('m_') && !String(k).endsWith(':thumb'));
+    const used = new Set();
+    const addId = id => { if(!id) return; const s = String(id); if(/^m_[A-Za-z0-9]{6,}$/.test(s)) used.add(s); };
+    const fromStr = str => { const m = String(str).match(/m_[A-Za-z0-9]{6,}/g); if(m) m.forEach(addId); };
+    const walk = (o, seen) => {
+      if(o == null) return;
+      if(typeof o === 'string'){ addId(o); fromStr(o); return; }
+      if(typeof o !== 'object') return;
+      if(seen.has(o)) return; seen.add(o);
+      if(Array.isArray(o)){ o.forEach(x=>walk(x, seen)); return; }
+      for(const k of Object.keys(o)){ const v=o[k]; if(typeof v === 'string'){ addId(v); fromStr(v); } else walk(v, seen); }
+    };
+    for(const k of Store.keyList()){
+      if(String(k).startsWith('__')) continue; /* 大仓库句柄等系统键，不是记录 */
+      const v = Store.get(k, null);
+      if(v == null) continue;
+      walk(v, new Set());
+    }
+    const orphans = originals.filter(id => !used.has(id));
+    if(!orphans.length){ UI.toast('没有需要清理的孤立图片 ✓'); return; }
+    const kb = await this._bytesOf(orphans);
+    if(!confirm('发现 ' + orphans.length + ' 张「孤立图片」(' + Util.bytes(kb) + '）：已不再被任何日记/摘录/灵感/记录引用。\n\n只删这些没被引用的旧图，正在使用的图片一概不动。确定清理？')) return;
+    for(const id of orphans){ await this.del(id).catch(()=>{}); }
+    UI.toast('已清理 ' + orphans.length + ' 张孤立图片，释放 ' + Util.bytes(kb));
+    if(typeof Settings !== 'undefined') Settings.renderStorage();
+  },
+  async _bytesOf(ids){
+    let sum = 0;
+    for(const id of ids){ const rec = await this.get(id); if(rec?.blob?.size) sum += rec.blob.size; }
+    return sum;
   },
   /* 把历史 base64 图片搬进大仓库，释放文字仓库 */
   async migrateLegacy(){
@@ -5612,9 +5671,12 @@ const Notes = {
     const it = this.list().find(x=>x.id===id); if(!it) return;
     const rightBtn = `<button class="ui-fs-icon-btn" type="button" onclick="Notes.editInfo('${id}')" title="编辑题目/分类/标签">✏️</button><button class="ui-fs-icon-btn" type="button" onclick="Notes.copyFullFromEdit(this)" title="复制全文">📋</button><button class="ui-fs-icon-btn" type="button" onclick="document.getElementById('noteEditPureFile').click()" title="插入图片">🖼</button><button class="ui-fs-icon-btn" type="button" onclick="Notes.undoEdit(this)" title="撤销">↶</button><button class="ui-fs-icon-btn" type="button" onclick="Notes.redoEdit(this)" title="重做">↷</button>`;
     UI.openFull('', `
+      <div class="note-detail-meta" id="noteDetailMeta"></div>
       <div id="noteEditPure" class="note-edit-view" contenteditable="true" tabindex="0" spellcheck="false" data-placeholder="写下你的经验、原则、观察..."></div>
       <input type="file" id="noteEditPureFile" accept="image/*" multiple style="display:none" onchange="Notes.insertImages(this,'noteEditPure')">
     `, '← 返回', null, rightBtn, /*hideTitle*/true);
+    this._curDetailId = id;
+    this._renderDetailMeta(it);
     const div = document.getElementById('noteEditPure'); if(!div) return;
     /* 载入：图片直接渲染成行内大图显示在文字位置（_renderTextWithMedia） */
     div.innerHTML = this._renderTextWithMedia(it.text || '');
@@ -5640,6 +5702,14 @@ const Notes = {
     }
     /* id 暂存，供 _autoSaveEdit 用 */
     this._fsEditingId = id;
+  },
+  /* v138：详情页顶部显示题目/分类/标签（hideTitle 时不占系统头，这里自己画一个），保存后原地刷新，让「存完了还在详情」可见 */
+  _curDetailId: null,
+  _renderDetailMeta(it){
+    if(!it) return;
+    const el = document.getElementById('noteDetailMeta'); if(!el) return;
+    el.innerHTML = `<div class="ndm-title">${Util.esc((it.title||'').trim() || this.firstSentence(this._stripMedia(it.text||'')))}</div>` +
+      `<div class="ndm-tags">${[ Util.esc((it.cat||'').trim()), ...this.splitTags(it.tags||'').map(Util.esc) ].filter(Boolean).map(t=>`<span>${t}</span>`).join('')}</div>`;
   },
   /* v137：详情页右上角 ✏️ —— 弹窗修改这条摘录的题目 / 分类 / 标签，保存即时生效 */
   editInfo(id){
@@ -5674,6 +5744,9 @@ const Notes = {
       Store.set('notes', this.list().map(x => x.id===id ? {...x, title: title || Util.firstSentence(this._stripMedia(it.text||'')), cat, tags, updatedAt: new Date().toISOString()} : x));
       UI.closeModal();
       UI.toast('摘录信息已更新 ✓');
+      /* 原地刷新详情页顶部元信息：存完仍停在详情，题目/分类/标签立即更新（不再误以为跳走了） */
+      const open = Store.get('notes',[]).find(x=>x.id===id);
+      if(open && this._curDetailId === id) this._renderDetailMeta(open);
       this.render();
     };
     body.querySelector('#niCancel').onclick = ()=>UI.closeModal();
@@ -7025,6 +7098,14 @@ const Visual = {
     this._viewer = {items: flat, idx, itemId: flat[idx]._itemId};
     this._renderViewer();
   },
+  /* v138：从相册点开全屏查看器，只在该相册（分类）内左右翻上/下一张 */
+  openAlbumViewer(mediaId){
+    const list = this._album?.items || [];
+    const idx = list.findIndex(m => m.id === mediaId);
+    if(idx < 0) return;
+    this._viewer = {items: list.slice(), idx, itemId: list[idx]._itemId};
+    this._renderViewer();
+  },
   async _renderViewer(){
     const v = this._viewer; if(!v) return;
     let box = document.getElementById('visualViewer');
@@ -7032,6 +7113,7 @@ const Visual = {
       box = document.createElement('div'); box.id = 'visualViewer'; box.className = 'visual-viewer';
       box.innerHTML = `<button class="vv-close" onclick="Visual.closeViewer()">×</button><button class="vv-prev" onclick="Visual.viewerNav(-1)">‹</button><div class="vv-stage" id="vvStage"></div><button class="vv-next" onclick="Visual.viewerNav(1)">›</button><div class="vv-bar"><a class="vv-dl" id="vvDl" download>⬇ 下载</a><span class="vv-info" id="vvInfo"></span></div>`;
       document.body.appendChild(box);
+      Util.bindSwipe(box, d=>{ if(d) this.viewerNav(d); });
     }
     box.style.display = 'flex';
     const m = v.items[v.idx];
@@ -7069,7 +7151,7 @@ const Visual = {
     const grid=document.getElementById('albumGrid'); if(!grid||!this._album) return;
     if(!this._album.items.length){ grid.innerHTML='<div class="album-empty">已经删光啦</div>'; return; }
     const isVid = m => m.type?.startsWith?.('video/') || /\.mp4$|\.webm$|\.mov$/i.test(m.name||'');
-    grid.innerHTML = this._album.items.map(m=>`<div class="album-cell">${isVid(m)?`<video data-mid="${m.id}" muted playsinline></video>`:`<img data-mid="${m.id}" alt="">`}<button class="ab-del" onclick="Visual.delMedia('${m._itemId}','${m.id}')">✕</button></div>`).join('');
+    grid.innerHTML = this._album.items.map(m=>`<div class="album-cell">${isVid(m)?`<video data-mid="${m.id}" muted playsinline onclick="Visual.openAlbumViewer('${m.id}')"></video>`:`<img data-mid="${m.id}" alt="" onclick="Visual.openAlbumViewer('${m.id}')">`}<button class="ab-del" onclick="Visual.delMedia('${m._itemId}','${m.id}')">✕</button></div>`).join('');
     this._album.items.forEach(m=>{
       const el=grid.querySelector(`[data-mid="${m.id}"]`); if(!el) return;
       Media.objectUrl(m.id).then(u=>{ el.src=u; }).catch(()=>{});
@@ -7993,7 +8075,7 @@ const Settings = {
     }
     const total = (lsBytes||0) + mediaBytes;
     const el = document.getElementById('storeUsage');
-    if(el) el.textContent = (supported ? '' : '当前浏览器不支持大仓库 · ') + Util.bytes(total) + (mediaCount ? ' · ' + mediaCount + ' 张图片/视频' : '');
+    if(el) el.textContent = (supported ? '' : '当前浏览器不支持大仓库 · ') + Util.bytes(total) + (mediaCount ? ' · ' + mediaCount + ' 张图片' : '');
     const meter = document.getElementById('storeMeter');
     /* 进度条上限：APK 用「本机设备总存储」，网页兜底用浏览器给该站的存储配额；只反映本应用真实占用 */
     let devCap = 0, devAvail = 0;
@@ -8026,6 +8108,9 @@ const Settings = {
     const bi = document.getElementById('buildInfo');
     if(bi) bi.textContent = '当前版本：' + BUILD_VERSION;
   },
+  /* v138：恢复「清理孤立图片」入口（v137 曾整体下掉，因旧实现误删真实图）。
+     现走 Media.cleanOrphans 全量深度扫描，只删不再被任何记录引用的孤儿图，删除前 confirm 数量。 */
+  cleanOrphans(){ return Media.cleanOrphans(); },
   cleanHttps(v, fallback=''){
     const s = String(v || '').trim();
     if(!s) return fallback;
