@@ -790,6 +790,9 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
 .db-box.cyan{background:#d9f0f3;border-color:#b6dadd;box-shadow:0 1px 5px rgba(90,170,185,.18)}
 .db-box.cyan h3{color:#35707e}
 .db-box.cyan .db-list li{color:#28505a}
+/* v137：吐槽区每行加圆点，跟列表一样一眼看出有几条、每条从哪开始 */
+.db-box.cyan .db-list.dots{margin:0;padding-left:18px;list-style:disc}
+.db-box.cyan .db-list.dots li{margin:1.5px 0;padding-left:2px;list-style:disc}
 /* 情绪日记 / 碎碎念：不加框，正文用黑色同正文（不再是咖色弱化），碎碎念合并成一段 */
 .db-plain{margin:6px 0;font-size:12px;line-height:1.55;color:#2e2e29}
 .db-plain b{color:#8a7a5c;font-weight:600;margin-right:4px}
@@ -1475,8 +1478,6 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
         <div class="meter" id="storeMeter"><span></span></div>
         <p class="hint" style="margin-top:4px"><span id="storeDetail">-</span></p>
         <div id="storeWarn" style="display:none;margin-top:8px;padding:10px 12px;border-radius:10px;font-size:13px;line-height:1.6"></div>
-        <button class="btn ghost small" style="margin-top:8px" onclick="Media.cleanOrphans()">清理残留</button>
-        <p class="hint" style="margin-top:4px">只删已不被任何卡片/日记/灵感引用的旧图片，你的文字和在用的图片都不受牵连。</p>
       </div>
       <div class="card">
         <h2>AI 分析</h2>
@@ -2071,45 +2072,6 @@ const Media = {
     UI.toast(moved ? `搬完了，移走 ${moved} 个文件` : '没有需要搬运的旧图片');
     if(typeof Settings !== 'undefined') Settings.renderStorage();
   },
-  /* 清理没有任何记录引用的孤儿文件 */
-  async cleanOrphans(){
-    if(!this.supported()) return;
-    /* 全量扫描：任何记录（含日记、灵感、生活、富文本内嵌图等）里引用的媒体 id 都收集，
-       只把「完全没有被引用」的旧图片当孤儿。媒体 id 统一形如 m_xxx。 */
-    const used = new Set();
-    const addId = id => { if(typeof id === 'string' && /^m_[A-Za-z0-9]+$/.test(id)) used.add(id); };
-    const INLINE_RE = /(?:data-media="|openFull\('|\[img:)(m_[A-Za-z0-9]+)/g;
-    const walk = (obj) => {
-      if(Array.isArray(obj)){
-        for(const it of obj){ if(it != null){ if(typeof it === 'string') addId(it); else if(typeof it === 'object') walk(it); } }
-        return;
-      }
-      if(obj && typeof obj === 'object'){
-        for(const k in obj){
-          const v = obj[k];
-          if(v == null) continue;
-          if(typeof v === 'string'){
-            addId(v);
-            INLINE_RE.lastIndex = 0; let m2;
-            while((m2 = INLINE_RE.exec(v)) !== null) used.add(m2[1]);
-          } else if(typeof v === 'object'){ walk(v); }
-        }
-      }
-    };
-    try{ (typeof Store.keyList === 'function' ? Store.keyList() : []).forEach(k => { try{ walk(Store.get(k)); }catch(e){} }); }catch(e){}
-    const keys = await this.keys();
-    const doomed = [];
-    for(const k of keys){
-      if(String(k).startsWith('__')) continue;
-      const root = String(k).replace(/:thumb$/, '');
-      if(!used.has(root)) doomed.push(k);
-    }
-    if(!doomed.length){ UI.toast('没有残留文件，所有图片都在使用中'); if(typeof Settings !== 'undefined') Settings.renderStorage(); return; }
-    if(!confirm('将删除 ' + doomed.length + ' 个「已不再被任何卡片、日记、灵感等记录引用」的旧图片/视频。\n只删用不到的，你的文字记录和正在用的图片都不会受影响。确定继续吗？')) return;
-    for(const k of doomed){ await this.del(k); }
-    UI.toast('已清理 ' + doomed.length + ' 个残留文件');
-    if(typeof Settings !== 'undefined') Settings.renderStorage();
-  },
   /* 把大仓库里所有文件（原件）导出成可序列化的 base64 数组，用于完整备份；缩略图随原图重建，不进备份；目录句柄等非文件键会被跳过 */
   async exportAll(){
     const keys = await this.keys();
@@ -2686,7 +2648,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-09-09-v136';
+const BUILD_VERSION = '2026-09-10-v137';
 /* 版本自愈：一旦读到的 HTML 比上次更新（BUILD_VERSION 变了），立即清空 caches 里的旧副本并 reload。
    避免 SWR 回退到陈旧缓存、让旧界面永远赖着不走（中国网络访问 github.io 不稳时尤其多发：联网经常失败→回退旧缓存） */
 (function(){try{
@@ -3717,7 +3679,7 @@ const DiaryBook = {
     if(d.winLines.length) out.push(`<div class="db-box yellow num" style="cursor:pointer" title="点击去修改这天的开心小事" onclick="Success.openDay('${date}')"><h3>⭐ 开心小事</h3><ul class="db-list">${d.winLines.map(x=>`<li>${Util.esc(x)}</li>`).join('')}</ul></div>`);
     /* 感动瞬间图片并排无标题，紧跟「开心小事」下方 */
     if(d.images.length){ Media._diaryImgs = d.images; out.push(`<div class="db-sec"><div class="img-row">${d.images.map((id,i)=>`<img data-media="${id}" alt="" onclick="Media.gallery(Media._diaryImgs, ${i})">`).join('')}</div></div>`); }
-    if(d.rantLines.length) out.push(`<div class="db-box cyan"><h3>💬 吐槽区</h3><ul class="db-list">${d.rantLines.map(x=>`<li>${Util.esc(x)}</li>`).join('')}</ul></div>`);
+    if(d.rantLines.length) out.push(`<div class="db-box cyan"><h3>💬 吐槽区</h3><ul class="db-list dots">${d.rantLines.map(x=>`<li>${Util.esc(x)}</li>`).join('')}</ul></div>`);
     /* @情绪日记 / @碎碎念：无框、黑色正文，排在主框后；碎碎念合并成一段话 */
     if(d.moodDiary.length) out.push(`<div class="db-plain"><b>@情绪日记</b><p>${d.moodDiary.map(x=>`${Util.esc(x.symbol||'')} ${Util.esc(x.text)}`).join('；')}</p></div>`);
     if(d.whispers.length) out.push(`<div class="db-plain"><b>@碎碎念</b><p>${d.whispers.map(x=>Util.esc(x)).join('，')}</p></div>`);
@@ -5645,7 +5607,7 @@ const Notes = {
   /* v88：单 div contenteditable —— 点进来纯阅读（图片大图行内显示在文字位置），点击/聚焦出现光标进入编辑，blur 或 ← 返回自动保存 */
   openDetail(id){
     const it = this.list().find(x=>x.id===id); if(!it) return;
-    const rightBtn = `<button class="ui-fs-icon-btn" type="button" onclick="Notes.copyFullFromEdit(this)" title="复制全文">📋</button><button class="ui-fs-icon-btn" type="button" onclick="document.getElementById('noteEditPureFile').click()" title="插入图片">🖼</button><button class="ui-fs-icon-btn" type="button" onclick="Notes.undoEdit(this)" title="撤销">↶</button><button class="ui-fs-icon-btn" type="button" onclick="Notes.redoEdit(this)" title="重做">↷</button>`;
+    const rightBtn = `<button class="ui-fs-icon-btn" type="button" onclick="Notes.editInfo('${id}')" title="编辑题目/分类/标签">✏️</button><button class="ui-fs-icon-btn" type="button" onclick="Notes.copyFullFromEdit(this)" title="复制全文">📋</button><button class="ui-fs-icon-btn" type="button" onclick="document.getElementById('noteEditPureFile').click()" title="插入图片">🖼</button><button class="ui-fs-icon-btn" type="button" onclick="Notes.undoEdit(this)" title="撤销">↶</button><button class="ui-fs-icon-btn" type="button" onclick="Notes.redoEdit(this)" title="重做">↷</button>`;
     UI.openFull('', `
       <div id="noteEditPure" class="note-edit-view" contenteditable="true" tabindex="0" spellcheck="false" data-placeholder="写下你的经验、原则、观察..."></div>
       <input type="file" id="noteEditPureFile" accept="image/*" multiple style="display:none" onchange="Notes.insertImages(this,'noteEditPure')">
@@ -5675,6 +5637,43 @@ const Notes = {
     }
     /* id 暂存，供 _autoSaveEdit 用 */
     this._fsEditingId = id;
+  },
+  /* v137：详情页右上角 ✏️ —— 弹窗修改这条摘录的题目 / 分类 / 标签，保存即时生效 */
+  editInfo(id){
+    const it = this.list().find(x=>x.id===id); if(!it) return;
+    const cats = this.cats();
+    const curCat = (it.cat||'').trim();
+    UI.modal('编辑摘录信息', `
+      <div style="margin-bottom:10px">
+        <label style="display:block;margin-bottom:4px">题目</label>
+        <input id="niTitle" value="${Util.esc(it.title||'')}" placeholder="标题" style="width:100%">
+      </div>
+      <div style="margin-bottom:10px">
+        <label style="display:block;margin-bottom:4px">分类</label>
+        <select id="niCat" style="width:100%">${cats.map(c=>`<option value="${Util.esc(c)}" ${c===curCat?'selected':''}>${Util.esc(c)}</option>`).join('')}</select>
+      </div>
+      <div style="margin-bottom:4px">
+        <label style="display:block;margin-bottom:4px">标签（逗号分隔，可选）</label>
+        <input id="niTags" value="${Util.esc(it.tags||'')}" placeholder="如：效率, 心态" style="width:100%">
+      </div>
+      <div class="row" style="margin-top:16px">
+        <button class="btn" id="niSave">保存</button>
+        <button class="btn ghost" id="niCancel">取消</button>
+      </div>
+    `);
+    const body = document.querySelector('#uiModalBody'); if(!body) return;
+    const saveBtn = body.querySelector('#niSave');
+    saveBtn.onclick = ()=>{
+      const title = (body.querySelector('#niTitle').value||'').trim();
+      const cat = body.querySelector('#niCat').value;
+      const tags = (body.querySelector('#niTags').value||'').trim();
+      this.saveMeta(tags);
+      Store.set('notes', this.list().map(x => x.id===id ? {...x, title: title || Util.firstSentence(this._stripMedia(it.text||'')), cat, tags, updatedAt: new Date().toISOString()} : x));
+      UI.closeModal();
+      UI.toast('摘录信息已更新 ✓');
+      this.render();
+    };
+    body.querySelector('#niCancel').onclick = ()=>UI.closeModal();
   },
   /* v63：全屏编辑态「复制全文」符号按钮（📋）—— 复制当前 textarea 全部文本（含 [img:m_xxx] 图片标记）。
    v66：btn 加 .is-flash 关键帧动画（点完立刻深→恢复 0.42s），保证触屏/鼠标都能看到点按反馈。 */
@@ -8010,7 +8009,7 @@ const Settings = {
       const pct = total / cap;
       if(pct >= 0.95){
         warn.style.display=''; warn.style.background='#fdecec'; warn.style.color='#b00020'; warn.style.border='1px solid #f3b4b4';
-        warn.innerHTML='⚠️ 存储快满了（已用 ' + (pct*100).toFixed(0) + '%）。数据只存在这台设备，不会自动上传云端。建议：① 先点「立即备份」存一份到同步文件夹；② 再点「清理残留」删掉没用的旧图片。照片都是原图，占空间大，定期备份后清理即可。';
+        warn.innerHTML='⚠️ 存储快满了（已用 ' + (pct*100).toFixed(0) + '%）。数据只存在这台设备，不会自动上传云端。建议先点「立即备份」存一份到同步文件夹。照片都是原图、占空间大，可以适当整理删除不用的记录释放空间。';
       } else if(pct >= 0.8){
         warn.style.display=''; warn.style.background='#fff7e6'; warn.style.color='#9a6b00'; warn.style.border='1px solid #ffe1a6';
         warn.innerHTML='🟡 已用 ' + (pct*100).toFixed(0) + '%，还够用。记得定期点「立即备份」，存满前先备份再清理，照片都是原图占空间较大。';
