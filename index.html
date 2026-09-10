@@ -1482,7 +1482,7 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
         <p class="hint" style="margin-top:4px"><span id="storeDetail">-</span></p>
         <p class="hint" id="storeNote" style="display:none;margin-top:2px"></p>
         <div id="storeWarn" style="display:none;margin-top:8px;padding:10px 12px;border-radius:10px;font-size:13px;line-height:1.6"></div>
-        <button class="btn ghost" style="margin-top:12px;width:100%" onclick="Settings.cleanOrphans()">🧹 清理孤立图片（只删没被任何记录引用的旧图）</button>
+        <button class="btn ghost" style="margin-top:12px;width:100%" onclick="Settings.cleanOrphans()">🧹 清理缓存</button>
       </div>
       <div class="card">
         <h2>AI 分析</h2>
@@ -2712,7 +2712,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-09-10-v139';
+const BUILD_VERSION = '2026-09-10-v140';
 /* 版本自愈：一旦读到的 HTML 比上次更新（BUILD_VERSION 变了），立即清空 caches 里的旧副本并 reload。
    避免 SWR 回退到陈旧缓存、让旧界面永远赖着不走（中国网络访问 github.io 不稳时尤其多发：联网经常失败→回退旧缓存） */
 (function(){try{
@@ -7913,22 +7913,11 @@ const Backup = {
   },
   markdown(){ const lines=['# 拾光手账日记本','','导出时间：'+new Date().toLocaleString('zh-CN'),'']; Success.collect(365).forEach(x=>{lines.push('## 成功日记 '+x.date, '', '### 成就感', x.wins||'', '### 学到了什么', x.learned||'', '### 做对了什么', x.right||'', '### 明日必做', ...Success.norm(x.tomorrow).map(t=>'- '+t.text), '');}); Mood.list().forEach(x=>lines.push('## 情绪日记 '+x.date+' '+x.time,'',x.symbol+' '+x.text,'',x.summary||'','')); return lines.join('\n'); },
   csv(){ const rows=[['type','date','title','content']]; Success.collect(365).forEach(x=>rows.push(['success',x.date,'感恩日记',[x.wins,Success.norm(x.tomorrow).map(y=>y.text).join(';')].join('\n')])); Mood.list().forEach(x=>rows.push(['mood',x.date,x.symbol,x.text])); Gift.list().forEach(x=>rows.push(['gift',x.date,x.person,`${x.type} ${x.amount} ${x.event} ${x.note}`])); return rows.map(r=>r.map(Util.csvCell).join(',')).join('\n'); },
-  /* 恢复备份入口。小文件（≤20MB）快速整读；大文件走流式导入 importFull，避免整包 JSON.parse 撑爆 WebView。
-     恢复结果按实际成败反馈（不再盲目报「恢复成功」）。 */
+  /* 恢复备份入口 = 与首页顶部「恢复备份」完全同一套逻辑（AutoBackup.applyRestore）。
+     手机/桌面、大小文件统一都走它，不再维护 importFile/importFull 两套恢复路径，从根上消除“设置里导不进去”的差异。 */
   importFile(input){
-    const f=input.files[0]; if(!f)return; input.value='';
-    if(!confirm('恢复备份会覆盖当前数据，确定吗？覆盖前会自动留一份急救快照，误操作也能救回。')) return;
-    Store.rescue();
-    UI.toast('⏳ 正在导入，请稍候…', 1);
-    const report=(r)=>{ if(r.fail>0){ alert('有 '+r.fail+' 个媒体没能恢复（原图可能已被清）。已恢复 '+(r.ok||0)+' 个。'); } else { UI.toast('✅ 导入成功'+(r.mediaTotal?('，含 '+r.ok+'/'+r.mediaTotal+' 个媒体'):'')); } };
-    const done=async(r)=>{ await Store.flush(); report(r); setTimeout(()=>location.reload(), 1200); };
-    const fail=(err)=>{ alert('导入失败：' + (err.message || '未知错误')); location.reload(); };
-    if(f.size <= 20*1024*1024){
-      const r=new FileReader(); r.onerror=()=>fail(new Error('读取文件失败'));
-      r.onload=async e=>{ try{ const parsed=JSON.parse(e.target.result); await Store.importAll(parsed); const res=Array.isArray(parsed.media)?await Media.restore(parsed.media):{ok:0,fail:0,mediaTotal:0}; await done(res); }catch(e){ fail(e); } };
-      r.readAsText(f); return;
-    }
-    this.importFull(f).then(done, fail);
+    const f = input.files[0]; if(!f) return; input.value='';
+    (async()=>{ let text; try{ text = await f.text(); }catch(e){ alert('读取备份失败：' + (e.message || '未知错误')); return; } await AutoBackup.applyRestore(text, f.name); })();
   },
   /* 大文件流式导入：字节级扫描定位顶层 "media":[ 与每个媒体对象的字节区间（全程不建整包大字符串），
      头部文字一次性 parse 进 Store，媒体逐个「读区间→解码→写回大仓库→释放」，内存上限=最大单个媒体。 */
@@ -8096,11 +8085,6 @@ const Settings = {
     if(devAvail > 0) detText += ' · 本机可用 ' + Util.bytes(devAvail);
     const det = document.getElementById('storeDetail');
     if(det) det.textContent = supported ? detText : '建议用 Chrome / Edge 打开';
-    const note = document.getElementById('storeNote');
-    if(note){
-      note.style.display = supported ? '' : 'none';
-      note.textContent = supported ? '这里的“图片/视频”是添加的原图（独立存放，文字记录另算）；导出/备份会把原图转成 base64 打包进一份 JSON，所以备份比这里显示的更大，属正常。' : '';
-    }
     const warn = document.getElementById('storeWarn');
     if(warn){
       const pct = total / cap;
