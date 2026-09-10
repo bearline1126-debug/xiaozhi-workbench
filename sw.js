@@ -1,8 +1,10 @@
-/* 缓存策略（v84 + v91 两轮血泪史的最终形态，勿改回 cache-first）：
+/* 缓存策略（v84 + v91 两轮血泪史的最终形态，勿改回纯 cache-first）：
    1. install 立即 skipWaiting + 不预缓存 HTML，只预缓存 4 个静态资源（单个失败不阻塞）
    2. activate 强制清掉所有旧 cache
-   3. fetch HTML：网络优先 + 缓存兜底（SWR）——网络成功回填缓存（部署立即生效），
-      失败回退缓存副本（弱网/离线不白屏。v84 的"纯不缓存"曾导致网络不稳时白屏，v91 修复）
+   3. fetch HTML（v143 起）：SWR 快速刷新 —— 先用本地缓存立即渲染，同时后台拉最新；
+      网络快(<1.2s)用它返回(部署立即生效)，网络慢则 1.2s 先用缓存顶上(不再白屏)、后台继续更新缓存；
+      后台取到更新版本号 ≠ 旧缓存版本号 → 主动刷新窗口一次，配合 index.html 版本自愈清旧缓存。
+      仍非 cache-first：后台持续校验版本，避免"部署了用户看不到新版"。
    4. 其他静态资源 cache-first */
 const CACHE = 'xiaozhi-workbench-v143';
 const ASSETS = ['./manifest.json', './icon.png', './icon-192.png', './assets/welcome-default.jpg', './dict.json'];
