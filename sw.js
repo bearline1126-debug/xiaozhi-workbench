@@ -6,9 +6,9 @@
       后台取到更新版本号 ≠ 旧缓存版本号 → 主动刷新窗口一次，配合 index.html 版本自愈清旧缓存。
       仍非 cache-first：后台持续校验版本，避免"部署了用户看不到新版"。
    4. 其他静态资源 cache-first */
-const CACHE = 'xiaozhi-workbench-v143';
+const CACHE = 'xiaozhi-workbench-v144';
 const ASSETS = ['./manifest.json', './icon.png', './icon-192.png', './assets/welcome-default.jpg', './dict.json'];
-const BUILD = '2026-09-10-v143';
+const BUILD = '2026-09-10-v144';
 
 const DEFAULT_MANIFEST = {
   name: '拾光手账', short_name: '拾光',
