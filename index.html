@@ -2019,7 +2019,7 @@ const Media = {
       box = document.createElement('div'); box.id = 'mediaViewer'; box.className = 'visual-viewer';
       box.innerHTML = `<button class="vv-close" onclick="Media.galClose()">×</button><button class="vv-prev" onclick="Media.galNav(-1)">‹</button><div class="vv-stage" id="vvStage2"></div><button class="vv-next" onclick="Media.galNav(1)">›</button><div class="vv-bar"><span class="vv-info" id="vvInfo2"></span></div>`;
       document.body.appendChild(box);
-      Util.bindSwipe(box, (d)=>{ if(d) Media.galNav(d); });
+      Util.bindSwipe(box, ()=>{ Media.galClose(); }); /* v142：左右滑都退出全屏图，切图用 ‹ › 按钮 */
     }
     box.style.display = 'flex';
     const stage = document.getElementById('vvStage2');
@@ -2468,7 +2468,10 @@ const UI = {
         box.style.display = 'none';
         const body = document.getElementById('uiFullBody');
         if(body) body.innerHTML = '';
-        box._backLabel = null; box._onBack = null;
+        /* v142：全屏真正关闭时若有 _onCloseFull 钩子（如新建摘录退出要弹 ✏️ 填题目的弹框）就触发一次 */
+        const onCloseFull = box._onCloseFull;
+        box._backLabel = null; box._onBack = null; box._onCloseFull = null;
+        if(typeof onCloseFull === 'function'){ try{ onCloseFull(); }catch(e){} }
       }
       this._fsHistory = [];
       document.body.classList.remove('ui-fs-on');
@@ -2704,7 +2707,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-09-10-v141';
+const BUILD_VERSION = '2026-09-10-v142';
 /* 版本自愈：一旦读到的 HTML 比上次更新（BUILD_VERSION 变了），立即清空 caches 里的旧副本并 reload。
    避免 SWR 回退到陈旧缓存、让旧界面永远赖着不走（中国网络访问 github.io 不稳时尤其多发：联网经常失败→回退旧缓存） */
 (function(){try{
@@ -5615,6 +5618,8 @@ const Notes = {
         ${allInner}
       </div>`;
     noteList.innerHTML = `<div class="note-cat-grid">${cards}${allCard}</div>`;
+    /* v142：主页面网格也支持长按 → 拖动排序 + 浮出右上角 ✕ 删除（此前只绑了搜索/分类全屏网格，主页卡片删不了） */
+    DragSort.bind('#noteList [data-sort-id]', 'notes', ()=>Notes.render());
     /* v60：外层 mini card 内嵌图异步 fill src（与内层 _renderOpenGrid 一致） */
     Media.paint(noteList);
   },
@@ -5667,6 +5672,25 @@ const Notes = {
     const cats = this.cats();
     Store.set('notes', [{ id, date:Util.today(), title:'', text:'', tags:'', cat: cats[0]||'' }, ...this.list()]);
     this.openDetail(id);
+    /* v142：新建摘录退出全屏时自动弹 ✏️ 编辑弹框，提示补题目/分类/标签。
+       对新建 id 暂存 _fsNewNoteId：_autoSaveEdit 对这条先不自动删空白（否则退出提示的编辑对象就没了），
+       由 _promptNewNote 决定「补了信息就留、仍为空（标题+正文+标签全空）就删」。 */
+    this._fsNewNoteId = id;
+    const box = document.getElementById('uiFullBox');
+    if(box) box._onCloseFull = ()=>{ Notes._promptNewNote(id); };
+  },
+  /* v142：新摘录退出后 → 若还没填题目就自动弹 ✏️ 编辑弹框；编辑框关掉后再扫一次，仍全空则删掉这条空白 */
+  _promptNewNote(id){
+    this._fsNewNoteId = null;
+    const it = this.list().find(x=>x.id===id); if(!it) return;
+    if((it.title||'').trim()) return; /* 已经填了题目，不再打扰 */
+    this.editInfo(id, ()=>{
+      const n = Notes.list().find(x=>x.id===id);
+      if(n && !(n.title||'').trim() && !Notes._stripMedia(n.text||'').trim() && !(n.tags||'').trim()){
+        Store.set('notes', Notes.list().filter(x=>x.id!==id));
+        Notes.render();
+      }
+    });
   },
   /* v57：详情 = 全屏纯文本编辑。无标题/分类/标签输入框、无保存/取消按钮 —— 默认自动保存；
      右下角 🖼 插入图片（带文字说明）。删除另放在小卡长按浮出的红色 ✕。 */
@@ -5716,7 +5740,8 @@ const Notes = {
       `<div class="ndm-tags">${[ Util.esc((it.cat||'').trim()), ...this.splitTags(it.tags||'').map(Util.esc) ].filter(Boolean).map(t=>`<span>${t}</span>`).join('')}</div>`;
   },
   /* v137：详情页右上角 ✏️ —— 弹窗修改这条摘录的题目 / 分类 / 标签，保存即时生效 */
-  editInfo(id){
+  /* v142：第二参 onDone —— 弹框保存/取消关闭后都会回调一次（新建摘录退出提示回收空白用） */
+  editInfo(id, onDone=null){
     const it = this.list().find(x=>x.id===id); if(!it) return;
     const cats = this.cats();
     const curCat = (it.cat||'').trim();
@@ -5752,8 +5777,9 @@ const Notes = {
       const open = Store.get('notes',[]).find(x=>x.id===id);
       if(open && this._curDetailId === id) this._renderDetailMeta(open);
       /* 不重绘父页：原地刷新元信息即可，避免任何“编辑后跳回知识页”的副作用 */
+      if(onDone) onDone();
     };
-    body.querySelector('#niCancel').onclick = ()=>UI.closeModal();
+    body.querySelector('#niCancel').onclick = ()=>{ UI.closeModal(); if(onDone) onDone(); };
   },
   /* v63：全屏编辑态「复制全文」符号按钮（📋）—— 复制当前 textarea 全部文本（含 [img:m_xxx] 图片标记）。
    v66：btn 加 .is-flash 关键帧动画（点完立刻深→恢复 0.42s），保证触屏/鼠标都能看到点按反馈。 */
@@ -5824,10 +5850,12 @@ const Notes = {
     /* 空内容才判定为「退栈即弃」并删除（新建时只点了 ✏️ 填了题目/标签也算有内容，保留）。 */
     const hasContent = !!(textNoMedia || (list[idx] && ((list[idx].title||'').trim() || (list[idx].tags||'').trim())));
     if(!title && !textNoMedia && !hasContent){
-      /* 空内容：等价于删除这条（用户退栈后再撤太烦） */
-      Store.set('notes', list.filter(x=>x.id!==id));
-      this.render();
-      if(this._fsMode) this._renderOpenGrid();
+      /* v142：新建摘录退出前先不自动删空白 —— 退出提示 _promptNewNote 会弹 ✏️ 弹框，由它决定留/删 */
+      if(this._fsNewNoteId !== id){
+        Store.set('notes', list.filter(x=>x.id!==id));
+        this.render();
+        if(this._fsMode) this._renderOpenGrid();
+      }
       return;
     }
     list[idx] = {...list[idx], text, title: list[idx].title || title, updatedAt:new Date().toISOString()};
@@ -7119,7 +7147,7 @@ const Visual = {
       box = document.createElement('div'); box.id = 'visualViewer'; box.className = 'visual-viewer';
       box.innerHTML = `<button class="vv-close" onclick="Visual.closeViewer()">×</button><button class="vv-prev" onclick="Visual.viewerNav(-1)">‹</button><div class="vv-stage" id="vvStage"></div><button class="vv-next" onclick="Visual.viewerNav(1)">›</button><div class="vv-bar"><a class="vv-dl" id="vvDl" download>⬇ 下载</a><span class="vv-info" id="vvInfo"></span></div>`;
       document.body.appendChild(box);
-      Util.bindSwipe(box, d=>{ if(d) this.viewerNav(d); });
+      Util.bindSwipe(box, ()=>{ this.closeViewer(); }); /* v142：左右滑都退出全屏图，切图用 ‹ › 按钮 */
     }
     box.style.display = 'flex';
     const m = v.items[v.idx];
