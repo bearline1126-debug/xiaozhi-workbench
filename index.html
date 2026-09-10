@@ -1225,27 +1225,15 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
       </div>
       <div id="selfBoards"></div>
     </section><!-- ==== 功能：个人认知库 END ==== --><!-- ==== 功能：经验摘录 START ==== --><section class="page" id="page-notes">
-      <div class="page-title">经验摘录</div><div class="page-sub">好写好查：经验、原则、句子、生活观察，用标签和搜索找回来。</div>
-      <div class="card">
-        <label>标题</label>
-        <input id="noteTitle" placeholder="标题（选填）">
-        <label>分类</label>
-        <div class="row"><select id="noteCat" style="flex:1"></select><button class="note-manage-btn" onclick="Notes.editCategories()" title="增删改分类">管理分类</button></div>
-        <label>内容</label>
-        <textarea id="noteText" placeholder="内容。可点下面「🖼 插入图片」在文字之间插入图片"></textarea>
-        <div class="row" style="margin-top:8px"><button class="btn ghost small" type="button" onclick="document.getElementById('noteFile').click()">🖼 插入图片</button><span class="hint" id="noteMediaCount" style="margin-left:auto"></span></div>
-        <div style="margin-top:10px">
-          <label style="margin-top:0">标签</label>
-          <div style="display:flex;gap:0"><input id="noteTags" placeholder="逗号分隔，如：情绪,边界"><button type="button" class="combo-toggle" onclick="Util.Combo.open('noteTags','note_tags',event)" title="选已有标签">▾</button></div>
-        </div>
-        <button class="btn" style="margin-top:10px;width:100%" onclick="Notes.add()">保存摘录</button>
-        <button class="btn ghost" style="margin-top:8px;width:100%;display:none" id="noteCancelEdit" onclick="Notes.cancelEdit()">取消编辑，写一条新的</button>
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <div style="flex:1;min-width:0"><div class="page-title">经验摘录</div><div class="page-sub">好写好查：经验、原则、句子、生活观察，用标签和搜索找回来。</div></div>
+        <button class="ui-fs-icon-btn" style="font-size:26px;padding:2px 12px;flex:none;margin-top:2px" onclick="Notes.newNote()" title="新建摘录">＋</button>
       </div>
       <div class="card">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:6px"><button class="note-manage-btn" onclick="Notes.editCategories()" title="增删改分类">📁 管理分类</button></div>
         <div class="row"><input id="noteSearch" placeholder="搜索标题、内容、标签、关键词" oninput="Notes.render()" style="flex:1;min-width:0"><button class="btn ghost" onclick="Notes.render()" style="flex:0 0 auto;padding:7px 14px;font-size:13px">搜索</button></div>
         <div id="noteList" style="margin-top:10px"></div>
       </div>
-      <input type="file" id="noteFile" accept="image/*" multiple style="display:none" onchange="Notes.insertImages(this,'noteText')">
     </section><!-- ==== 功能：经验摘录 END ==== --><!-- ==== 功能：英语积累 START ==== --><section class="page" id="page-english">
       <div class="page-title">英语积累</div><div class="page-sub">每日一句、每日单词、固定搭配、每日对话、每日写作。离线也能用，内容按天轮换。</div>
       <div class="row" style="margin-bottom:10px;align-items:center;gap:8px;flex-wrap:wrap">
@@ -1477,7 +1465,7 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
       </div>
       <div class="card">
         <h2>存储空间</h2>
-        <div class="kv"><span>本机存储（数据只存在这台设备）</span><b id="storeUsage">-</b></div>
+        <div class="kv"><span>本机存储</span><b id="storeUsage">-</b></div>
         <div class="meter" id="storeMeter"><span></span></div>
         <p class="hint" style="margin-top:4px"><span id="storeDetail">-</span></p>
         <p class="hint" id="storeNote" style="display:none;margin-top:2px"></p>
@@ -2424,6 +2412,10 @@ const UI = {
         const t=e.changedTouches[0];
         const dx=t.clientX-swX, dy=t.clientY-swY;
         if(Math.abs(dx)>70 && Math.abs(dx) > Math.abs(dy)*1.5 && (Date.now()-swT) < 500){
+          /* 从左边缘(<=28px)起手的右滑是系统/浏览器自带的「返回手势」，系统会退这一层；
+             这里若再自己 history.back()，会和系统那一次并行触发 → 一个手势退两层，
+             把全屏上层之外的分页也弹掉，直接坠到知识页(hub)。右滑退层就让系统退这一格即可。 */
+          if(swX <= 28) return;
           if(history.state && typeof history.state.uiFs === 'number'){ history.back(); }
           else { UI.closeFull(true); }
         }
@@ -2465,9 +2457,9 @@ const UI = {
          但 history.back() 是异步、且不保证每帧都落，多格里容易弹出过头/落不完 → 竞态。
          现在改为自增计数器 _fsDepth + 单次 history.go(-depth) 原子定位，一步到位跨浏览器稳定。
          _silentFsClose 让 popstate 监听器短路，避免弹栈过程触发 _fsBack。 */
-      /* 用「当前顶层 history.state.uiFs」动态算需回溯层数，而不是固定累计值 ——
-         否则用户已用物理返回/手势先弹掉部分 uiFs 占位后，closeFull 会多退格、越过分层页直达 hub（“退到知识页”）。 */
-      const depth = (history.state && typeof history.state.uiFs === 'number') ? history.state.uiFs : (this._fsDepth || 0);
+      /* 需回溯的 uiFs 占位层数 = 当前顶层 history.state 里的数（popstate 已把当前 uiFs 弹掉 → 落到记录层 → 0，绝不再多弹）。
+         用累计 _fsDepth 当兜底曾把单层详情（从主列表直接打开）返回时多弹一格，把经验摘录列表页也弹掉、坠到 hub —— 就是"右滑直接退到知识页面"的根。 */
+      const depth = (history.state && typeof history.state.uiFs === 'number') ? history.state.uiFs : 0;
       this._fsDepth = 0;
       this._silentFsClose = true;
       try { if(depth > 0) history.go(-depth); } finally { this._silentFsClose = false; }
@@ -2712,7 +2704,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-09-10-v140';
+const BUILD_VERSION = '2026-09-10-v141';
 /* 版本自愈：一旦读到的 HTML 比上次更新（BUILD_VERSION 变了），立即清空 caches 里的旧副本并 reload。
    避免 SWR 回退到陈旧缓存、让旧界面永远赖着不走（中国网络访问 github.io 不稳时尤其多发：联网经常失败→回退旧缓存） */
 (function(){try{
@@ -5023,6 +5015,7 @@ const AutoBackup = {
     try { parsed = JSON.parse(text); } catch(e){ UI.toast('这份备份读不了，可能损坏了'); return; }
     if(!parsed.data) { UI.toast('这不是有效的工作台备份'); return; }
     if(!confirm('确定从「' + label + '」恢复吗？\n恢复前会自动留一份当前数据的急救快照，误操作也能救回。')) return;
+    UI.toast('⏳ 正在导入，请稍候…', 1);
     Store.rescue();
     await Store.importAll(parsed);
     let msg = '恢复成功，正在刷新';
@@ -5599,7 +5592,7 @@ const Notes = {
       /* 最多展示 4 张 mini card；多于 4 张时显示「查看全部」链接 */
       const showItems = items.slice(0, 4);
       const inner = isEmpty
-        ? '<div class="nc-preview" style="color:var(--text-dim)">点上面「保存摘录」会自动归到这里</div>'
+        ? '<div class="nc-preview" style="color:var(--text-dim)">点右上角「＋」新建摘录，会自动归到这里</div>'
         : '<div class="note-detail-grid nc-mini-grid">' + showItems.map(x=>this._miniCard(x)).join('') + '</div>'
           + (count > 4
               ? `<div class="nc-see-all" onclick="event.stopPropagation();Notes.openCat('${Util.esc(cat)}')">查看全部 ${count} 条 →</div>`
@@ -5666,6 +5659,14 @@ const Notes = {
     grid.innerHTML = list.map(x=>this._miniCard(x)).join('');
     Media.paint(grid);
     DragSort.bind('#noteMiniGrid [data-sort-id]','notes',()=>Notes._renderOpenGrid());
+  },
+  /* v141：右上角「＋」新建摘录 —— 先落一条空白记录再进全屏编辑直接写内容；
+     题目/分类/标签用右上角 ✏️ 补。空着退出会在 _autoSaveEdit 里自动清掉这条空白。 */
+  newNote(){
+    const id = Util.uid();
+    const cats = this.cats();
+    Store.set('notes', [{ id, date:Util.today(), title:'', text:'', tags:'', cat: cats[0]||'' }, ...this.list()]);
+    this.openDetail(id);
   },
   /* v57：详情 = 全屏纯文本编辑。无标题/分类/标签输入框、无保存/取消按钮 —— 默认自动保存；
      右下角 🖼 插入图片（带文字说明）。删除另放在小卡长按浮出的红色 ✕。 */
@@ -5820,7 +5821,9 @@ const Notes = {
     const list = this.list();
     const idx = list.findIndex(x=>x.id===id);
     if(idx<0) return;
-    if(!title && !textNoMedia){
+    /* 空内容才判定为「退栈即弃」并删除（新建时只点了 ✏️ 填了题目/标签也算有内容，保留）。 */
+    const hasContent = !!(textNoMedia || (list[idx] && ((list[idx].title||'').trim() || (list[idx].tags||'').trim())));
+    if(!title && !textNoMedia && !hasContent){
       /* 空内容：等价于删除这条（用户退栈后再撤太烦） */
       Store.set('notes', list.filter(x=>x.id!==id));
       this.render();
