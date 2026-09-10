@@ -24,8 +24,8 @@
 - 版本号：见第 4 节，三处同步递增。
 - **Android 唯一构建目录**（v139 起固定，勿新建其他 APK 工程）：`C:\Users\cheng\Documents\Codex\2026-08-10\skill-1-skill-skill-md-2\xiaozhi-capacitor`
   - 其 `android\` 是 Capacitor Android 工程；`www\` 是网页资源镜像（仅供打包用，**真正的代码只改上面第 1 行 PWA 目录里的 index.html**）。
-  - **所有 APK 必须由 `xiaozhi-capacitor\android` 构建**；最终 APK 复制到 **`xiaozhi-capacitor\` 根目录**（用户明确要求放这里，勿再放深层 build 目录或另行拷贝新文件夹）。
-  - 打包步骤固定为：改 PWA 源码 → 同步 index.html/sw.js/manifest/dict/icon/assets 到 `xiaozhi-capacitor\www` → 同步到 `xiaozhi-capacitor\android\app\src\main\assets\public` → `gradlew assembleRelease`（`signingConfig` 已指向正式 keystore）→ 拷 `app-release.apk` 到 `xiaozhi-capacitor\拾光手账-v{版本}-release.apk`。**任何一步同步遗漏都会造成"APK 里是旧代码"。**
+  - **所有 APK 必须由 `xiaozhi-capacitor\android` 构建**；最终 APK 固定复制到 **`小彘的工作台 - v2-workbuddy\keystore-release\`**（用户指定唯一存放位置，命名 `拾光手账-v{版本}-release.apk`；勿放深层 build 目录或另行拷贝新文件夹）。
+  - 打包步骤固定为：改 PWA 源码 → 同步 index.html/sw.js/manifest/dict/icon/assets 到 `xiaozhi-capacitor\www` → 同步到 `xiaozhi-capacitor\android\app\src\main\assets\public` → `gradlew assembleRelease`（`signingConfig` 已指向正式 keystore）→ 拷 `app-release.apk` 到 `keystore-release\拾光手账-v{版本}-release.apk`。**任何一步同步遗漏都会造成"APK 里是旧代码"。**
 
 ---
 
@@ -120,8 +120,8 @@ curl -s "https://bearline1126-debug.github.io/xiaozhi-workbench/index.html" | gr
 #    文件：index.html sw.js manifest.json dict.json icon.png icon-192.png assets/*  （.git、deploy_github.sh 等不打包）
 # 2) 在 xiaozhi-capacitor\android 构建（signingConfig 已指向正式 keystore，自动签名）
 cd ../xiaozhi-capacitor/android && ./gradlew.bat assembleRelease
-# 3) 把产物复制到 xiaozhi-capacitor 根目录，命名带版本号（用户指定位置，勿放深层 build 目录）
-copy android\app\build\outputs\apk\release\app-release.apk ..\拾光手账-v{版本}-release.apk
+# 3) 把产物复制到 keystore-release 根目录，命名带版本号（用户指定唯一存放位置）
+copy android\app\build\outputs\apk\release\app-release.apk ..\..\keystore-release\拾光手账-v{版本}-release.apk
 ```
 
 > 注意：`android\app\src\main\assets\public\{你的index.html}` 必须与 PWA 源 index.html **MD5 一致**才算同步成功；`assembleRelease` 若显示 "x up-to-date" 而没有重新打包，多半是 assets 没变化（旧代码）。
