@@ -4,9 +4,9 @@
    3. fetch HTML：网络优先 + 缓存兜底（SWR）——网络成功回填缓存（部署立即生效），
       失败回退缓存副本（弱网/离线不白屏。v84 的"纯不缓存"曾导致网络不稳时白屏，v91 修复）
    4. 其他静态资源 cache-first */
-const CACHE = 'xiaozhi-workbench-v142';
+const CACHE = 'xiaozhi-workbench-v143';
 const ASSETS = ['./manifest.json', './icon.png', './icon-192.png', './assets/welcome-default.jpg', './dict.json'];
-const BUILD = '2026-09-10-v142';
+const BUILD = '2026-09-10-v143';
 
 const DEFAULT_MANIFEST = {
   name: '拾光手账', short_name: '拾光',
@@ -88,19 +88,44 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  /* HTML（含 navigate）：SWR 策略 —— 网络优先拿最新（部署立即生效），同时缓存一份用于离线/网络失败兜底
-     v91：修 v84 引入的回归 bug（HTML 永不缓存 → 网络不稳时 fetch 失败、缓存里又没有 → 白屏打不开） */
+  /* HTML（含 navigate）：SWR 快速刷新 + 网络后台更新（v143）
+     之前是"网络优先 + 兜底"：每次刷新都阻塞等 GitHub Pages 下完整份 index.html（~4MB，中国访问 github.io 不稳定），
+     网络一卡就长时间白屏转圈，甚至最终回退旧缓存 → 又慢、又"看不到新版"。
+     现改为：先用本地缓存立即渲染；同时后台拉最新 HTML：
+       · 网络快（<1.2s）→ 直接用新版，部署立即生效；
+       · 网络慢/挂起 → 1.2s 内先用缓存顶上（刷新飞快不再白屏），后台继续拉取并回填缓存；
+       · 后台取到最新版号 ≠ 缓存里的旧版号 → 主动刷新窗口一次，用户无需手动再刷就拿到新版。
+   仍不是 cache-first（后台持续校验并更新版本号，配合 index.html 的版本自愈清旧缓存） */
   if (event.request.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname === '/' || url.pathname.endsWith('/')) {
     event.respondWith(
-      fetch(event.request, { cache: 'no-store' })
-        .then(resp => {
-          if (resp && resp.ok) {
-            const copy = resp.clone();
-            caches.open(CACHE).then(c => c.put('./index.html', copy)).catch(() => {});
-          }
-          return resp;
-        })
-        .catch(() => caches.match('./index.html'))
+      caches.match('./index.html').then(cached => {
+        const network = fetch(event.request, { cache: 'no-store' })
+          .then(resp => {
+            if (resp && resp.ok) {
+              const copy = resp.clone();
+              caches.open(CACHE).then(c => c.put('./index.html', copy)).catch(() => {});
+              /* 后台自愈：取到的新版号 ≠ 之前缓存服务的旧版号 → 通知窗口刷新一次，让"新版"一次到位 */
+              copy.clone().text().then(async t => {
+                try {
+                  const newV = /BUILD_VERSION = '([^']+)'/.exec(t);
+                  if (!newV || !cached) return;
+                  let oldV = null;
+                  try { const oldT = await cached.clone().text(); const om = /BUILD_VERSION = '([^']+)'/.exec(oldT); oldV = om ? om[1] : null; } catch {}
+                  if (oldV !== newV[1]) {
+                    const cs = await self.clients.matchAll({ type: 'window' });
+                    if (cs.length) cs.forEach(c => { try { c.navigate(c.url); } catch {} });
+                  }
+                } catch {}
+              }).catch(() => {});
+            }
+            return resp;
+          })
+          .catch(() => cached);
+        if (cached) {
+          return Promise.race([network, new Promise(r => setTimeout(() => r(cached), 1200))]);
+        }
+        return network;
+      })
     );
     return;
   }

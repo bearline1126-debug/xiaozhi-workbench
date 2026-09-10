@@ -2707,7 +2707,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-09-10-v142';
+const BUILD_VERSION = '2026-09-10-v143';
 /* 版本自愈：一旦读到的 HTML 比上次更新（BUILD_VERSION 变了），立即清空 caches 里的旧副本并 reload。
    避免 SWR 回退到陈旧缓存、让旧界面永远赖着不走（中国网络访问 github.io 不稳时尤其多发：联网经常失败→回退旧缓存） */
 (function(){try{
@@ -5722,6 +5722,8 @@ const Notes = {
       clearTimeout(timer);
       timer = setTimeout(()=>Notes._autoSaveEdit(), 600);
     });
+    /* v143：退出即存 —— blur(点返回/点别处)立刻保存，避免"输入后马上退出 → 内容还没落库就丢" */
+    div.addEventListener('blur', ()=>{ try{ Notes._autoSaveEdit(); }catch(e){} });
     /* 退栈时强制保存 */
     const box = document.getElementById('uiFullBox');
     if(box){
