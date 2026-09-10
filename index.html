@@ -625,9 +625,9 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
 .visual-viewer .vv-prev{left:14px}.visual-viewer .vv-next{right:14px}
 .visual-viewer .vv-prev:active,.visual-viewer .vv-next:active,.visual-viewer .vv-close:active{background:rgba(255,255,255,.32)}
 .visual-viewer .vv-stage{flex:1;display:flex;align-items:center;justify-content:center;width:100%;overflow:hidden}
-.visual-viewer .vv-stage img,.visual-viewer .vv-stage video{max-width:96%;max-height:80vh;object-fit:contain;border-radius:6px}
-.visual-viewer .vv-bar{display:flex;gap:14px;align-items:center;justify-content:center;width:100%;padding:14px;color:#fff;font-size:13px}
-.visual-viewer .vv-dl{color:#fff;background:rgba(255,255,255,.16);padding:8px 14px;border-radius:18px;text-decoration:none;font-size:13px}
+.visual-viewer .vv-stage img,.visual-viewer .vv-stage video{width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;background:#000}
+.visual-viewer .vv-bar{position:absolute;left:0;right:0;bottom:0;display:flex;gap:14px;align-items:center;justify-content:center;padding:36px 12px 14px;color:#fff;font-size:13px;background:linear-gradient(transparent,rgba(0,0,0,.6));pointer-events:none}
+.visual-viewer .vv-dl{color:#fff;background:rgba(255,255,255,.16);padding:8px 14px;border-radius:18px;text-decoration:none;font-size:13px;pointer-events:auto}
 .visual-viewer .vv-info{opacity:.7}
 /* 长按拖动排布时显示的小卡片编辑控件：缩小/放大/折叠/删除，平时隐藏 */
 .edit-actions{display:none;position:absolute;right:6px;top:6px;gap:4px;z-index:3;background:rgba(255,255,255,.92);padding:3px 4px;border-radius:10px;box-shadow:0 2px 8px rgba(38,54,40,.18)}
@@ -2036,7 +2036,7 @@ const Media = {
     box.style.display = 'flex';
     const stage = document.getElementById('vvStage2');
     const url = await this.objectUrl(g.ids[g.idx]);
-    stage.innerHTML = url ? `<img src="${url}" style="max-width:96%;max-height:80vh;object-fit:contain">` : '<div class="vv-info">这张图片原图找不到了</div>';
+    stage.innerHTML = url ? `<img src="${url}" style="width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain">` : '<div class="vv-info">这张图片原图找不到了</div>';
     const info = document.getElementById('vvInfo2');
     if(info) info.textContent = (g.idx+1) + ' / ' + g.ids.length;
   },
@@ -2083,15 +2083,15 @@ const Media = {
       for(const k of Object.keys(o)){ const v=o[k]; if(typeof v === 'string'){ addId(v); fromStr(v); } else walk(v, seen); }
     };
     for(const k of Store.keyList()){
-      if(String(k).startsWith('__')) continue; /* 大仓库句柄等系统键，不是记录 */
-      const v = Store.get(k, null);
+      if(String(k).startsWith('__') && k !== '__rescueList') continue; /* 大仓库句柄等系统键不是记录；急救快照里的文字会引用图片，要纳入 */
+      const v = (k === '__rescueList') ? (Store.get(k, []).map(r => r && r.data)) : Store.get(k, null);
       if(v == null) continue;
       walk(v, new Set());
     }
     const orphans = originals.filter(id => !used.has(id));
     if(!orphans.length){ UI.toast('没有需要清理的孤立图片 ✓'); return; }
     const kb = await this._bytesOf(orphans);
-    if(!confirm('发现 ' + orphans.length + ' 张「孤立图片」(' + Util.bytes(kb) + '）：已不再被任何日记/摘录/灵感/记录引用。\n\n只删这些没被引用的旧图，正在使用的图片一概不动。确定清理？')) return;
+    if(!confirm('发现 ' + orphans.length + ' 张无人引用的旧图（' + Util.bytes(kb) + '）。只删孤儿，正在用的图片不碰。清理？')) return;
     for(const id of orphans){ await this.del(id).catch(()=>{}); }
     UI.toast('已清理 ' + orphans.length + ' 张孤立图片，释放 ' + Util.bytes(kb));
     if(typeof Settings !== 'undefined') Settings.renderStorage();
@@ -2163,7 +2163,8 @@ const Media = {
       try{
         const type = (m.meta && m.meta.type) || 'application/octet-stream';
         const blob = Util.dataUrlToBlob('data:' + type + ';base64,' + m.base64);
-        if(blob) await this.put(m.id, blob, m.meta || {});
+        if(!blob){ fail++; continue; }
+        await this.put(m.id, blob, m.meta || {});
         ok++;
       }catch(e){ console.error('恢复媒体失败', m.id, e); fail++; }
     }
@@ -2464,7 +2465,9 @@ const UI = {
          但 history.back() 是异步、且不保证每帧都落，多格里容易弹出过头/落不完 → 竞态。
          现在改为自增计数器 _fsDepth + 单次 history.go(-depth) 原子定位，一步到位跨浏览器稳定。
          _silentFsClose 让 popstate 监听器短路，避免弹栈过程触发 _fsBack。 */
-      const depth = this._fsDepth || 0;
+      /* 用「当前顶层 history.state.uiFs」动态算需回溯层数，而不是固定累计值 ——
+         否则用户已用物理返回/手势先弹掉部分 uiFs 占位后，closeFull 会多退格、越过分层页直达 hub（“退到知识页”）。 */
+      const depth = (history.state && typeof history.state.uiFs === 'number') ? history.state.uiFs : (this._fsDepth || 0);
       this._fsDepth = 0;
       this._silentFsClose = true;
       try { if(depth > 0) history.go(-depth); } finally { this._silentFsClose = false; }
@@ -2709,7 +2712,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-09-10-v138';
+const BUILD_VERSION = '2026-09-10-v139';
 /* 版本自愈：一旦读到的 HTML 比上次更新（BUILD_VERSION 变了），立即清空 caches 里的旧副本并 reload。
    避免 SWR 回退到陈旧缓存、让旧界面永远赖着不走（中国网络访问 github.io 不稳时尤其多发：联网经常失败→回退旧缓存） */
 (function(){try{
@@ -5747,7 +5750,7 @@ const Notes = {
       /* 原地刷新详情页顶部元信息：存完仍停在详情，题目/分类/标签立即更新（不再误以为跳走了） */
       const open = Store.get('notes',[]).find(x=>x.id===id);
       if(open && this._curDetailId === id) this._renderDetailMeta(open);
-      this.render();
+      /* 不重绘父页：原地刷新元信息即可，避免任何“编辑后跳回知识页”的副作用 */
     };
     body.querySelector('#niCancel').onclick = ()=>UI.closeModal();
   },
@@ -7119,7 +7122,7 @@ const Visual = {
     const m = v.items[v.idx];
     const stage = document.getElementById('vvStage');
     const url = await Media.objectUrl(m.id);
-    stage.innerHTML = (m.type?.startsWith?.('video/') || (/\.mp4$|\.webm$|\.mov$/i.test(m.name||''))) ? `<video src="${url}" controls autoplay style="max-width:100%;max-height:80vh"></video>` : `<img src="${url}" style="max-width:100%;max-height:80vh;object-fit:contain">`;
+    stage.innerHTML = (m.type?.startsWith?.('video/') || (/\.mp4$|\.webm$|\.mov$/i.test(m.name||''))) ? `<video src="${url}" controls autoplay style="width:100%;height:100%;max-width:100%;max-height:100%" ></video>` : `<img src="${url}" style="width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain">`;
     const dl = document.getElementById('vvDl');
     if(dl){ dl.href = url; dl.download = (m.name || ('visual-' + m.id)) + Media.extOf(m.type || 'image/jpeg'); }
     const info = document.getElementById('vvInfo');
@@ -7967,7 +7970,10 @@ const Backup = {
       p+=chunk.length;
     }
     const headBytes=await read(0,headEnd);
-    const st=JSON.parse(new TextDecoder('utf-8').decode(headBytes)+'[]}');
+    /* 头字节已去掉顶层 "media":[ 段的起始（headEnd 停在 '"media"' 的引号处），
+       需补全 '"media":[]' 才能真正闭合出合法 JSON；旧代码直接拼 '[]}' 会得到 {...,[]} 这种非法结构，
+       JSON.parse 一抛错 → 记录一条都导不进来。 */
+    const st=JSON.parse(new TextDecoder('utf-8').decode(headBytes).trim().replace(/,\s*$/,'')+',"media":[]}');
     await Store.importAll(st);
     let ok=0, fail=0;
     for(const rr of ranges){
@@ -7977,7 +7983,8 @@ const Backup = {
       try{
         const type=(m&&m.meta&&m.meta.type)||'application/octet-stream';
         const blob=Util.dataUrlToBlob('data:'+type+';base64,'+m.base64);
-        if(blob) await Media.put(m.id, blob, m.meta||{});
+        if(!blob){ fail++; continue; }
+        await Media.put(m.id, blob, m.meta||{});
         ok++;
       }catch{ fail++; }
     }
