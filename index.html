@@ -567,7 +567,7 @@ label{display:block;font-size:13px;color:var(--text-dim);margin:10px 0 6px}
 .quick-item .grow{width:100%;min-width:0}
 .quick-item .title{white-space:pre-wrap;word-break:break-word}
 /* 通用弹窗（被 UI.modal 调用） */
-.ui-modal-mask{position:fixed;inset:0;background:rgba(20,28,30,.45);z-index:9998;display:flex;align-items:center;justify-content:center;padding:14px}
+.ui-modal-mask{position:fixed;inset:0;background:rgba(20,28,30,.45);z-index:10000;display:flex;align-items:center;justify-content:center;padding:14px}
 .ui-modal-card{background:var(--card);border-radius:14px;max-width:480px;width:100%;max-height:80vh;overflow:hidden;box-shadow:0 16px 36px rgba(20,30,18,.25);display:flex;flex-direction:column}
 .ui-modal-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #ece6d3}
 .ui-modal-head h3{margin:0;font-size:15px}
@@ -1477,6 +1477,7 @@ body.ui-fs-on .nav-bar,body.ui-fs-on .top-bar,body.ui-fs-on .app-main{filter:non
         <div class="kv"><span>本机存储（数据只存在这台设备）</span><b id="storeUsage">-</b></div>
         <div class="meter" id="storeMeter"><span></span></div>
         <p class="hint" style="margin-top:4px"><span id="storeDetail">-</span></p>
+        <p class="hint" id="storeNote" style="display:none;margin-top:2px"></p>
         <div id="storeWarn" style="display:none;margin-top:8px;padding:10px 12px;border-radius:10px;font-size:13px;line-height:1.6"></div>
       </div>
       <div class="card">
@@ -2303,7 +2304,8 @@ Util.Combo = {
 };
 
 const UI = {
-  toast(msg){ const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(this.timer); this.timer = setTimeout(() => t.classList.remove('on'), 1800); },
+  /* keep=1 时提示不会自动消失，直到被下一条 toast 替换（用来显示“正在…”类耗时进度），避免中途消失又单独弹结果 */
+  toast(msg, keep){ const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(this.timer); if(!keep){ this.timer = setTimeout(() => t.classList.remove('on'), 1800); } },
   grab(){ return '<button class="grab" data-grab title="按住这里拖动" onclick="event.stopPropagation()">⠿</button>'; },
   modal(title, html){
     let box = document.getElementById('uiModalBox');
@@ -2648,7 +2650,7 @@ const AI = {
   }
 };
 /* 构建版本：每次部署时递增，用于检测是否需要强制刷新 */
-const BUILD_VERSION = '2026-09-10-v137';
+const BUILD_VERSION = '2026-09-10-v138';
 /* 版本自愈：一旦读到的 HTML 比上次更新（BUILD_VERSION 变了），立即清空 caches 里的旧副本并 reload。
    避免 SWR 回退到陈旧缓存、让旧界面永远赖着不走（中国网络访问 github.io 不稳时尤其多发：联网经常失败→回退旧缓存） */
 (function(){try{
@@ -4862,15 +4864,16 @@ const AutoBackup = {
     /* 手机 App：写进已记住的文件夹（流式单 JSON：文字一次写、媒体逐个读一个追加一个，内存峰值只有单个文件） */
     if(NativeBackup.isNative()){
       if(!c.dirUri){ if(!silent) UI.toast('还没设置保存位置，请先点「选择保存位置」'); return false; }
-      if(!silent) UI.toast('⏳ 正在备份，请稍候…');
+      if(!silent) UI.toast('⏳ 正在备份，请稍候…', 1);
       const ok = await NativeBackup.streamBackup(c.dirUri, name);
       if(!ok){ const er = NativeBackup.lastErr; UI.toast('写入失败' + (er && er.message ? '：' + er.message : '，请重新「选择保存位置」再试')); return false; }
       this.save({lastMonth:month});
-      if(!silent) UI.toast('✅ 备份成功');
+      if(!silent) UI.toast('✅ 备份成功，已写入「' + (c.dirName || '所选文件夹') + '」');
       this.render();
       return true;
     }
     /* 桌面浏览器：拼全量后再写（桌面堆内存大，一次性 stringify 没问题） */
+    if(!silent) UI.toast('⏳ 正在备份，请稍候…', 1);
     const pack = Store.exportAll();
     try{ pack.media = await Media.exportAll().catch(() => []); }catch(e){}
     const text = JSON.stringify(pack);
@@ -5653,8 +5656,8 @@ const Notes = {
         <select id="niCat" style="width:100%">${cats.map(c=>`<option value="${Util.esc(c)}" ${c===curCat?'selected':''}>${Util.esc(c)}</option>`).join('')}</select>
       </div>
       <div style="margin-bottom:4px">
-        <label style="display:block;margin-bottom:4px">标签（逗号分隔，可选）</label>
-        <input id="niTags" value="${Util.esc(it.tags||'')}" placeholder="如：效率, 心态" style="width:100%">
+        <label style="display:block;margin-bottom:4px">标签（逗号分隔，可选，▾ 可选已用过的标签）</label>
+        <div style="display:flex;gap:0"><input id="niTags" value="${Util.esc(it.tags||'')}" placeholder="如：效率, 心态" style="width:100%"><button type="button" class="combo-toggle" onclick="Util.Combo.open('niTags','note_tags',event)" title="选已有标签" style="flex:none">▾</button></div>
       </div>
       <div class="row" style="margin-top:16px">
         <button class="btn" id="niSave">保存</button>
@@ -7831,13 +7834,13 @@ const Backup = {
     const f=input.files[0]; if(!f)return; input.value='';
     if(!confirm('恢复备份会覆盖当前数据，确定吗？覆盖前会自动留一份急救快照，误操作也能救回。')) return;
     Store.rescue();
-    try{ if(UI && UI.openFull) UI.openFull('⏳ 正在导入…', '<div style="text-align:center;padding:24px 12px"><div style="font-size:20px">正在导入备份…</div><p class="hint" style="margin-top:10px">文件较大请稍候，勿关闭本页</p></div>', ''); }catch(e){}
-    const report=(r)=>{ if(r.fail>0){ alert('有 '+r.fail+' 个媒体没能恢复（原图可能已被清）。已恢复 '+(r.ok||0)+' 个。'); } else { UI.toast('导入成功'+(r.mediaTotal?('，含 '+r.ok+'/'+r.mediaTotal+' 个媒体'):'')); } };
-    const done=async(r)=>{ await Store.flush(); report(r); location.reload(); };
-    const fail=()=>location.reload();
+    UI.toast('⏳ 正在导入，请稍候…', 1);
+    const report=(r)=>{ if(r.fail>0){ alert('有 '+r.fail+' 个媒体没能恢复（原图可能已被清）。已恢复 '+(r.ok||0)+' 个。'); } else { UI.toast('✅ 导入成功'+(r.mediaTotal?('，含 '+r.ok+'/'+r.mediaTotal+' 个媒体'):'')); } };
+    const done=async(r)=>{ await Store.flush(); report(r); setTimeout(()=>location.reload(), 1200); };
+    const fail=(err)=>{ alert('导入失败：' + (err.message || '未知错误')); location.reload(); };
     if(f.size <= 20*1024*1024){
-      const r=new FileReader(); r.onerror=fail;
-      r.onload=async e=>{ try{ const parsed=JSON.parse(e.target.result); await Store.importAll(parsed); const res=Array.isArray(parsed.media)?await Media.restore(parsed.media):{ok:0,fail:0,mediaTotal:0}; await done(res); }catch{ fail(); } };
+      const r=new FileReader(); r.onerror=()=>fail(new Error('读取文件失败'));
+      r.onload=async e=>{ try{ const parsed=JSON.parse(e.target.result); await Store.importAll(parsed); const res=Array.isArray(parsed.media)?await Media.restore(parsed.media):{ok:0,fail:0,mediaTotal:0}; await done(res); }catch(e){ fail(e); } };
       r.readAsText(f); return;
     }
     this.importFull(f).then(done, fail);
@@ -7990,7 +7993,7 @@ const Settings = {
     }
     const total = (lsBytes||0) + mediaBytes;
     const el = document.getElementById('storeUsage');
-    if(el) el.textContent = (supported ? '' : '当前浏览器不支持大仓库 · ') + Util.bytes(total) + (mediaCount ? ' · ' + mediaCount + ' 个文件' : '');
+    if(el) el.textContent = (supported ? '' : '当前浏览器不支持大仓库 · ') + Util.bytes(total) + (mediaCount ? ' · ' + mediaCount + ' 张图片/视频' : '');
     const meter = document.getElementById('storeMeter');
     /* 进度条上限：APK 用「本机设备总存储」，网页兜底用浏览器给该站的存储配额；只反映本应用真实占用 */
     let devCap = 0, devAvail = 0;
@@ -8004,6 +8007,11 @@ const Settings = {
     if(devAvail > 0) detText += ' · 本机可用 ' + Util.bytes(devAvail);
     const det = document.getElementById('storeDetail');
     if(det) det.textContent = supported ? detText : '建议用 Chrome / Edge 打开';
+    const note = document.getElementById('storeNote');
+    if(note){
+      note.style.display = supported ? '' : 'none';
+      note.textContent = supported ? '这里的“图片/视频”是添加的原图（独立存放，文字记录另算）；导出/备份会把原图转成 base64 打包进一份 JSON，所以备份比这里显示的更大，属正常。' : '';
+    }
     const warn = document.getElementById('storeWarn');
     if(warn){
       const pct = total / cap;
